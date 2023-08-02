@@ -1,4 +1,4 @@
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Type
 
 from graphql import GraphQLSchema, TypeDefinitionNode
 
@@ -38,15 +38,12 @@ class GraphQLType:
 
 class GraphQLModel:
     name: str
-    ast_type: TypeDefinitionNode
+    ast: TypeDefinitionNode
+    ast_type: Type[TypeDefinitionNode]
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, ast: TypeDefinitionNode):
         self.name = name
-
-    def get_ast(self) -> TypeDefinitionNode:
-        raise NotImplementedError(
-            "Subclasses of 'GraphQLModel' need to define a 'get_ast' method."
-        )
+        self.ast = ast
 
     def bind_to_schema(self, schema: GraphQLSchema):
         pass

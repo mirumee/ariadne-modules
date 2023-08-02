@@ -2,7 +2,12 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Sequence, Type, Union
 
 from ariadne import SchemaBindable, SchemaDirectiveVisitor, SchemaNameConverter
-from graphql import GraphQLSchema
+from graphql import (
+    DocumentNode,
+    GraphQLSchema,
+    assert_valid_schema,
+    build_ast_schema,
+)
 
 from .base import GraphQLModel, GraphQLType
 
@@ -29,6 +34,22 @@ def make_executable_schema(
     # Convert unique types list to models/bindables list
     # Deal with deferred types
 
+    schema_models: List[GraphQLModel] = [
+        type_def.__get_graphql_model__() for type_def in types_list
+    ]
+
+    document_node = DocumentNode(
+        definitions=tuple(schema_model.ast for schema_model in schema_models),
+    )
+    
+    schema = build_ast_schema(document_node)
+    assert_valid_schema(schema)
+
+    for schema_model in schema_models:
+        schema_model.bind_to_schema(schema)
+
+    return schema
+
 
 def find_type_defs(types: Sequence[SchemaType]) -> List[str]:
     type_defs: List[str] = []
@@ -52,7 +73,7 @@ def flatten_types(types: Sequence[Union[SchemaType, List[SchemaType]]]) -> List[
 
             if getattr(type_def, "__abstract__", None):
                 raise ValueError(
-                    f"Type '{type_def.__name__}' is an abstract type and can't be used "
+                    f"Type '{type_name}' is an abstract type and can't be used "
                     "for schema creation."
                 )
 
