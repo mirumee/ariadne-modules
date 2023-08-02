@@ -1,0 +1,69 @@
+from inspect import isclass
+from types import UnionType
+from typing import Any, List, Union, get_args, get_origin
+
+from graphql import (
+    ListTypeNode,
+    NameNode,
+    NamedTypeNode,
+    NonNullTypeNode,
+    TypeNode,
+)
+
+from .base import GraphQLType
+
+
+def get_type_node(type_hint: Any) -> TypeNode:
+    if is_nullable(type_hint):
+        nullable = True
+        type_hint = unwrap_type(type_hint)
+    else:
+        nullable = False
+
+    if is_list(type_hint):
+        list_item_type_hint = unwrap_type(type_hint)
+        type_node = ListTypeNode(type=get_type_node(list_item_type_hint))
+    elif type_hint ==  str:
+        type_node = NamedTypeNode(name=NameNode(value="String"))
+    elif type_hint == int:
+        type_node = NamedTypeNode(name=NameNode(value="Int"))
+    elif type_hint == float:
+        type_node = NamedTypeNode(name=NameNode(value="Float"))
+    elif type_hint == bool:
+        type_node = NamedTypeNode(name=NameNode(value="Boolean"))
+    elif isclass(type_hint) and issubclass(type_hint, GraphQLType):
+        type_node = NamedTypeNode(
+            name=NameNode(value=type_hint.__get_graphql_name__()),
+        )
+    else:
+        raise ValueError(f"Can't create a GraphQL return type for '{type_hint}'")
+
+    if nullable:
+        return type_node
+
+    return NonNullTypeNode(type=type_node)
+
+
+
+def is_list(type_hint: Any) -> bool:
+    return get_origin(type_hint) == list
+
+
+def is_nullable(type_hint: Any) -> bool:
+    origin = get_origin(type_hint)
+    if origin in (UnionType, Union):
+        return type(None) in get_args(type_hint)
+
+    return False
+
+
+def unwrap_type(type_hint: Any) -> Any:
+    args = list(get_args(type_hint))
+    if type(None) in args:
+        args.remove(type(None))
+    if len(args) != 1:
+        raise ValueError(
+            f"Type {type_hint} is a wrapper type for multiple other "
+            "types and can't be unwrapped."
+        )
+    return args[0]

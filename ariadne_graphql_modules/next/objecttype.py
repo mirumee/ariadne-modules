@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Optional, Type
+from typing import Any, Dict, Iterable, List, Optional, Type, get_origin, get_type_hints
 
 from ariadne import ObjectType as ObjectTypeBindable
 from ariadne.types import Resolver
@@ -9,10 +9,12 @@ from graphql import (
     NamedTypeNode,
     NonNullTypeNode,
     ObjectTypeDefinitionNode,
+    TypeNode,
 )
 
 from .base import GraphQLModel, GraphQLType
 from .convert_name import convert_python_name_to_graphql
+from .typing import get_type_node
 
 
 class GraphQLObject(GraphQLType):
@@ -48,16 +50,7 @@ class GraphQLObject(GraphQLType):
             if field.resolver:
                 resolvers[field.name] = field.resolver
 
-            fields_ast.append(
-                FieldDefinitionNode(
-                    name=NameNode(value=field.name),
-                    type=NonNullTypeNode(
-                        type=NamedTypeNode(
-                            name=NameNode(value="String"),
-                        ),
-                    ),
-                )
-            )
+            fields_ast.append(get_field_node(field))
 
         return GraphQLObjectModel(
             name=name,
@@ -74,7 +67,7 @@ class GraphQLObject(GraphQLType):
         f: Optional[Resolver] = None,
         *,
         name: Optional[str] = None,
-        type: Optional[Type[GraphQLType]] = None,
+        type: Optional[Any] = None,
     ):
         """Shortcut for using object_field() separately"""
         return object_field(f, name=name)
@@ -93,9 +86,11 @@ class GraphQLObjectField:
         self,
         *,
         name: str,
+        type: Any,
         resolver: Optional[Resolver] = None,
     ):
         self.name = name
+        self.type = type
         self.resolver = resolver
 
 
@@ -103,12 +98,28 @@ def object_field(
     f: Optional[Resolver] = None,
     *,
     name: Optional[str] = None,
-    type: Optional[Type[GraphQLType]] = None,
+    type: Optional[Any] = None,
 ):
     def object_field_factory(f: Optional[Resolver]) -> GraphQLObjectField:
+        field_type: Any = None
+        field_name = name or convert_python_name_to_graphql(f.__name__)
+
+        if type:
+            field_type = type
+        elif f:
+            field_type = get_field_type_from_resolver(f)
+
+        if field_type is None:
+            raise ValueError(
+                f"Unable to find return type for field '{field_name}'. Either add "
+                "return type annotation on it's resolver or specify return type "
+                "explicitly via 'type=...' option."
+            )
+
         return GraphQLObjectField(
             resolver=f,
-            name=name or convert_python_name_to_graphql(f.__name__),
+            name=field_name,
+            type=field_type,
         )
 
     if f is not None:
@@ -121,6 +132,16 @@ def object_field(
         return object_field_factory(f)
     
     return object_field_factory
+
+
+def get_field_type_from_resolver(resolver: Resolver):
+    return_hint = get_type_hints(resolver).get("return")
+    if not return_hint:
+        raise ValueError(
+            f"Resolver function '{resolver}' is missing return type's annotation."
+        )
+
+    return return_hint
 
 
 class GraphQLObjectModel(GraphQLModel):
@@ -148,3 +169,9 @@ class GraphQLObjectModel(GraphQLModel):
 
         bindable.bind_to_schema(schema)
 
+
+def get_field_node(field: GraphQLObjectField) -> FieldDefinitionNode:
+    return FieldDefinitionNode(
+        name=NameNode(value=field.name),
+        type=get_type_node(field.type),
+    )
