@@ -1,6 +1,6 @@
 from inspect import isclass
 from types import UnionType
-from typing import Any, List, Union, get_args, get_origin
+from typing import Any, Optional, Union, get_args, get_origin
 
 from graphql import (
     ListTypeNode,
@@ -23,7 +23,7 @@ def get_type_node(type_hint: Any) -> TypeNode:
     if is_list(type_hint):
         list_item_type_hint = unwrap_type(type_hint)
         type_node = ListTypeNode(type=get_type_node(list_item_type_hint))
-    elif type_hint ==  str:
+    elif type_hint == str:
         type_node = NamedTypeNode(name=NameNode(value="String"))
     elif type_hint == int:
         type_node = NamedTypeNode(name=NameNode(value="Int"))
@@ -42,7 +42,6 @@ def get_type_node(type_hint: Any) -> TypeNode:
         return type_node
 
     return NonNullTypeNode(type=type_node)
-
 
 
 def is_list(type_hint: Any) -> bool:
@@ -67,3 +66,13 @@ def unwrap_type(type_hint: Any) -> Any:
             "types and can't be unwrapped."
         )
     return args[0]
+
+
+def get_graphql_type(type_hint: Any) -> Optional[GraphQLType]:
+    if not isclass(type_hint):
+        return None
+
+    if issubclass(type_hint, GraphQLType):
+        return type_hint
+
+    return None
