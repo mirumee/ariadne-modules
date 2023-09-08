@@ -25,6 +25,31 @@ def test_object_type_with_field(assert_schema_equals):
     assert result.data == {"hello": "Hello World!"}
 
 
+def test_object_type_with_alias(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        __aliases__ = {
+            "hello": "welcome"
+        }
+
+        hello: str
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          hello: String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }", root_value={"welcome": "Hello World!"})
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello World!"}
+
+
 def test_object_type_with_field_resolver(assert_schema_equals):
     class QueryType(GraphQLObject):
         @GraphQLObject.field
@@ -262,6 +287,80 @@ def test_resolver_decorator_sets_resolver_for_field_in_schema(assert_schema_equa
         schema,
         """
         type Query {
+          hello: String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }")
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello World!"}
+
+
+def test_object_type_with_description(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        __description__ = "Lorem ipsum."
+
+        hello: str
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        \"\"\"Lorem ipsum.\"\"\"
+        type Query {
+          hello: String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }", root_value={"hello": "Hello World!"})
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello World!"}
+
+
+def test_field_decorator_sets_description_for_field(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(description="Lorem ipsum.")
+        def hello(obj, info) -> str:
+            return "Hello World!"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          \"\"\"Lorem ipsum.\"\"\"
+          hello: String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }")
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello World!"}
+
+
+def test_resolver_decorator_sets_description_for_type_hint_field(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        hello: str
+
+        @GraphQLObject.resolver("hello", description="Lorem ipsum.")
+        def resolve_hello(*_):
+            return "Hello World!"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          \"\"\"Lorem ipsum.\"\"\"
           hello: String!
         }
         """,

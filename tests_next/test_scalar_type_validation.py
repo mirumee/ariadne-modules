@@ -23,3 +23,18 @@ def test_scalar_type_validation_fails_for_name_mismatch_between_schema_and_attr(
             __schema__ = gql("scalar Custom")
 
     snapshot.assert_match(str(exc_info.value))
+
+
+def test_scalar_type_validation_fails_for_two_descriptions(snapshot):
+    with pytest.raises(ValueError) as exc_info:
+
+        class CustomScalar(GraphQLScalar[str]):
+            __description__ = "Hello world!"
+            __schema__ = gql(
+                """
+                \"\"\"Other description\"\"\"
+                scalar Lorem
+                """
+            )
+
+    snapshot.assert_match(str(exc_info.value))

@@ -5,6 +5,7 @@ from graphql import GraphQLSchema, TypeDefinitionNode, parse
 
 class GraphQLType:
     __graphql_name__: Optional[str]
+    __description__: Optional[str]
     __abstract__: bool = True
 
     @classmethod

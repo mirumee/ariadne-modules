@@ -5,12 +5,14 @@ from graphql import (
     GraphQLSchema,
     NameNode,
     ScalarTypeDefinitionNode,
+    StringValueNode,
     ValueNode,
     value_from_ast_untyped,
 )
 
 from ..utils import parse_definition
 from .base import GraphQLModel, GraphQLType
+from .validators import validate_description
 
 T = TypeVar("T")
 
@@ -109,6 +111,8 @@ def validate_scalar_type_with_schema(cls: Type[GraphQLScalar]):
             f"'__schema__' attributes, but scalar's names in those don't match. "
             f"('{graphql_name}' != '{definition.name.value}')"
         )
+
+    validate_description(cls, definition)
 
 
 class GraphQScalarModel(GraphQLModel):

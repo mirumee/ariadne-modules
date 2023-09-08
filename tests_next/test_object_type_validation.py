@@ -4,7 +4,7 @@ from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLObject
 
 
-def test_scalar_type_validation_fails_for_invalid_type_schema(snapshot):
+def test_object_type_validation_fails_for_invalid_type_schema(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -41,5 +41,22 @@ def test_object_type_validation_fails_for_undefined_field_resolver(snapshot):
             @GraphQLObject.resolver("other")
             def resolve_hello(*_):
                 return "Hello World!"
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_object_type_validation_fails_for_two_descriptions(snapshot):
+    with pytest.raises(ValueError) as exc_info:
+
+        class CustomType(GraphQLObject):
+            __description__ = "Hello world!"
+            __schema__ = gql(
+                """
+                \"\"\"Other description\"\"\"
+                type Query {
+                  hello: String!
+                }
+                """
+            )
 
     snapshot.assert_match(str(exc_info.value))
