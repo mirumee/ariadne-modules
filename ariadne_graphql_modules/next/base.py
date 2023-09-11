@@ -13,9 +13,6 @@ class GraphQLType:
         if getattr(cls, "__graphql_name__", None):
             return cls.__graphql_name__
 
-        if getattr(cls, "__schema__", None):
-            return cls.__get_graphql_name_from_schema__()
-
         name = cls.__name__
         if name.endswith("GraphQLType"):
             # 'UserGraphQLType' will produce the 'User' name
@@ -34,12 +31,6 @@ class GraphQLType:
             return name[:-7] or name
 
         return name
-
-    @classmethod
-    def __get_graphql_name_from_schema__(cls) -> "str":
-        # Todo: cache this in future...
-        document = parse(cls.__schema__)
-        return document.definitions[0].name.value
 
     @classmethod
     def __get_graphql_model__(cls) -> "GraphQLModel":

@@ -28,7 +28,7 @@ from ..utils import parse_definition
 from .base import GraphQLModel, GraphQLType
 from .convert_name import convert_python_name_to_graphql
 from .typing import get_graphql_type, get_type_node
-from .validators import validate_description
+from .validators import validate_description, validate_name
 
 
 class GraphQLObject(GraphQLType):
@@ -301,6 +301,9 @@ def validate_object_type_with_schema(cls: Type[GraphQLObject]):
             f"'{ObjectTypeDefinitionNode.__name__}')"
         )
 
+    validate_name(cls, definition)
+    validate_description(cls, definition)
+
     field_names: List[str] = [f.name.value for f in definition.fields]
     for attr_name in dir(cls):
         cls_attr = getattr(cls, attr_name)
@@ -311,8 +314,6 @@ def validate_object_type_with_schema(cls: Type[GraphQLObject]):
                     f"Class '{cls.__name__}' defines resolver for an undefined "
                     f"field '{cls_attr.field}'. (Valid fields: '{valid_fields}')"
                 )
-
-    validate_description(cls, definition)
 
 
 class GraphQLObjectField:
