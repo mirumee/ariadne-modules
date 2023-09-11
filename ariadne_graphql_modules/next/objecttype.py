@@ -15,6 +15,8 @@ from ariadne import ObjectType as ObjectTypeBindable
 from ariadne.types import Resolver
 from graphql import (
     FieldDefinitionNode,
+    GraphQLField,
+    GraphQLObjectType,
     GraphQLSchema,
     InputValueDefinitionNode,
     NameNode,
@@ -122,6 +124,13 @@ class GraphQLObject(GraphQLType):
             if hint_name in fields_resolvers:
                 resolvers[hint_field_name] = fields_resolvers[hint_name]
                 field_args = get_field_args_from_resolver(resolvers[hint_field_name])
+                if field_args:
+                    if fields_args_options.get(hint_field_name):
+                        update_args_options(
+                            field_args, fields_args_options[hint_field_name]
+                        )
+
+                    out_names[hint_field_name] = get_field_args_out_names(field_args)
             else:
                 field_args = {}
 
@@ -161,11 +170,14 @@ class GraphQLObject(GraphQLType):
                 resolvers[field_instance.name] = field_resolver
                 field_args = get_field_args_from_resolver(field_resolver)
                 if field_instance.name in fields_args_options:
-                    update_resolver_args(
+                    update_args_options(
                         field_args, fields_args_options[field_instance.name]
                     )
 
             fields_ast.append(get_field_node_from_obj_field(field_instance, field_args))
+
+            if field_args:
+                out_names[field_instance.name] = get_field_args_out_names(field_args)
 
         object_description = getattr(cls, "__description__", None)
         if object_description:
@@ -241,10 +253,13 @@ class GraphQLObject(GraphQLType):
 
     @staticmethod
     def argument(
+        name: Optional[str] = None,
         description: Optional[str] = None,
         type: Optional[Any] = None,
     ) -> dict:
         options: dict = {}
+        if name:
+            options["name"] = name
         if description:
             options["description"] = description
         if type:
@@ -444,6 +459,12 @@ class GraphQLObjectModel(GraphQLModel):
 
         bindable.bind_to_schema(schema)
 
+        graphql_type = cast(GraphQLObjectType, schema.get_type(self.name))
+        for field_name, field_out_names in self.out_names.items():
+            graphql_field = cast(GraphQLField, graphql_type.fields[field_name])
+            for arg_name, out_name in field_out_names.items():
+                graphql_field.args[arg_name].out_name = out_name
+
 
 def get_field_node_from_type_hint(
     field_name: str,
@@ -460,7 +481,7 @@ def get_field_node_from_type_hint(
         description=description,
         name=NameNode(value=field_name),
         type=get_type_node(field_type),
-        arguments=get_field_args_nodes_from_obj_field_arg(field_args),
+        arguments=get_field_args_nodes_from_obj_field_args(field_args),
     )
 
 
@@ -477,7 +498,7 @@ def get_field_node_from_obj_field(
         description=description,
         name=NameNode(value=field.name),
         type=get_type_node(field.type),
-        arguments=get_field_args_nodes_from_obj_field_arg(field_args),
+        arguments=get_field_args_nodes_from_obj_field_args(field_args),
     )
 
 
@@ -539,7 +560,16 @@ def get_field_args_from_resolver(
     return field_args
 
 
-def get_field_args_nodes_from_obj_field_arg(
+def get_field_args_out_names(
+    field_args: Dict[str, GraphQLObjectFieldArg]
+) -> Dict[str, str]:
+    out_names: Dict[str, str] = {}
+    for field_arg in field_args.values():
+        out_names[field_arg.name] = field_arg.out_name
+    return out_names
+
+
+def get_field_args_nodes_from_obj_field_args(
     field_args: Dict[str, GraphQLObjectFieldArg]
 ) -> Tuple[InputValueDefinitionNode]:
     return tuple(
@@ -563,7 +593,7 @@ def get_field_arg_node_from_obj_field_arg(
     )
 
 
-def update_resolver_args(
+def update_args_options(
     resolver_args: Dict[str, GraphQLObjectFieldArg],
     args_options: Optional[Dict[str, dict]],
 ):
@@ -572,6 +602,8 @@ def update_resolver_args(
 
     for arg_name, arg_options in args_options.items():
         resolver_arg = resolver_args[arg_name]
+        if arg_options.get("name"):
+            resolver_arg.name = arg_options["name"]
         if arg_options.get("description"):
             resolver_arg.description = arg_options["description"]
         if arg_options.get("type"):

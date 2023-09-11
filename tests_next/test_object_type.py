@@ -27,9 +27,7 @@ def test_object_type_with_field(assert_schema_equals):
 
 def test_object_type_with_alias(assert_schema_equals):
     class QueryType(GraphQLObject):
-        __aliases__ = {
-            "hello": "welcome"
-        }
+        __aliases__ = {"hello": "welcome"}
 
         hello: str
 
