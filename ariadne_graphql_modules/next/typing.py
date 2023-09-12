@@ -1,6 +1,7 @@
+from importlib import import_module
 from inspect import isclass
 from types import UnionType
-from typing import Any, Optional, Union, get_args, get_origin
+from typing import Annotated, Any, ForwardRef, Optional, Union, get_args, get_origin
 
 from graphql import (
     ListTypeNode,
@@ -11,6 +12,7 @@ from graphql import (
 )
 
 from .base import GraphQLType
+from .deferredtype import DeferredType
 
 
 def get_type_node(type_hint: Any) -> TypeNode:
@@ -31,12 +33,25 @@ def get_type_node(type_hint: Any) -> TypeNode:
         type_node = NamedTypeNode(name=NameNode(value="Float"))
     elif type_hint == bool:
         type_node = NamedTypeNode(name=NameNode(value="Boolean"))
+    elif get_origin(type_hint) is Annotated:
+        forward_ref, type_meta = get_args(type_hint)
+        if not type_meta or not isinstance(type_meta, DeferredType):
+            raise ValueError(
+                f"Can't create a GraphQL return type for '{type_hint}'. "
+                "Second argument of 'Annotated' is expected to be a return "
+                "value from the 'deferred()' utility."
+            )
+
+        deferred_type = get_deferred_type(type_hint, forward_ref, type_meta)
+        type_node = NamedTypeNode(
+            name=NameNode(value=deferred_type.__get_graphql_name__()),
+        )
     elif isclass(type_hint) and issubclass(type_hint, GraphQLType):
         type_node = NamedTypeNode(
             name=NameNode(value=type_hint.__get_graphql_name__()),
         )
     else:
-        raise ValueError(f"Can't create a GraphQL return type for '{type_hint}'")
+        raise ValueError(f"Can't create a GraphQL return type for '{type_hint}'.")
 
     if nullable:
         return type_node
@@ -66,6 +81,19 @@ def unwrap_type(type_hint: Any) -> Any:
             "types and can't be unwrapped."
         )
     return args[0]
+
+
+def get_deferred_type(
+    type_hint: Any, forward_ref: ForwardRef, deferred_type: DeferredType
+) -> Optional[GraphQLType]:
+    type_name = forward_ref.__forward_arg__
+    module = import_module(deferred_type.path)
+    graphql_type = getattr(module, type_name)
+
+    if not isclass(graphql_type) or not issubclass(graphql_type, GraphQLType):
+        raise ValueError(f"Can't create a GraphQL return type for '{type_hint}'.")
+
+    return graphql_type
 
 
 def get_graphql_type(type_hint: Any) -> Optional[GraphQLType]:

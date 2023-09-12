@@ -8,7 +8,6 @@ from typing import (
     Tuple,
     Type,
     cast,
-    get_type_hints,
 )
 
 from ariadne import ObjectType as ObjectTypeBindable
@@ -87,7 +86,7 @@ class GraphQLObject(GraphQLType):
 
     @classmethod
     def __get_graphql_model_without_schema__(cls, name: str) -> "GraphQLModel":
-        type_hints = get_type_hints(cls)
+        type_hints = cls.__annotations__
         fields_args_options: Dict[str, dict] = {}
         fields_descriptions: Dict[str, str] = {}
         fields_resolvers: Dict[str, Resolver] = {}
@@ -210,7 +209,7 @@ class GraphQLObject(GraphQLType):
                     if field_graphql_type and field_graphql_type not in types:
                         types.append(field_graphql_type)
 
-        type_hints = get_type_hints(cls)
+        type_hints = cls.__annotations__
         for hint_type in type_hints.values():
             hint_graphql_type = get_graphql_type(hint_type)
             if hint_graphql_type and hint_graphql_type not in types:
@@ -269,7 +268,7 @@ class GraphQLObject(GraphQLType):
 
 def validate_object_type(cls: Type[GraphQLObject]):
     attrs_names: List[str] = [
-        attr_name for attr_name in get_type_hints(cls) if not attr_name.startswith("__")
+        attr_name for attr_name in cls.__annotations__ if not attr_name.startswith("__")
     ]
     resolvers_names: List[str] = []
 
@@ -374,7 +373,7 @@ def object_field(
 
 
 def get_field_type_from_resolver(resolver: Resolver) -> Any:
-    return get_type_hints(resolver).get("return")
+    return resolver.__annotations__.get("return")
 
 
 class GraphQLObjectResolver:
@@ -527,7 +526,7 @@ def get_field_args_from_resolver(
     resolver: Resolver,
 ) -> Dict[str, GraphQLObjectFieldArg]:
     resolver_signature = signature(resolver)
-    type_hints = get_type_hints(resolver)
+    type_hints = resolver.__annotations__
     type_hints.pop("return", None)
 
     field_args: Dict[str, GraphQLObjectFieldArg] = {}

@@ -1,9 +1,12 @@
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, Annotated, List, Optional, Union, get_type_hints
 
 from graphql import ListTypeNode, NameNode, NamedTypeNode, NonNullTypeNode
 
-from ariadne_graphql_modules.next import GraphQLObject
+from ariadne_graphql_modules.next import GraphQLObject, deferred
 from ariadne_graphql_modules.next.typing import get_type_node
+
+if TYPE_CHECKING:
+    from .types import ForwardScalar
 
 
 def assert_non_null_type(type_node, name: str):
@@ -64,3 +67,24 @@ def test_get_non_null_graphql_list_type_node_from_python_builtin_type():
     assert_non_null_list_type(get_type_node(List[int]), "Int")
     assert_non_null_list_type(get_type_node(List[float]), "Float")
     assert_non_null_list_type(get_type_node(List[bool]), "Boolean")
+
+
+def test_get_graphql_type_node_from_annotated_type():
+    class MockType(GraphQLObject):
+        field: Annotated["ForwardScalar", deferred("tests_next.types")]
+
+    assert_non_null_type(get_type_node(MockType.__annotations__["field"]), "Forward")
+
+
+def test_get_graphql_type_node_from_annotated_type_with_relative_path():
+    class MockType(GraphQLObject):
+        field: Annotated["ForwardScalar", deferred(".types")]
+
+    assert_non_null_type(get_type_node(MockType.__annotations__["field"]), "Forward")
+
+
+def test_get_graphql_type_node_from_nullable_annotated_type():
+    class MockType(GraphQLObject):
+        field: Optional[Annotated["ForwardScalar", deferred("tests_next.types")]]
+
+    assert_named_type(get_type_node(MockType.__annotations__["field"]), "Forward")
