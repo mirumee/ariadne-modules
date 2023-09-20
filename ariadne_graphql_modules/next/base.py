@@ -1,6 +1,8 @@
-from typing import Iterable, Optional, Type
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Dict, Iterable, Optional, Type, Union
 
-from graphql import GraphQLSchema, TypeDefinitionNode, parse
+from graphql import GraphQLSchema, TypeDefinitionNode
 
 
 class GraphQLType:
@@ -33,7 +35,7 @@ class GraphQLType:
         return name
 
     @classmethod
-    def __get_graphql_model__(cls) -> "GraphQLModel":
+    def __get_graphql_model__(cls, metadata: "Metadata") -> "GraphQLModel":
         raise NotImplementedError(
             "Subclasses of 'GraphQLType' must define '__get_graphql_model__'"
         )
@@ -44,6 +46,7 @@ class GraphQLType:
         return [cls]
 
 
+@dataclass(frozen=True)
 class GraphQLModel:
     name: str
     ast: TypeDefinitionNode
@@ -55,3 +58,29 @@ class GraphQLModel:
 
     def bind_to_schema(self, schema: GraphQLSchema):
         pass
+
+
+@dataclass(frozen=True)
+class GraphQLMetadata:
+    models: Dict[Union[Type[GraphQLType], Type[Enum]], GraphQLModel] = field(
+        default_factory=dict
+    )
+
+    def get_graphql_model(
+        self, type: Union[Type[GraphQLType], Type[Enum]]
+    ) -> GraphQLModel:
+        if type not in self.models:
+            if hasattr(type, "__get_graphql_model__"):
+                self.models[type] = type.__get_graphql_model__(self)
+            elif issubclass(type, Enum):
+                from .enumtype import create_graphql_enum_model
+
+                self.models[type] = create_graphql_enum_model(type)
+            else:
+                raise ValueError(f"Can't retrieve GraphQL model for '{type}'.")
+
+        return self.models[type]
+
+    def get_graphql_name(self, type: Union[Type[GraphQLType], Type[Enum]]) -> str:
+        model = self.get_graphql_model(type)
+        return model.name

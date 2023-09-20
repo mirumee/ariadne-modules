@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, Generic, Optional, Type, TypeVar, cast
 
 from ariadne import ScalarType as ScalarTypeBindable
@@ -10,7 +11,8 @@ from graphql import (
 )
 
 from ..utils import parse_definition
-from .base import GraphQLModel, GraphQLType
+from .base import GraphQLMetadata, GraphQLModel, GraphQLType
+from .description import get_description_node
 from .validators import validate_description, validate_name
 
 T = TypeVar("T")
@@ -36,16 +38,18 @@ class GraphQLScalar(GraphQLType, Generic[T]):
             validate_scalar_type_with_schema(cls)
 
     @classmethod
-    def __get_graphql_model__(cls) -> "GraphQLModel":
+    def __get_graphql_model__(cls, metadata: GraphQLMetadata) -> "GraphQLModel":
         name = cls.__get_graphql_name__()
 
         if getattr(cls, "__schema__", None):
-            return cls.__get_graphql_model_with_schema__(name)
+            return cls.__get_graphql_model_with_schema__(metadata, name)
 
-        return cls.__get_graphql_model_without_schema__(name)
+        return cls.__get_graphql_model_without_schema__(metadata, name)
 
     @classmethod
-    def __get_graphql_model_with_schema__(cls, name: str) -> "GraphQLModel":
+    def __get_graphql_model_with_schema__(
+        cls, metadata: GraphQLMetadata, name: str
+    ) -> "GraphQLModel":
         definition = cast(
             ScalarTypeDefinitionNode,
             parse_definition(ScalarTypeDefinitionNode, cls.__schema__),
@@ -53,6 +57,7 @@ class GraphQLScalar(GraphQLType, Generic[T]):
 
         return GraphQScalarModel(
             name=definition.name.value,
+            ast_type=ScalarTypeDefinitionNode,
             ast=definition,
             serialize=cls.serialize,
             parse_value=cls.parse_value,
@@ -60,11 +65,17 @@ class GraphQLScalar(GraphQLType, Generic[T]):
         )
 
     @classmethod
-    def __get_graphql_model_without_schema__(cls, name: str) -> "GraphQLModel":
+    def __get_graphql_model_without_schema__(
+        cls, metadata: GraphQLMetadata, name: str
+    ) -> "GraphQLModel":
         return GraphQScalarModel(
             name=name,
+            ast_type=ScalarTypeDefinitionNode,
             ast=ScalarTypeDefinitionNode(
                 name=NameNode(value=name),
+                description=get_description_node(
+                    getattr(cls, "__description__", None),
+                ),
             ),
             serialize=cls.serialize,
             parse_value=cls.parse_value,
@@ -107,22 +118,11 @@ def validate_scalar_type_with_schema(cls: Type[GraphQLScalar]):
     validate_description(cls, definition)
 
 
+@dataclass(frozen=True)
 class GraphQScalarModel(GraphQLModel):
-    ast_type = ScalarTypeDefinitionNode
-
-    def __init__(
-        self,
-        name: str,
-        ast: ScalarTypeDefinitionNode,
-        serialize: Callable[[Any], Any],
-        parse_value: Callable[[Any], Any],
-        parse_literal: Callable[[ValueNode, Optional[Dict[str, Any]]], Any],
-    ):
-        self.name = name
-        self.ast = ast
-        self.serialize = serialize
-        self.parse_value = parse_value
-        self.parse_literal = parse_literal
+    serialize: Callable[[Any], Any]
+    parse_value: Callable[[Any], Any]
+    parse_literal: Callable[[ValueNode, Optional[Dict[str, Any]]], Any]
 
     def bind_to_schema(self, schema: GraphQLSchema):
         bindable = ScalarTypeBindable(

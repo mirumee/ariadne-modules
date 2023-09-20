@@ -9,7 +9,8 @@ from graphql import (
     build_ast_schema,
 )
 
-from .base import GraphQLModel, GraphQLType
+from .base import GraphQLMetadata, GraphQLModel, GraphQLType
+from .enumtype import GraphQLEnumModel
 from .objecttype import GraphQLObjectModel
 from .scalartype import GraphQScalarModel
 
@@ -26,6 +27,7 @@ def make_executable_schema(
     directives: Optional[Dict[str, Type[SchemaDirectiveVisitor]]] = None,
     convert_names_case: Union[bool, SchemaNameConverter] = False,
 ) -> GraphQLSchema:
+    metadata = GraphQLMetadata()
     type_defs: List[str] = find_type_defs(types)
     types_list: List[SchemaType] = flatten_types(types)
 
@@ -33,7 +35,7 @@ def make_executable_schema(
     assert_types_not_abstract(types_list)
 
     schema_models: List[GraphQLModel] = sort_models(
-        [type_def.__get_graphql_model__() for type_def in types_list]
+        [metadata.get_graphql_model(type_def) for type_def in types_list]
     )
 
     document_node = DocumentNode(
@@ -77,6 +79,9 @@ def flatten_types(
                     "for schema creation."
                 )
 
+            types_list.append(type_def)
+
+        if issubclass(type_def, Enum):
             types_list.append(type_def)
 
         if isinstance(type_def, list):
@@ -146,6 +151,7 @@ def assert_types_not_abstract(type_defs: List[SchemaType]):
 
 def sort_models(schema_models: List[GraphQLModel]) -> List[GraphQLModel]:
     sorted_models: List[GraphQLModel] = []
+    sorted_models += sort_models_by_type(GraphQLEnumModel, schema_models)
     sorted_models += sort_models_by_type(GraphQScalarModel, schema_models)
     sorted_models += [
         model for model in schema_models if isinstance(model, GraphQLObjectModel)
