@@ -14,5 +14,3 @@ snapshots['test_value_error_is_raised_if_member_description_is_set_for_excluded_
 snapshots['test_value_error_is_raised_if_member_description_is_set_for_missing_item 1'] = "Member description was specified for a member 'MISSING' not present in final GraphQL enum."
 
 snapshots['test_value_error_is_raised_if_member_description_is_set_for_omitted_item 1'] = "Member description was specified for a member 'ADMINISTRATOR' not present in final GraphQL enum."
-
-snapshots['test_value_error_is_raised_if_no_name_was_set_for_dict 1'] = "'name' argument is required when 'enum' type is a 'dict'."

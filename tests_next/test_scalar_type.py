@@ -84,7 +84,7 @@ def test_scalar_field_returning_scalar_wrapped_type(assert_schema_equals):
     assert result.data == {"date": "1989-10-30"}
 
 
-def test_schema_first_scalar_type(assert_schema_equals):
+def test_sdl_scalar_field_returning_scalar_instance(assert_schema_equals):
     class QueryType(GraphQLObject):
         date: SDLDateScalar
 

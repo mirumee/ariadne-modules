@@ -62,7 +62,7 @@ class GraphQLObject(GraphQLType):
     @classmethod
     def __get_graphql_model_with_schema__(
         cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLModel":
+    ) -> "GraphQLObjectModel":
         definition = cast(
             ObjectTypeDefinitionNode,
             parse_definition(ObjectTypeDefinitionNode, cls.__schema__),
@@ -91,7 +91,7 @@ class GraphQLObject(GraphQLType):
     @classmethod
     def __get_graphql_model_without_schema__(
         cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLModel":
+    ) -> "GraphQLObjectModel":
         type_hints = cls.__annotations__
         fields_args_options: Dict[str, dict] = {}
         fields_descriptions: Dict[str, str] = {}
@@ -272,6 +272,32 @@ class GraphQLObject(GraphQLType):
         return options
 
 
+def validate_object_type_with_schema(cls: Type[GraphQLObject]):
+    definition = parse_definition(ObjectTypeDefinitionNode, cls.__schema__)
+
+    if not isinstance(definition, ObjectTypeDefinitionNode):
+        raise ValueError(
+            f"Class '{cls.__name__}' defines '__schema__' attribute "
+            "with declaration for an invalid GraphQL type. "
+            f"('{definition.__class__.__name__}' != "
+            f"'{ObjectTypeDefinitionNode.__name__}')"
+        )
+
+    validate_name(cls, definition)
+    validate_description(cls, definition)
+
+    field_names: List[str] = [f.name.value for f in definition.fields]
+    for attr_name in dir(cls):
+        cls_attr = getattr(cls, attr_name)
+        if isinstance(cls_attr, GraphQLObjectResolver):
+            if cls_attr.field not in field_names:
+                valid_fields: str = "', '".join(sorted(field_names))
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines resolver for an undefined "
+                    f"field '{cls_attr.field}'. (Valid fields: '{valid_fields}')"
+                )
+
+
 def validate_object_type(cls: Type[GraphQLObject]):
     attrs_names: List[str] = [
         attr_name for attr_name in cls.__annotations__ if not attr_name.startswith("__")
@@ -322,32 +348,6 @@ def validate_object_type(cls: Type[GraphQLObject]):
                             "thats not defined on the resolver function. "
                             f"({error_help})"
                         )
-
-
-def validate_object_type_with_schema(cls: Type[GraphQLObject]):
-    definition = parse_definition(ObjectTypeDefinitionNode, cls.__schema__)
-
-    if not isinstance(definition, ObjectTypeDefinitionNode):
-        raise ValueError(
-            f"Class '{cls.__name__}' defines '__schema__' attribute "
-            "with declaration for an invalid GraphQL type. "
-            f"('{definition.__class__.__name__}' != "
-            f"'{ObjectTypeDefinitionNode.__name__}')"
-        )
-
-    validate_name(cls, definition)
-    validate_description(cls, definition)
-
-    field_names: List[str] = [f.name.value for f in definition.fields]
-    for attr_name in dir(cls):
-        cls_attr = getattr(cls, attr_name)
-        if isinstance(cls_attr, GraphQLObjectResolver):
-            if cls_attr.field not in field_names:
-                valid_fields: str = "', '".join(sorted(field_names))
-                raise ValueError(
-                    f"Class '{cls.__name__}' defines resolver for an undefined "
-                    f"field '{cls_attr.field}'. (Valid fields: '{valid_fields}')"
-                )
 
 
 class GraphQLObjectField:
