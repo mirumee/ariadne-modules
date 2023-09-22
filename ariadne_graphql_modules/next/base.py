@@ -22,6 +22,9 @@ class GraphQLType:
         if name.endswith("Type"):
             # 'UserType' will produce the 'User' name
             return name[:-4] or name
+        if name.endswith("GraphQLEnum"):
+            # 'UserLevelGraphQLEnum' will produce the 'UserLevelEnum' name
+            return f"{name[:-11]}Enum" or name
         if name.endswith("GraphQLScalar"):
             # 'DateTimeGraphQLScalar' will produce the 'DateTime' name
             return name[:-13] or name
