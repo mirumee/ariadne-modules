@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Iterable, Optional, Type, Union
+from typing import Any, Dict, Iterable, Optional, Type, Union
 
 from graphql import GraphQLSchema, TypeDefinitionNode
 
@@ -16,15 +16,12 @@ class GraphQLType:
             return cls.__graphql_name__
 
         name = cls.__name__
-        if name.endswith("GraphQLType"):
-            # 'UserGraphQLType' will produce the 'User' name
-            return name[:-11] or name
-        if name.endswith("Type"):
-            # 'UserType' will produce the 'User' name
-            return name[:-4] or name
         if name.endswith("GraphQLEnum"):
             # 'UserLevelGraphQLEnum' will produce the 'UserLevelEnum' name
             return f"{name[:-11]}Enum" or name
+        if name.endswith("GraphQLInput"):
+            # 'UserGraphQLInput' will produce the 'UserInput' name
+            return f"{name[:-11]}Input" or name
         if name.endswith("GraphQLScalar"):
             # 'DateTimeGraphQLScalar' will produce the 'DateTime' name
             return name[:-13] or name
@@ -34,17 +31,25 @@ class GraphQLType:
         if name.endswith("GraphQL"):
             # 'UserGraphQL' will produce the 'User' name
             return name[:-7] or name
+        if name.endswith("Type"):
+            # 'UserType' will produce the 'User' name
+            return name[:-4] or name
+        if name.endswith("GraphQLType"):
+            # 'UserGraphQLType' will produce the 'User' name
+            return name[:-11] or name
 
         return name
 
     @classmethod
-    def __get_graphql_model__(cls, metadata: "Metadata") -> "GraphQLModel":
+    def __get_graphql_model__(cls, metadata: "GraphQLMetadata") -> "GraphQLModel":
         raise NotImplementedError(
             "Subclasses of 'GraphQLType' must define '__get_graphql_model__'"
         )
 
     @classmethod
-    def __get_graphql_types__(cls) -> Iterable["GraphQLType"]:
+    def __get_graphql_types__(
+        cls, metadata: "GraphQLMetadata"
+    ) -> Iterable["GraphQLType"]:
         """Returns iterable with GraphQL types associated with this type"""
         return [cls]
 
@@ -65,9 +70,20 @@ class GraphQLModel:
 
 @dataclass(frozen=True)
 class GraphQLMetadata:
+    data: Dict[Union[Type[GraphQLType], Type[Enum]], Any] = field(default_factory=dict)
     models: Dict[Union[Type[GraphQLType], Type[Enum]], GraphQLModel] = field(
         default_factory=dict
     )
+
+    def get_data(self, type: Union[Type[GraphQLType], Type[Enum]]) -> Any:
+        try:
+            return self.data[type]
+        except KeyError as e:
+            raise KeyError(f"No data is set for '{type}'.") from e
+
+    def set_data(self, type: Union[Type[GraphQLType], Type[Enum]], data: Any) -> Any:
+        self.data[type] = data
+        return data
 
     def get_graphql_model(
         self, type: Union[Type[GraphQLType], Type[Enum]]

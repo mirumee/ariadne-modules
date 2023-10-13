@@ -11,6 +11,7 @@ from graphql import (
 
 from .base import GraphQLMetadata, GraphQLModel, GraphQLType
 from .enumtype import GraphQLEnumModel
+from .inputtype import GraphQLInputModel
 from .objecttype import GraphQLObjectModel
 from .scalartype import GraphQScalarModel
 
@@ -29,7 +30,7 @@ def make_executable_schema(
 ) -> GraphQLSchema:
     metadata = GraphQLMetadata()
     type_defs: List[str] = find_type_defs(types)
-    types_list: List[SchemaType] = flatten_types(types)
+    types_list: List[SchemaType] = flatten_types(types, metadata)
 
     assert_types_unique(types_list)
     assert_types_not_abstract(types_list)
@@ -64,9 +65,12 @@ def find_type_defs(types: Sequence[SchemaType]) -> List[str]:
 
 
 def flatten_types(
-    types: Sequence[Union[SchemaType, List[SchemaType]]]
+    types: Sequence[Union[SchemaType, List[SchemaType]]],
+    metadata: GraphQLMetadata,
 ) -> List[Union[Enum, SchemaBindable, GraphQLModel]]:
-    flat_schema_types_list: List[SchemaType] = flatten_schema_types(types)
+    flat_schema_types_list: List[SchemaType] = flatten_schema_types(
+        types, metadata, dedupe=True
+    )
 
     types_list: List[Union[Enum, SchemaBindable, GraphQLModel]] = []
     for type_def in flat_schema_types_list:
@@ -92,15 +96,16 @@ def flatten_types(
 
 def flatten_schema_types(
     types: Sequence[Union[SchemaType, List[SchemaType]]],
-    dedupe: bool = True,
+    metadata: GraphQLMetadata,
+    dedupe: bool,
 ) -> List[SchemaType]:
     flat_list: List[SchemaType] = []
 
     for type_def in types:
         if isinstance(type_def, list):
-            flat_list += flatten_schema_types(type_def, dedupe=False)
+            flat_list += flatten_schema_types(type_def, metadata, dedupe=False)
         elif issubclass(type_def, GraphQLType):
-            flat_list += type_def.__get_graphql_types__()
+            flat_list += type_def.__get_graphql_types__(metadata)
         elif get_graphql_type_name(type_def):
             flat_list.append(type_def)
 
@@ -151,11 +156,12 @@ def assert_types_not_abstract(type_defs: List[SchemaType]):
 
 def sort_models(schema_models: List[GraphQLModel]) -> List[GraphQLModel]:
     sorted_models: List[GraphQLModel] = []
-    sorted_models += sort_models_by_type(GraphQLEnumModel, schema_models)
     sorted_models += sort_models_by_type(GraphQScalarModel, schema_models)
+    sorted_models += sort_models_by_type(GraphQLEnumModel, schema_models)
     sorted_models += [
         model for model in schema_models if isinstance(model, GraphQLObjectModel)
     ]
+    sorted_models += sort_models_by_type(GraphQLInputModel, schema_models)
     return sorted_models
 
 

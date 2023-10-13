@@ -2,7 +2,16 @@ from enum import Enum
 from importlib import import_module
 from inspect import isclass
 from types import UnionType
-from typing import Annotated, Any, ForwardRef, Optional, Union, get_args, get_origin
+from typing import (
+    Annotated,
+    Any,
+    ForwardRef,
+    Optional,
+    Type,
+    Union,
+    get_args,
+    get_origin,
+)
 
 from graphql import (
     ListTypeNode,
@@ -13,7 +22,7 @@ from graphql import (
 )
 
 from .base import GraphQLMetadata, GraphQLType
-from .deferredtype import DeferredType
+from .deferredtype import DeferredTypeData
 
 
 def get_type_node(metadata: GraphQLMetadata, type_hint: Any) -> TypeNode:
@@ -37,7 +46,7 @@ def get_type_node(metadata: GraphQLMetadata, type_hint: Any) -> TypeNode:
         type_node = NamedTypeNode(name=NameNode(value="Boolean"))
     elif get_origin(type_hint) is Annotated:
         forward_ref, type_meta = get_args(type_hint)
-        if not type_meta or not isinstance(type_meta, DeferredType):
+        if not type_meta or not isinstance(type_meta, DeferredTypeData):
             raise ValueError(
                 f"Can't create a GraphQL return type for '{type_hint}'. "
                 "Second argument of 'Annotated' is expected to be a return "
@@ -87,7 +96,7 @@ def unwrap_type(type_hint: Any) -> Any:
 
 
 def get_deferred_type(
-    type_hint: Any, forward_ref: ForwardRef, deferred_type: DeferredType
+    type_hint: Any, forward_ref: ForwardRef, deferred_type: DeferredTypeData
 ) -> Optional[Union[GraphQLType, Enum]]:
     type_name = forward_ref.__forward_arg__
     module = import_module(deferred_type.path)
@@ -99,11 +108,15 @@ def get_deferred_type(
     return graphql_type
 
 
-def get_graphql_type(type_hint: Any) -> Optional[Union[GraphQLType, Enum]]:
-    if not isclass(type_hint):
+def get_graphql_type(annotation: Any) -> Optional[Union[Type[GraphQLType], Type[Enum]]]:
+    """Utility that extracts GraphQL type from type annotation"""
+    if is_nullable(annotation) or is_list(annotation):
+        return get_graphql_type(unwrap_type(annotation))
+
+    if not isclass(annotation):
         return None
 
-    if issubclass(type_hint, (GraphQLType, Enum)):
-        return type_hint
+    if issubclass(annotation, (GraphQLType, Enum)):
+        return annotation
 
     return None

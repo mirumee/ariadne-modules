@@ -4,13 +4,13 @@ from typing import cast
 
 
 @dataclass(frozen=True)
-class DeferredType:
+class DeferredTypeData:
     path: str
 
 
-def deferred(module_path: str) -> DeferredType:
+def deferred(module_path: str) -> DeferredTypeData:
     if not module_path.startswith("."):
-        return DeferredType(module_path)
+        return DeferredTypeData(module_path)
 
     frame = sys._getframe(2)
     if not frame:
@@ -32,4 +32,4 @@ def deferred(module_path: str) -> DeferredType:
             )
 
     package = ".".join(packages)
-    return DeferredType(f"{package}.{module_path_suffix}")
+    return DeferredTypeData(f"{package}.{module_path_suffix}")

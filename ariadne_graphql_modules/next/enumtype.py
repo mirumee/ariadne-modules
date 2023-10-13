@@ -14,6 +14,7 @@ from graphql import (
 from ..utils import parse_definition
 from .base import GraphQLMetadata, GraphQLModel, GraphQLType
 from .description import get_description_node
+from .validators import validate_description, validate_name
 
 
 class GraphQLEnum(GraphQLType):
@@ -127,8 +128,6 @@ class GraphQLEnum(GraphQLType):
 
 
 def validate_enum_type_with_schema(cls: Type[GraphQLEnum]):
-    from .validators import validate_description, validate_name
-
     definition = parse_definition(EnumTypeDefinitionNode, cls.__schema__)
 
     if not isinstance(definition, EnumTypeDefinitionNode):

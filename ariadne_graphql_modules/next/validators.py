@@ -1,6 +1,6 @@
 from typing import Any, Type
 
-from .objecttype import GraphQLType
+from .base import GraphQLType
 
 
 def validate_name(cls: Type[GraphQLType], definition: Any):

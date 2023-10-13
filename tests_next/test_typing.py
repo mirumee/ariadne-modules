@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Annotated, List, Optional, Union
 from graphql import ListTypeNode, NameNode, NamedTypeNode, NonNullTypeNode
 
 from ariadne_graphql_modules.next import GraphQLObject, deferred, graphql_enum
-from ariadne_graphql_modules.next.typing import get_type_node
+from ariadne_graphql_modules.next.typing import get_graphql_type, get_type_node
 
 if TYPE_CHECKING:
     from .types import ForwardEnum, ForwardScalar
@@ -32,6 +32,36 @@ def assert_named_type(type_node, name: str):
     assert isinstance(type_node, NamedTypeNode)
     assert isinstance(type_node.name, NameNode)
     assert type_node.name.value == name
+
+
+def test_get_graphql_type_from_python_builtin_type_returns_none(metadata):
+    assert get_graphql_type(Optional[str]) is None
+    assert get_graphql_type(Union[int, None]) is None
+    assert get_graphql_type(float | None) is None
+    assert get_graphql_type(Optional[bool]) is None
+
+
+def test_get_graphql_type_from_graphql_type_subclass_returns_type(metadata):
+    class UserType(GraphQLObject):
+        ...
+
+    assert get_graphql_type(UserType) == UserType
+    assert get_graphql_type(Optional[UserType]) == UserType
+    assert get_graphql_type(List[UserType]) == UserType
+    assert get_graphql_type(Optional[List[Optional[UserType]]]) == UserType
+
+
+def test_get_graphql_type_from_enum_returns_type(metadata):
+    class UserLevel(Enum):
+        GUEST = 0
+        MEMBER = 1
+        MODERATOR = 2
+        ADMINISTRATOR = 3
+
+    assert get_graphql_type(UserLevel) == UserLevel
+    assert get_graphql_type(Optional[UserLevel]) == UserLevel
+    assert get_graphql_type(List[UserLevel]) == UserLevel
+    assert get_graphql_type(Optional[List[Optional[UserLevel]]]) == UserLevel
 
 
 def test_get_graphql_type_node_from_python_builtin_type(metadata):
