@@ -18,6 +18,38 @@ def test_object_type_validation_fails_for_names_not_matching(snapshot):
 
         class CustomType(GraphQLObject):
             __graphql_name__ = "Lorem"
+            __schema__ = gql(
+                """
+                type Custom {
+                    hello: String
+                }
+                """
+            )
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_object_type_validation_fails_for_two_descriptions(snapshot):
+    with pytest.raises(ValueError) as exc_info:
+
+        class CustomType(GraphQLObject):
+            __description__ = "Hello world!"
+            __schema__ = gql(
+                """
+                \"\"\"Other description\"\"\"
+                type Query {
+                  hello: String!
+                }
+                """
+            )
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_object_type_validation_fails_for_schema_missing_fields(snapshot):
+    with pytest.raises(ValueError) as exc_info:
+
+        class CustomType(GraphQLObject):
             __schema__ = gql("type Custom")
 
     snapshot.assert_match(str(exc_info.value))
@@ -51,23 +83,6 @@ def test_object_type_validation_fails_for_undefined_field_resolver(snapshot):
             @GraphQLObject.resolver("other")
             def resolve_hello(*_):
                 return "Hello World!"
-
-    snapshot.assert_match(str(exc_info.value))
-
-
-def test_object_type_validation_fails_for_two_descriptions(snapshot):
-    with pytest.raises(ValueError) as exc_info:
-
-        class CustomType(GraphQLObject):
-            __description__ = "Hello world!"
-            __schema__ = gql(
-                """
-                \"\"\"Other description\"\"\"
-                type Query {
-                  hello: String!
-                }
-                """
-            )
 
     snapshot.assert_match(str(exc_info.value))
 
@@ -396,7 +411,7 @@ def test_object_type_validation_fails_for_resolver_alias(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_schema_alias(snapshot):
+def test_object_type_validation_fails_for_schema_resolver_alias(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):

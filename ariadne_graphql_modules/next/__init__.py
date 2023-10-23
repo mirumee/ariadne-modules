@@ -1,4 +1,8 @@
 from .base import GraphQLMetadata, GraphQLModel, GraphQLType
+from .convert_name import (
+    convert_graphql_name_to_python,
+    convert_python_name_to_graphql,
+)
 from .deferredtype import deferred
 from .description import get_description_node
 from .enumtype import (
@@ -24,6 +28,8 @@ __all__ = [
     "GraphQLScalar",
     "GraphQScalarModel",
     "GraphQLType",
+    "convert_graphql_name_to_python",
+    "convert_python_name_to_graphql",
     "create_graphql_enum_model",
     "deferred",
     "get_description_node",

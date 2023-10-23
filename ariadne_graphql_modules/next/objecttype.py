@@ -125,7 +125,6 @@ class GraphQLObject(GraphQLType):
                     type=field.type,
                 )
             )
-        print(descriptions)
 
         return GraphQLObjectModel(
             name=definition.name.value,
@@ -273,6 +272,12 @@ def validate_object_type_with_schema(cls: Type[GraphQLObject]):
 
     validate_name(cls, definition)
     validate_description(cls, definition)
+
+    if not definition.fields:
+        raise ValueError(
+            f"Class '{cls.__name__}' defines '__schema__' attribute "
+            "with declaration for an object type without any fields. "
+        )
 
     field_names: List[str] = [f.name.value for f in definition.fields]
     field_definitions: Dict[str, FieldDefinitionNode] = {
