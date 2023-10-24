@@ -71,6 +71,7 @@ class GraphQLModel:
 @dataclass(frozen=True)
 class GraphQLMetadata:
     data: Dict[Union[Type[GraphQLType], Type[Enum]], Any] = field(default_factory=dict)
+    names: Dict[Union[Type[GraphQLType], Type[Enum]], str] = field(default_factory=dict)
     models: Dict[Union[Type[GraphQLType], Type[Enum]], GraphQLModel] = field(
         default_factory=dict
     )
@@ -100,6 +101,12 @@ class GraphQLMetadata:
 
         return self.models[type]
 
+    def set_graphql_name(self, type: Union[Type[GraphQLType], Type[Enum]], name: str):
+        self.names[type] = name
+
     def get_graphql_name(self, type: Union[Type[GraphQLType], Type[Enum]]) -> str:
-        model = self.get_graphql_model(type)
-        return model.name
+        if type not in self.names:
+            model = self.get_graphql_model(type)
+            self.set_graphql_name(type, model.name)
+
+        return self.names[type]

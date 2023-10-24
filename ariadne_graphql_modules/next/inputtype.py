@@ -57,6 +57,7 @@ class GraphQLInput(GraphQLType):
     @classmethod
     def __get_graphql_model__(cls, metadata: GraphQLMetadata) -> "GraphQLModel":
         name = cls.__get_graphql_name__()
+        metadata.set_graphql_name(cls, name)
 
         if getattr(cls, "__schema__", None):
             return cls.__get_graphql_model_with_schema__(metadata, name)
@@ -130,6 +131,7 @@ class GraphQLInput(GraphQLType):
             hint_field_name = convert_python_name_to_graphql(hint_name)
             fields_ast.append(
                 get_field_node_from_type_hint(
+                    cls,
                     metadata,
                     hint_field_name,
                     hint_type,
@@ -309,6 +311,7 @@ class GraphQLInputModel(GraphQLModel):
 
 
 def get_field_node_from_type_hint(
+    parent_type: GraphQLInput,
     metadata: GraphQLMetadata,
     field_name: str,
     field_type: Any,
@@ -317,6 +320,6 @@ def get_field_node_from_type_hint(
     return InputValueDefinitionNode(
         description=get_description_node(field_description),
         name=NameNode(value=field_name),
-        type=get_type_node(metadata, field_type),
+        type=get_type_node(metadata, field_type, parent_type),
         default_value=None,
     )

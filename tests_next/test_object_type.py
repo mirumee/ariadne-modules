@@ -1,3 +1,5 @@
+from typing import Optional
+
 from graphql import graphql_sync
 
 from ariadne_graphql_modules import gql
@@ -533,3 +535,53 @@ def test_resolver_decorator_sets_description_for_field_arg_in_schema(
 
     assert not result.errors
     assert result.data == {"hello": "Hello Bob!"}
+
+
+def test_object_type_self_reference(
+    assert_schema_equals,
+):
+    class CategoryType(GraphQLObject):
+        name: str
+        parent: Optional["CategoryType"]
+
+    class QueryType(GraphQLObject):
+        category: CategoryType
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          category: Category!
+        }
+
+        type Category {
+          name: String!
+          parent: Category
+        }
+        """,
+    )
+
+    result = graphql_sync(
+        schema,
+        "{ category { name parent { name } } }",
+        root_value={
+            "category": {
+                "name": "Lorem",
+                "parent": {
+                    "name": "Ipsum",
+                },
+            },
+        },
+    )
+
+    assert not result.errors
+    assert result.data == {
+        "category": {
+            "name": "Lorem",
+            "parent": {
+                "name": "Ipsum",
+            },
+        },
+    }

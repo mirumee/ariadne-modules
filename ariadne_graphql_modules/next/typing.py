@@ -23,9 +23,14 @@ from graphql import (
 
 from .base import GraphQLMetadata, GraphQLType
 from .deferredtype import DeferredTypeData
+from .idtype import GraphQLID
 
 
-def get_type_node(metadata: GraphQLMetadata, type_hint: Any) -> TypeNode:
+def get_type_node(
+    metadata: GraphQLMetadata,
+    type_hint: Any,
+    parent_type: Optional[GraphQLType] = None,
+) -> TypeNode:
     if is_nullable(type_hint):
         nullable = True
         type_hint = unwrap_type(type_hint)
@@ -35,7 +40,9 @@ def get_type_node(metadata: GraphQLMetadata, type_hint: Any) -> TypeNode:
     type_node = None
     if is_list(type_hint):
         list_item_type_hint = unwrap_type(type_hint)
-        type_node = ListTypeNode(type=get_type_node(metadata, list_item_type_hint))
+        type_node = ListTypeNode(
+            type=get_type_node(metadata, list_item_type_hint, parent_type=parent_type)
+        )
     elif type_hint == str:
         type_node = NamedTypeNode(name=NameNode(value="String"))
     elif type_hint == int:
@@ -57,10 +64,21 @@ def get_type_node(metadata: GraphQLMetadata, type_hint: Any) -> TypeNode:
         type_node = NamedTypeNode(
             name=NameNode(value=metadata.get_graphql_name(deferred_type)),
         )
-    elif isclass(type_hint) and issubclass(type_hint, (GraphQLType, Enum)):
+    elif isinstance(type_hint, ForwardRef):
+        type_name = type_hint.__forward_arg__
+        if not parent_type or parent_type.__name__ != type_name:
+            ...
+
         type_node = NamedTypeNode(
-            name=NameNode(value=metadata.get_graphql_name(type_hint)),
+            name=NameNode(value=metadata.get_graphql_name(parent_type)),
         )
+    elif isclass(type_hint):
+        if issubclass(type_hint, GraphQLID):
+            type_node = NamedTypeNode(name=NameNode(value="ID"))
+        elif issubclass(type_hint, (GraphQLType, Enum)):
+            type_node = NamedTypeNode(
+                name=NameNode(value=metadata.get_graphql_name(type_hint)),
+            )
 
     if not type_node:
         raise ValueError(f"Can't create a GraphQL return type for '{type_hint}'.")

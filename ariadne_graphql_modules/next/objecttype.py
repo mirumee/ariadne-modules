@@ -57,6 +57,7 @@ class GraphQLObject(GraphQLType):
     @classmethod
     def __get_graphql_model__(cls, metadata: GraphQLMetadata) -> "GraphQLModel":
         name = cls.__get_graphql_name__()
+        metadata.set_graphql_name(cls, name)
 
         if getattr(cls, "__schema__", None):
             return cls.__get_graphql_model_with_schema__(metadata, name)
@@ -149,7 +150,7 @@ class GraphQLObject(GraphQLType):
         out_names: Dict[str, Dict[str, str]] = {}
 
         for field in type_data.fields.values():
-            fields_ast.append(get_field_node_from_obj_field(metadata, field))
+            fields_ast.append(get_field_node_from_obj_field(cls, metadata, field))
 
             if field.resolver:
                 resolvers[field.name] = field.resolver
@@ -680,13 +681,14 @@ class GraphQLObjectModel(GraphQLModel):
 
 
 def get_field_node_from_obj_field(
+    parent_type: GraphQLObject,
     metadata: GraphQLMetadata,
     field: GraphQLObjectField,
 ) -> FieldDefinitionNode:
     return FieldDefinitionNode(
         description=get_description_node(field.description),
         name=NameNode(value=field.name),
-        type=get_type_node(metadata, field.type),
+        type=get_type_node(metadata, field.type, parent_type),
         arguments=get_field_args_nodes_from_obj_field_args(metadata, field.args),
     )
 

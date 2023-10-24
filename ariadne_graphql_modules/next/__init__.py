@@ -12,6 +12,7 @@ from .enumtype import (
     graphql_enum,
 )
 from .executable_schema import make_executable_schema
+from .idtype import GraphQLID
 from .inputtype import GraphQLInput, GraphQLInputModel
 from .objecttype import GraphQLObject, GraphQLObjectModel, object_field
 from .scalartype import GraphQLScalar, GraphQScalarModel
@@ -19,6 +20,7 @@ from .scalartype import GraphQLScalar, GraphQScalarModel
 __all__ = [
     "GraphQLEnum",
     "GraphQLEnumModel",
+    "GraphQLID",
     "GraphQLInput",
     "GraphQLInputModel",
     "GraphQLMetadata",
