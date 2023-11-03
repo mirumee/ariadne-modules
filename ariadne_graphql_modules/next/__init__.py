@@ -16,6 +16,7 @@ from .idtype import GraphQLID
 from .inputtype import GraphQLInput, GraphQLInputModel
 from .objecttype import GraphQLObject, GraphQLObjectModel, object_field
 from .scalartype import GraphQLScalar, GraphQScalarModel
+from .value import get_value_from_node, get_value_node
 
 __all__ = [
     "GraphQLEnum",
@@ -35,6 +36,8 @@ __all__ = [
     "create_graphql_enum_model",
     "deferred",
     "get_description_node",
+    "get_value_from_node",
+    "get_value_node",
     "graphql_enum",
     "make_executable_schema",
     "object_field",

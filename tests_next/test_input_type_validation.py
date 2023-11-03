@@ -106,3 +106,27 @@ def test_input_type_validation_fails_for_duplicate_schema_out_name(snapshot):
             }
 
     snapshot.assert_match(str(exc_info.value))
+
+
+class InvalidType:
+    pass
+
+
+def test_input_type_validation_fails_for_unsupported_attr_default(snapshot):
+    with pytest.raises(TypeError) as exc_info:
+
+        class QueryType(GraphQLInput):
+            attr: str = InvalidType()
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_input_type_validation_fails_for_unsupported_field_default_option(
+    snapshot,
+):
+    with pytest.raises(TypeError) as exc_info:
+
+        class QueryType(GraphQLInput):
+            attr: str = GraphQLInput.field(default_value=InvalidType())
+
+    snapshot.assert_match(str(exc_info.value))

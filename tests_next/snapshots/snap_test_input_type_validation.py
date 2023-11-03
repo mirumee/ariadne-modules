@@ -20,3 +20,7 @@ snapshots['test_input_type_validation_fails_for_out_names_without_schema 1'] = "
 snapshots['test_input_type_validation_fails_for_schema_missing_fields 1'] = "Class 'CustomType' defines '__schema__' attribute with declaration for an input type without any fields. "
 
 snapshots['test_input_type_validation_fails_for_two_descriptions 1'] = "Class 'CustomType' defines description in both '__description__' and '__schema__' attributes."
+
+snapshots['test_input_type_validation_fails_for_unsupported_attr_default 1'] = "Class 'QueryType' defines default value for the 'attr' field that can't be represented in GraphQL schema."
+
+snapshots['test_input_type_validation_fails_for_unsupported_field_default_option 1'] = "Class 'QueryType' defines default value for the 'attr' field that can't be represented in GraphQL schema."

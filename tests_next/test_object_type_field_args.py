@@ -1,6 +1,5 @@
 from graphql import GraphQLResolveInfo, graphql_sync
 
-from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLObject, make_executable_schema
 
 
@@ -49,6 +48,204 @@ def test_object_type_field_instance_with_scalar_arg(assert_schema_equals):
 
     assert not result.errors
     assert result.data == {"hello": "Hello Bob!"}
+
+
+def test_object_type_field_resolver_with_arg_default_value(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field
+        def hello(obj, info: GraphQLResolveInfo, *, name: str = "Anon") -> str:
+            return f"Hello {name}!"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          hello(name: String! = "Anon"): String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }")
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello Anon!"}
+
+
+def test_object_type_field_instance_with_arg_default_value(assert_schema_equals):
+    def hello_resolver(*_, name: str = "Anon") -> str:
+        return f"Hello {name}!"
+
+    class QueryType(GraphQLObject):
+        hello = GraphQLObject.field(hello_resolver)
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          hello(name: String! = "Anon"): String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }")
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello Anon!"}
+
+
+def test_object_type_field_resolver_with_arg_option_default_value(
+    assert_schema_equals,
+):
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(
+            args={"name": GraphQLObject.argument(default_value="Anon")},
+        )
+        def hello(obj, info: GraphQLResolveInfo, *, name: str) -> str:
+            return f"Hello {name}!"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          hello(name: String! = "Anon"): String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }")
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello Anon!"}
+
+
+def test_object_type_field_instance_with_arg_option_default_value(
+    assert_schema_equals,
+):
+    def hello_resolver(*_, name: str) -> str:
+        return f"Hello {name}!"
+
+    class QueryType(GraphQLObject):
+        hello = GraphQLObject.field(
+            hello_resolver,
+            args={"name": GraphQLObject.argument(default_value="Anon")},
+        )
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          hello(name: String! = "Anon"): String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }")
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello Anon!"}
+
+
+def test_object_type_schema_field_with_arg_default_value(
+    assert_schema_equals,
+):
+    class QueryType(GraphQLObject):
+        __schema__ = """
+            type Query {
+              hello(name: String! = "Anon"): String!
+            }
+            """
+
+        @GraphQLObject.resolver("hello")
+        def resolve_hello(obj, info: GraphQLResolveInfo, *, name: str) -> str:
+            return f"Hello {name}!"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          hello(name: String! = "Anon"): String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }")
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello Anon!"}
+
+
+def test_object_type_schema_field_with_arg_default_value_from_resolver_arg(
+    assert_schema_equals,
+):
+    class QueryType(GraphQLObject):
+        __schema__ = """
+            type Query {
+              hello(name: String!): String!
+            }
+            """
+
+        @GraphQLObject.resolver("hello")
+        def resolve_hello(obj, info: GraphQLResolveInfo, *, name: str = "Anon") -> str:
+            return f"Hello {name}!"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          hello(name: String! = "Anon"): String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }")
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello Anon!"}
+
+
+def test_object_type_schema_field_with_arg_default_value_from_resolver_arg_option(
+    assert_schema_equals,
+):
+    class QueryType(GraphQLObject):
+        __schema__ = """
+            type Query {
+              hello(name: String!): String!
+            }
+            """
+
+        @GraphQLObject.resolver(
+            "hello", args={"name": GraphQLObject.argument(default_value="Other")}
+        )
+        def resolve_hello(obj, info: GraphQLResolveInfo, *, name: str = "Anon") -> str:
+            return f"Hello {name}!"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          hello(name: String! = "Other"): String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ hello }")
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello Other!"}
 
 
 def test_object_type_field_instance_with_description(assert_schema_equals):

@@ -434,7 +434,7 @@ def test_object_type_validation_fails_for_schema_resolver_alias(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_schema_with_separate_field(snapshot):
+def test_object_type_validation_fails_for_schema_with_field_instance(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -447,5 +447,80 @@ def test_object_type_validation_fails_for_schema_with_separate_field(snapshot):
             )
 
             hello = GraphQLObject.field(lambda *_: "noop")
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+class InvalidType:
+    pass
+
+
+def test_object_type_validation_fails_for_unsupported_resolver_arg_default(snapshot):
+    with pytest.raises(TypeError) as exc_info:
+
+        class QueryType(GraphQLObject):
+            @GraphQLObject.field
+            def hello(*_, name: str = InvalidType):
+                return "Hello World!"
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_object_type_validation_fails_for_unsupported_resolver_arg_default_option(
+    snapshot,
+):
+    with pytest.raises(TypeError) as exc_info:
+
+        class QueryType(GraphQLObject):
+            @GraphQLObject.field(
+                args={"name": GraphQLObject.argument(default_value=InvalidType)}
+            )
+            def hello(*_, name: str):
+                return "Hello World!"
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_object_type_validation_fails_for_unsupported_schema_resolver_arg_default(
+    snapshot,
+):
+    with pytest.raises(TypeError) as exc_info:
+
+        class QueryType(GraphQLObject):
+            __schema__ = gql(
+                """
+                type Query {
+                  hello: String!
+                }
+                """
+            )
+
+            @GraphQLObject.resolver("hello")
+            def resolve_hello(*_, name: str = InvalidType):
+                return "Hello World!"
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_object_type_validation_fails_for_unsupported_schema_resolver_arg_option_default(
+    snapshot,
+):
+    with pytest.raises(TypeError) as exc_info:
+
+        class QueryType(GraphQLObject):
+            __schema__ = gql(
+                """
+                type Query {
+                  hello(name: String!): String!
+                }
+                """
+            )
+
+            @GraphQLObject.resolver(
+                "hello",
+                args={"name": GraphQLObject.argument(default_value=InvalidType)},
+            )
+            def resolve_hello(*_, name: str):
+                return "Hello World!"
 
     snapshot.assert_match(str(exc_info.value))

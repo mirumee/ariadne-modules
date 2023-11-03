@@ -49,7 +49,7 @@ snapshots['test_object_type_validation_fails_for_schema_missing_fields 1'] = "Cl
 
 snapshots['test_object_type_validation_fails_for_schema_resolver_alias 1'] = "Class 'CustomType' defines an alias for a field 'hello' that already has a custom resolver."
 
-snapshots['test_object_type_validation_fails_for_schema_with_separate_field 1'] = "Class 'CustomType' defines 'GraphQLObjectField' instance. This is not supported for types defining '__schema__'."
+snapshots['test_object_type_validation_fails_for_schema_with_field_instance 1'] = "Class 'CustomType' defines 'GraphQLObjectField' instance. This is not supported for types defining '__schema__'."
 
 snapshots['test_object_type_validation_fails_for_two_descriptions 1'] = "Class 'CustomType' defines description in both '__description__' and '__schema__' attributes."
 
@@ -60,3 +60,11 @@ snapshots['test_object_type_validation_fails_for_undefined_field_resolver 1'] = 
 snapshots['test_object_type_validation_fails_for_undefined_field_resolver_arg 1'] = "Class 'CustomType' defines 'hello' field with extra configuration for 'invalid' argument thats not defined on the resolver function. (function accepts no extra arguments)"
 
 snapshots['test_object_type_validation_fails_for_undefined_resolver_arg 1'] = "Class 'CustomType' defines 'resolve_hello' resolver with extra configuration for 'invalid' argument thats not defined on the resolver function. (function accepts no extra arguments)"
+
+snapshots['test_object_type_validation_fails_for_unsupported_resolver_arg_default 1'] = "Class 'QueryType' defines default value for 'name' argument of the 'hello' field that can't be represented in GraphQL schema."
+
+snapshots['test_object_type_validation_fails_for_unsupported_resolver_arg_default_option 1'] = "Class 'QueryType' defines default value for 'name' argument of the 'hello' field that can't be represented in GraphQL schema."
+
+snapshots['test_object_type_validation_fails_for_unsupported_schema_resolver_arg_default 1'] = "Class 'QueryType' defines default value for 'name' argument of the 'hello' field that can't be represented in GraphQL schema."
+
+snapshots['test_object_type_validation_fails_for_unsupported_schema_resolver_arg_option_default 1'] = "Class 'QueryType' defines default value for 'name' argument of the 'hello' field that can't be represented in GraphQL schema."

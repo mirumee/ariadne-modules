@@ -1,9 +1,119 @@
 from typing import Optional
 
+import pytest
 from graphql import graphql_sync
 
 from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLObject, make_executable_schema
+
+
+def test_object_type_instance_with_all_attrs_values():
+    class CategoryType(GraphQLObject):
+        name: str
+        posts: int
+
+    obj = CategoryType(name="Welcome", posts=20)
+    assert obj.name == "Welcome"
+    assert obj.posts == 20
+
+
+def test_object_type_instance_with_omitted_attrs_being_none():
+    class CategoryType(GraphQLObject):
+        name: str
+        posts: int
+
+    obj = CategoryType(posts=20)
+    assert obj.name is None
+    assert obj.posts == 20
+
+
+def test_object_type_instance_with_invalid_attrs_raising_error(snapshot):
+    class CategoryType(GraphQLObject):
+        name: str
+        posts: int
+
+    with pytest.raises(TypeError) as exc_info:
+        CategoryType(name="Welcome", invalid="Ok")
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_object_type_with_schema_instance_with_all_attrs_values():
+    class CategoryType(GraphQLObject):
+        __schema__ = gql(
+            """
+            type Category {
+                name: String
+                posts: Int
+            }
+            """
+        )
+
+        name: str
+        posts: int
+
+    obj = CategoryType(name="Welcome", posts=20)
+    assert obj.name == "Welcome"
+    assert obj.posts == 20
+
+
+def test_object_type_with_schema_instance_with_omitted_attrs_being_none():
+    class CategoryType(GraphQLObject):
+        __schema__ = gql(
+            """
+            type Category {
+                name: String
+                posts: Int
+            }
+            """
+        )
+
+        name: str
+        posts: int
+
+    obj = CategoryType(posts=20)
+    assert obj.name is None
+    assert obj.posts == 20
+
+
+def test_object_type_with_schema_instance_with_invalid_attrs_raising_error(snapshot):
+    class CategoryType(GraphQLObject):
+        __schema__ = gql(
+            """
+            type Category {
+                name: String
+                posts: Int
+            }
+            """
+        )
+
+        name: str
+        posts: int
+
+    with pytest.raises(TypeError) as exc_info:
+        CategoryType(name="Welcome", invalid="Ok")
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_object_type_with_schema_instance_with_aliased_attr_value():
+    class CategoryType(GraphQLObject):
+        __schema__ = gql(
+            """
+            type Category {
+                name: String
+                posts: Int
+            }
+            """
+        )
+        __aliases__ = {"name": "title"}
+
+        title: str
+        posts: int
+
+    obj = CategoryType(title="Welcome", posts=20)
+    assert obj.title == "Welcome"
+    assert obj.posts == 20
 
 
 def test_object_type_with_field(assert_schema_equals):
@@ -583,5 +693,47 @@ def test_object_type_self_reference(
             "parent": {
                 "name": "Ipsum",
             },
+        },
+    }
+
+
+def test_object_type_return_instance(
+    assert_schema_equals,
+):
+    class CategoryType(GraphQLObject):
+        name: str
+        color: str
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field()
+        def category(*_) -> CategoryType:
+            return CategoryType(
+                name="Welcome",
+                color="#FF00FF",
+            )
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          category: Category!
+        }
+
+        type Category {
+          name: String!
+          color: String!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ category { name color } }")
+
+    assert not result.errors
+    assert result.data == {
+        "category": {
+            "name": "Welcome",
+            "color": "#FF00FF",
         },
     }
