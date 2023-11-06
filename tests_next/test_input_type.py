@@ -521,6 +521,33 @@ def test_input_type_with_field_instance_default_value(assert_schema_equals):
     assert result.data == {"search": "['default', 42, False]"}
 
 
+def test_input_type_with_field_type(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        query: str = GraphQLInput.field(type=int)
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return str(input)
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: Int!
+        }
+        """,
+    )
+
+
 def test_schema_input_type_with_field_description(assert_schema_equals):
     class SearchInput(GraphQLInput):
         __schema__ = """
