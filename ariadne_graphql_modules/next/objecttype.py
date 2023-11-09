@@ -292,296 +292,6 @@ class GraphQLObject(GraphQLType):
         return options
 
 
-def validate_object_type_with_schema(cls: Type[GraphQLObject]) -> List[str]:
-    definition = parse_definition(ObjectTypeDefinitionNode, cls.__schema__)
-
-    if not isinstance(definition, ObjectTypeDefinitionNode):
-        raise ValueError(
-            f"Class '{cls.__name__}' defines '__schema__' attribute "
-            "with declaration for an invalid GraphQL type. "
-            f"('{definition.__class__.__name__}' != "
-            f"'{ObjectTypeDefinitionNode.__name__}')"
-        )
-
-    validate_name(cls, definition)
-    validate_description(cls, definition)
-
-    if not definition.fields:
-        raise ValueError(
-            f"Class '{cls.__name__}' defines '__schema__' attribute "
-            "with declaration for an object type without any fields. "
-        )
-
-    field_names: List[str] = [f.name.value for f in definition.fields]
-    field_definitions: Dict[str, FieldDefinitionNode] = {
-        f.name.value: f for f in definition.fields
-    }
-
-    resolvers_names: List[str] = []
-
-    for attr_name in dir(cls):
-        cls_attr = getattr(cls, attr_name)
-        if isinstance(cls_attr, GraphQLObjectField):
-            raise ValueError(
-                f"Class '{cls.__name__}' defines 'GraphQLObjectField' instance. "
-                "This is not supported for types defining '__schema__'."
-            )
-
-        if isinstance(cls_attr, GraphQLObjectResolver):
-            if cls_attr.field not in field_names:
-                valid_fields: str = "', '".join(sorted(field_names))
-                raise ValueError(
-                    f"Class '{cls.__name__}' defines resolver for an undefined "
-                    f"field '{cls_attr.field}'. (Valid fields: '{valid_fields}')"
-                )
-
-            if cls_attr.field in resolvers_names:
-                raise ValueError(
-                    f"Class '{cls.__name__}' defines multiple resolvers for field "
-                    f"'{cls_attr.field}'."
-                )
-
-            if cls_attr.description and field_definitions[cls_attr.field].description:
-                raise ValueError(
-                    f"Class '{cls.__name__}' defines multiple descriptions "
-                    f"for field '{cls_attr.field}'."
-                )
-
-            if cls_attr.args:
-                field_args = {
-                    arg.name.value: arg
-                    for arg in field_definitions[cls_attr.field].arguments
-                }
-
-                for arg_name, arg_options in cls_attr.args.items():
-                    if arg_name not in field_args:
-                        raise ValueError(
-                            f"Class '{cls.__name__}' defines options for '{arg_name}' "
-                            f"argument of the '{cls_attr.field}' field "
-                            "that doesn't exist."
-                        )
-
-                    if arg_options.get("name"):
-                        raise ValueError(
-                            f"Class '{cls.__name__}' defines 'name' option for "
-                            f"'{arg_name}' argument of the '{cls_attr.field}' field. "
-                            "This is not supported for types defining '__schema__'."
-                        )
-
-                    if arg_options.get("type"):
-                        raise ValueError(
-                            f"Class '{cls.__name__}' defines 'type' option for "
-                            f"'{arg_name}' argument of the '{cls_attr.field}' field. "
-                            "This is not supported for types defining '__schema__'."
-                        )
-
-                    if (
-                        arg_options.get("description")
-                        and field_args[arg_name].description
-                    ):
-                        raise ValueError(
-                            f"Class '{cls.__name__}' defines duplicate descriptions "
-                            f"for '{arg_name}' argument "
-                            f"of the '{cls_attr.field}' field."
-                        )
-
-                    validate_field_arg_default_value(
-                        cls, cls_attr.field, arg_name, arg_options.get("default_value")
-                    )
-
-            resolver_args = get_field_args_from_resolver(cls_attr.resolver)
-            for arg_name, arg_obj in resolver_args.items():
-                validate_field_arg_default_value(
-                    cls, cls_attr.field, arg_name, arg_obj.default_value
-                )
-
-            resolvers_names.append(cls_attr.field)
-
-    aliases: Dict[str, str] = getattr(cls, "__aliases__", None) or {}
-    validate_object_aliases(cls, aliases, field_names, resolvers_names)
-
-    return [aliases.get(field_name, field_name) for field_name in field_names]
-
-
-def validate_field_arg_default_value(
-    cls: Type[GraphQLObject], field_name: str, arg_name: str, default_value: Any
-):
-    if default_value is None:
-        return
-
-    try:
-        get_value_node(default_value)
-    except TypeError as e:
-        raise TypeError(
-            f"Class '{cls.__name__}' defines default value "
-            f"for '{arg_name}' argument "
-            f"of the '{field_name}' field that can't be "
-            "represented in GraphQL schema."
-        ) from e
-
-
-def validate_object_type(cls: Type[GraphQLObject]) -> List[str]:
-    attrs_names: List[str] = [
-        attr_name for attr_name in cls.__annotations__ if not attr_name.startswith("__")
-    ]
-
-    fields_instances: Dict[str, GraphQLObjectField] = {}
-    fields_names: List[str] = []
-    resolvers_names: List[str] = []
-
-    for attr_name in dir(cls):
-        cls_attr = getattr(cls, attr_name)
-        if isinstance(cls_attr, GraphQLObjectField):
-            if cls_attr.name in fields_names:
-                raise ValueError(
-                    f"Class '{cls.__name__}' defines multiple fields with GraphQL "
-                    f"name '{cls_attr.name}'."
-                )
-
-            fields_names.append(cls_attr.name)
-
-            if cls_attr not in attrs_names:
-                attrs_names.append(attr_name)
-            if cls_attr.resolver:
-                resolvers_names.append(attr_name)
-
-            fields_instances[attr_name] = cls_attr
-
-    for attr_name in dir(cls):
-        cls_attr = getattr(cls, attr_name)
-        if isinstance(cls_attr, GraphQLObjectResolver):
-            if cls_attr.field in resolvers_names:
-                raise ValueError(
-                    f"Class '{cls.__name__}' defines multiple resolvers for field "
-                    f"'{cls_attr.field}'."
-                )
-
-            resolvers_names.append(cls_attr.field)
-
-            field_instance = fields_instances.get(cls_attr.field)
-            if field_instance:
-                if field_instance.description and cls_attr.description:
-                    raise ValueError(
-                        f"Class '{cls.__name__}' defines multiple descriptions "
-                        f"for field '{cls_attr.field}'."
-                    )
-                if field_instance.args and cls_attr.args:
-                    raise ValueError(
-                        f"Class '{cls.__name__}' defines multiple arguments options "
-                        f"('args') for field '{cls_attr.field}'."
-                    )
-
-    graphql_names: List[str] = []
-
-    for attr_name in attrs_names:
-        if getattr(cls, attr_name, None) is None:
-            attr_graphql_name = convert_python_name_to_graphql(attr_name)
-
-            if attr_graphql_name in graphql_names or attr_graphql_name in fields_names:
-                raise ValueError(
-                    f"Class '{cls.__name__}' defines multiple fields with GraphQL "
-                    f"name '{attr_graphql_name}'."
-                )
-
-            graphql_names.append(attr_graphql_name)
-
-    for resolver_for in resolvers_names:
-        if resolver_for not in attrs_names:
-            valid_fields: str = "', '".join(sorted(attrs_names))
-            raise ValueError(
-                f"Class '{cls.__name__}' defines resolver for an undefined "
-                f"attribute '{resolver_for}'. (Valid attrs: '{valid_fields}')"
-            )
-
-    for attr_name in dir(cls):
-        cls_attr = getattr(cls, attr_name)
-        if isinstance(cls_attr, (GraphQLObjectField, GraphQLObjectResolver)):
-            if not cls_attr.resolver:
-                continue
-
-            resolver_args = get_field_args_from_resolver(cls_attr.resolver)
-            if resolver_args:
-                for arg_name, arg_obj in resolver_args.items():
-                    validate_field_arg_default_value(
-                        cls, attr_name, arg_name, arg_obj.default_value
-                    )
-
-            if not cls_attr.args:
-                continue
-
-            resolver_args_names = list(resolver_args.keys())
-            if resolver_args_names:
-                error_help = "expected one of: '%s'" % (
-                    "', '".join(resolver_args_names)
-                )
-            else:
-                error_help = "function accepts no extra arguments"
-
-            for arg_name, arg_options in cls_attr.args.items():
-                if arg_name not in resolver_args_names:
-                    if isinstance(cls_attr, GraphQLObjectField):
-                        raise ValueError(
-                            f"Class '{cls.__name__}' defines '{attr_name}' field "
-                            f"with extra configuration for '{arg_name}' argument "
-                            "thats not defined on the resolver function. "
-                            f"({error_help})"
-                        )
-
-                    raise ValueError(
-                        f"Class '{cls.__name__}' defines '{attr_name}' resolver "
-                        f"with extra configuration for '{arg_name}' argument "
-                        "thats not defined on the resolver function. "
-                        f"({error_help})"
-                    )
-
-                validate_field_arg_default_value(
-                    cls, attr_name, arg_name, arg_options.get("default_value")
-                )
-
-    aliases: Dict[str, str] = getattr(cls, "__aliases__", None) or {}
-    validate_object_aliases(cls, aliases, attrs_names, resolvers_names)
-
-    return get_object_type_kwargs(cls, aliases)
-
-
-def validate_object_aliases(
-    cls: Type[GraphQLObject],
-    aliases: Dict[str, str],
-    fields_names: List[str],
-    resolvers_names: List[str],
-):
-    for alias in aliases:
-        if alias not in fields_names:
-            valid_fields: str = "', '".join(sorted(fields_names))
-            raise ValueError(
-                f"Class '{cls.__name__}' defines an alias for an undefined "
-                f"field '{alias}'. (Valid fields: '{valid_fields}')"
-            )
-
-        if alias in resolvers_names:
-            raise ValueError(
-                f"Class '{cls.__name__}' defines an alias for a field "
-                f"'{alias}' that already has a custom resolver."
-            )
-
-
-def get_object_type_kwargs(
-    cls: Type[GraphQLObject],
-    aliases: Dict[str, str],
-) -> List[str]:
-    kwargs: List[str] = []
-
-    for attr_name in cls.__annotations__:
-        if attr_name.startswith("__"):
-            continue
-
-        attr_value = getattr(cls, attr_name, None)
-        if attr_value is None or isinstance(attr_value, GraphQLObjectField):
-            kwargs.append(aliases.get(attr_name, attr_name))
-
-    return kwargs
-
-
 @dataclass(frozen=True)
 class GraphQLObjectData:
     fields: Dict[str, "GraphQLObjectField"]
@@ -917,3 +627,319 @@ def update_field_args_options(
             updated_args[arg_name] = field_args[arg_name]
 
     return updated_args
+
+
+def validate_object_type_with_schema(cls: Type[GraphQLObject]) -> List[str]:
+    definition = parse_definition(ObjectTypeDefinitionNode, cls.__schema__)
+
+    if not isinstance(definition, ObjectTypeDefinitionNode):
+        raise ValueError(
+            f"Class '{cls.__name__}' defines '__schema__' attribute "
+            "with declaration for an invalid GraphQL type. "
+            f"('{definition.__class__.__name__}' != "
+            f"'{ObjectTypeDefinitionNode.__name__}')"
+        )
+
+    validate_name(cls, definition)
+    validate_description(cls, definition)
+
+    if not definition.fields:
+        raise ValueError(
+            f"Class '{cls.__name__}' defines '__schema__' attribute "
+            "with declaration for an object type without any fields. "
+        )
+
+    field_names: List[str] = [f.name.value for f in definition.fields]
+    field_definitions: Dict[str, FieldDefinitionNode] = {
+        f.name.value: f for f in definition.fields
+    }
+
+    resolvers_names: List[str] = []
+
+    for attr_name in dir(cls):
+        cls_attr = getattr(cls, attr_name)
+        if isinstance(cls_attr, GraphQLObjectField):
+            raise ValueError(
+                f"Class '{cls.__name__}' defines 'GraphQLObjectField' instance. "
+                "This is not supported for types defining '__schema__'."
+            )
+
+        if isinstance(cls_attr, GraphQLObjectResolver):
+            if cls_attr.field not in field_names:
+                valid_fields: str = "', '".join(sorted(field_names))
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines resolver for an undefined "
+                    f"field '{cls_attr.field}'. (Valid fields: '{valid_fields}')"
+                )
+
+            if cls_attr.field in resolvers_names:
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines multiple resolvers for field "
+                    f"'{cls_attr.field}'."
+                )
+
+            if cls_attr.description and field_definitions[cls_attr.field].description:
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines multiple descriptions "
+                    f"for field '{cls_attr.field}'."
+                )
+
+            if cls_attr.args:
+                field_args = {
+                    arg.name.value: arg
+                    for arg in field_definitions[cls_attr.field].arguments
+                }
+
+                for arg_name, arg_options in cls_attr.args.items():
+                    if arg_name not in field_args:
+                        raise ValueError(
+                            f"Class '{cls.__name__}' defines options for '{arg_name}' "
+                            f"argument of the '{cls_attr.field}' field "
+                            "that doesn't exist."
+                        )
+
+                    if arg_options.get("name"):
+                        raise ValueError(
+                            f"Class '{cls.__name__}' defines 'name' option for "
+                            f"'{arg_name}' argument of the '{cls_attr.field}' field. "
+                            "This is not supported for types defining '__schema__'."
+                        )
+
+                    if arg_options.get("type"):
+                        raise ValueError(
+                            f"Class '{cls.__name__}' defines 'type' option for "
+                            f"'{arg_name}' argument of the '{cls_attr.field}' field. "
+                            "This is not supported for types defining '__schema__'."
+                        )
+
+                    if (
+                        arg_options.get("description")
+                        and field_args[arg_name].description
+                    ):
+                        raise ValueError(
+                            f"Class '{cls.__name__}' defines duplicate descriptions "
+                            f"for '{arg_name}' argument "
+                            f"of the '{cls_attr.field}' field."
+                        )
+
+                    validate_field_arg_default_value(
+                        cls, cls_attr.field, arg_name, arg_options.get("default_value")
+                    )
+
+            resolver_args = get_field_args_from_resolver(cls_attr.resolver)
+            for arg_name, arg_obj in resolver_args.items():
+                validate_field_arg_default_value(
+                    cls, cls_attr.field, arg_name, arg_obj.default_value
+                )
+
+            resolvers_names.append(cls_attr.field)
+
+    aliases: Dict[str, str] = getattr(cls, "__aliases__", None) or {}
+    validate_object_aliases(cls, aliases, field_names, resolvers_names)
+
+    return [aliases.get(field_name, field_name) for field_name in field_names]
+
+
+def validate_field_arg_default_value(
+    cls: Type[GraphQLObject], field_name: str, arg_name: str, default_value: Any
+):
+    if default_value is None:
+        return
+
+    try:
+        get_value_node(default_value)
+    except TypeError as e:
+        raise TypeError(
+            f"Class '{cls.__name__}' defines default value "
+            f"for '{arg_name}' argument "
+            f"of the '{field_name}' field that can't be "
+            "represented in GraphQL schema."
+        ) from e
+
+
+def validate_object_type(cls: Type[GraphQLObject]) -> List[str]:
+    attrs_names: List[str] = [
+        attr_name for attr_name in cls.__annotations__ if not attr_name.startswith("__")
+    ]
+
+    fields_instances: Dict[str, GraphQLObjectField] = {}
+    resolvers_instances: Dict[str, GraphQLObjectResolver] = {}
+    fields_names: List[str] = []
+    resolvers_names: List[str] = []
+
+    for attr_name in dir(cls):
+        cls_attr = getattr(cls, attr_name)
+        if isinstance(cls_attr, GraphQLObjectField):
+            fields_instances[attr_name] = cls_attr
+        if isinstance(cls_attr, GraphQLObjectResolver):
+            resolvers_instances[attr_name] = cls_attr
+
+    for attr_name, field_instance in fields_instances.items():
+        if field_instance.name in fields_names:
+            raise ValueError(
+                f"Class '{cls.__name__}' defines multiple fields with GraphQL "
+                f"name '{field_instance.name}'."
+            )
+
+        fields_names.append(field_instance.name)
+
+        if attr_name not in attrs_names:
+            attrs_names.append(attr_name)
+        if field_instance.resolver:
+            resolvers_names.append(attr_name)
+
+    for attr_name, resolver_instance in resolvers_instances.items():
+        if resolver_instance.field in resolvers_names:
+            raise ValueError(
+                f"Class '{cls.__name__}' defines multiple resolvers for field "
+                f"'{resolver_instance.field}'."
+            )
+
+        resolvers_names.append(resolver_instance.field)
+
+        field_instance = fields_instances.get(resolver_instance.field)
+        if field_instance:
+            if field_instance.description and resolver_instance.description:
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines multiple descriptions "
+                    f"for field '{resolver_instance.field}'."
+                )
+            if field_instance.args and resolver_instance.args:
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines multiple arguments options "
+                    f"('args') for field '{resolver_instance.field}'."
+                )
+
+    validate_object_unique_graphql_names(cls, attrs_names, fields_names)
+    validate_object_resolvers_fields(cls, attrs_names, resolvers_names)
+    validate_object_fields_args(cls)
+
+    aliases: Dict[str, str] = getattr(cls, "__aliases__", None) or {}
+    validate_object_aliases(cls, aliases, attrs_names, resolvers_names)
+
+    return get_object_type_kwargs(cls, aliases)
+
+
+def validate_object_unique_graphql_names(
+    cls: Type[GraphQLObject],
+    attrs_names: List[str],
+    fields_names: List[str],
+):
+    graphql_names: List[str] = []
+
+    for attr_name in attrs_names:
+        if getattr(cls, attr_name, None) is None:
+            attr_graphql_name = convert_python_name_to_graphql(attr_name)
+
+            if attr_graphql_name in graphql_names or attr_graphql_name in fields_names:
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines multiple fields with GraphQL "
+                    f"name '{attr_graphql_name}'."
+                )
+
+            graphql_names.append(attr_graphql_name)
+
+
+def validate_object_resolvers_fields(
+    cls: Type[GraphQLObject],
+    attrs_names: List[str],
+    resolvers_names: List[str],
+):
+    for resolver_for in resolvers_names:
+        if resolver_for not in attrs_names:
+            valid_fields: str = "', '".join(sorted(attrs_names))
+            raise ValueError(
+                f"Class '{cls.__name__}' defines resolver for an undefined "
+                f"attribute '{resolver_for}'. (Valid attrs: '{valid_fields}')"
+            )
+
+
+def validate_object_fields_args(cls: Type[GraphQLObject]):
+    for field_name in dir(cls):
+        field_instance = getattr(cls, field_name)
+        if (
+            isinstance(field_instance, (GraphQLObjectField, GraphQLObjectResolver))
+            and field_instance.resolver
+        ):
+            validate_object_field_args(cls, field_name, field_instance)
+
+
+def validate_object_field_args(
+    cls: Type[GraphQLObject],
+    field_name: str,
+    field_instance: Union["GraphQLObjectField", "GraphQLObjectResolver"],
+):
+    resolver_args = get_field_args_from_resolver(field_instance.resolver)
+    if resolver_args:
+        for arg_name, arg_obj in resolver_args.items():
+            validate_field_arg_default_value(
+                cls, field_name, arg_name, arg_obj.default_value
+            )
+
+    if not field_instance.args:
+        return  # Skip extra logic for validating instance.args
+
+    resolver_args_names = list(resolver_args.keys())
+    if resolver_args_names:
+        error_help = "expected one of: '%s'" % ("', '".join(resolver_args_names))
+    else:
+        error_help = "function accepts no extra arguments"
+
+    for arg_name, arg_options in field_instance.args.items():
+        if arg_name not in resolver_args_names:
+            if isinstance(field_instance, GraphQLObjectField):
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines '{field_name}' field "
+                    f"with extra configuration for '{arg_name}' argument "
+                    "thats not defined on the resolver function. "
+                    f"({error_help})"
+                )
+
+            raise ValueError(
+                f"Class '{cls.__name__}' defines '{field_name}' resolver "
+                f"with extra configuration for '{arg_name}' argument "
+                "thats not defined on the resolver function. "
+                f"({error_help})"
+            )
+
+        validate_field_arg_default_value(
+            cls, field_name, arg_name, arg_options.get("default_value")
+        )
+
+
+def validate_object_aliases(
+    cls: Type[GraphQLObject],
+    aliases: Dict[str, str],
+    fields_names: List[str],
+    resolvers_names: List[str],
+):
+    for alias in aliases:
+        if alias not in fields_names:
+            valid_fields: str = "', '".join(sorted(fields_names))
+            raise ValueError(
+                f"Class '{cls.__name__}' defines an alias for an undefined "
+                f"field '{alias}'. (Valid fields: '{valid_fields}')"
+            )
+
+        if alias in resolvers_names:
+            raise ValueError(
+                f"Class '{cls.__name__}' defines an alias for a field "
+                f"'{alias}' that already has a custom resolver."
+            )
+
+
+def get_object_type_kwargs(
+    cls: Type[GraphQLObject],
+    aliases: Dict[str, str],
+) -> List[str]:
+    kwargs: List[str] = []
+
+    for attr_name in cls.__annotations__:
+        if attr_name.startswith("__"):
+            continue
+
+        attr_value = getattr(cls, attr_name, None)
+        if attr_value is None or isinstance(attr_value, GraphQLObjectField):
+            kwargs.append(aliases.get(attr_name, attr_name))
+
+    return kwargs

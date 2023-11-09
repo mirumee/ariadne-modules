@@ -224,6 +224,57 @@ class GraphQLInput(GraphQLType):
         )
 
 
+class GraphQLInputField:
+    name: Optional[str]
+    description: Optional[str]
+    type: Optional[Any]
+    default_value: Optional[Any]
+
+    def __init__(
+        self,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        type: Optional[Any] = None,
+        default_value: Optional[Any] = None,
+    ):
+        self.name = name
+        self.description = description
+        self.type = type
+        self.default_value = default_value
+
+
+@dataclass(frozen=True)
+class GraphQLInputModel(GraphQLModel):
+    out_type: Any
+    out_names: Dict[str, str]
+
+    def bind_to_schema(self, schema: GraphQLSchema):
+        bindable = InputTypeBindable(self.name, self.out_type, self.out_names)
+        bindable.bind_to_schema(schema)
+
+
+def get_field_node_from_type_hint(
+    parent_type: GraphQLInput,
+    metadata: GraphQLMetadata,
+    field_name: str,
+    field_type: Any,
+    field_description: Optional[str] = None,
+    field_default_value: Optional[Any] = None,
+) -> InputValueDefinitionNode:
+    if field_default_value is not None:
+        default_value = get_value_node(field_default_value)
+    else:
+        default_value = None
+
+    return InputValueDefinitionNode(
+        description=get_description_node(field_description),
+        name=NameNode(value=field_name),
+        type=get_type_node(metadata, field_type, parent_type),
+        default_value=default_value,
+    )
+
+
 def validate_input_type_with_schema(cls: Type[GraphQLInput]) -> Dict[str, Any]:
     definition = cast(
         InputObjectTypeDefinitionNode,
@@ -332,54 +383,3 @@ def validate_field_default_value(
             f"for the '{field_name}' field that can't be "
             "represented in GraphQL schema."
         ) from e
-
-
-class GraphQLInputField:
-    name: Optional[str]
-    description: Optional[str]
-    type: Optional[Any]
-    default_value: Optional[Any]
-
-    def __init__(
-        self,
-        *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        type: Optional[Any] = None,
-        default_value: Optional[Any] = None,
-    ):
-        self.name = name
-        self.description = description
-        self.type = type
-        self.default_value = default_value
-
-
-@dataclass(frozen=True)
-class GraphQLInputModel(GraphQLModel):
-    out_type: Any
-    out_names: Dict[str, str]
-
-    def bind_to_schema(self, schema: GraphQLSchema):
-        bindable = InputTypeBindable(self.name, self.out_type, self.out_names)
-        bindable.bind_to_schema(schema)
-
-
-def get_field_node_from_type_hint(
-    parent_type: GraphQLInput,
-    metadata: GraphQLMetadata,
-    field_name: str,
-    field_type: Any,
-    field_description: Optional[str] = None,
-    field_default_value: Optional[Any] = None,
-) -> InputValueDefinitionNode:
-    if field_default_value is not None:
-        default_value = get_value_node(field_default_value)
-    else:
-        default_value = None
-
-    return InputValueDefinitionNode(
-        description=get_description_node(field_description),
-        name=NameNode(value=field_name),
-        type=get_type_node(metadata, field_type, parent_type),
-        default_value=default_value,
-    )

@@ -4,7 +4,7 @@ from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLScalar
 
 
-def test_scalar_type_validation_fails_for_invalid_type_schema(snapshot):
+def test_schema_scalar_type_validation_fails_for_invalid_type_schema(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomScalar(GraphQLScalar[str]):
@@ -13,7 +13,7 @@ def test_scalar_type_validation_fails_for_invalid_type_schema(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_scalar_type_validation_fails_for_name_mismatch_between_schema_and_attr(
+def test_schema_scalar_type_validation_fails_for_different_names(
     snapshot,
 ):
     with pytest.raises(ValueError) as exc_info:
@@ -25,7 +25,7 @@ def test_scalar_type_validation_fails_for_name_mismatch_between_schema_and_attr(
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_scalar_type_validation_fails_for_two_descriptions(snapshot):
+def test_schema_scalar_type_validation_fails_for_two_descriptions(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomScalar(GraphQLScalar[str]):

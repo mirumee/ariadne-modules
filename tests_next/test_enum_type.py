@@ -206,7 +206,7 @@ def test_enum_type_with_member_description(assert_schema_equals):
     )
 
 
-def test_sdl_enum_field_returning_enum_value(assert_schema_equals):
+def test_schema_enum_field_returning_enum_value(assert_schema_equals):
     class UserLevel(GraphQLEnum):
         __schema__ = """
             enum UserLevel {
@@ -247,7 +247,7 @@ def test_sdl_enum_field_returning_enum_value(assert_schema_equals):
     assert result.data == {"level": "MEMBER"}
 
 
-def test_sdl_enum_field_returning_dict_value(assert_schema_equals):
+def test_schema_enum_field_returning_dict_value(assert_schema_equals):
     class UserLevel(GraphQLEnum):
         __schema__ = """
             enum UserLevel {
@@ -292,7 +292,7 @@ def test_sdl_enum_field_returning_dict_value(assert_schema_equals):
     assert result.data == {"level": "ADMIN"}
 
 
-def test_sdl_enum_field_returning_str_value(assert_schema_equals):
+def test_schema_enum_field_returning_str_value(assert_schema_equals):
     class UserLevel(GraphQLEnum):
         __schema__ = """
             enum UserLevel {
@@ -332,7 +332,7 @@ def test_sdl_enum_field_returning_str_value(assert_schema_equals):
     assert result.data == {"level": "GUEST"}
 
 
-def test_sdl_enum_with_description_attr(assert_schema_equals):
+def test_schema_enum_with_description_attr(assert_schema_equals):
     class UserLevel(GraphQLEnum):
         __schema__ = """
             enum UserLevel {
@@ -379,7 +379,7 @@ def test_sdl_enum_with_description_attr(assert_schema_equals):
     assert result.data == {"level": "ADMIN"}
 
 
-def test_sdl_enum_with_schema_description(assert_schema_equals):
+def test_schema_enum_with_schema_description(assert_schema_equals):
     class UserLevel(GraphQLEnum):
         __schema__ = """
             \"\"\"Hello world.\"\"\"
@@ -426,7 +426,7 @@ def test_sdl_enum_with_schema_description(assert_schema_equals):
     assert result.data == {"level": "ADMIN"}
 
 
-def test_sdl_enum_with_member_description(assert_schema_equals):
+def test_schema_enum_with_member_description(assert_schema_equals):
     class UserLevel(GraphQLEnum):
         __schema__ = """
             enum UserLevel {
@@ -474,7 +474,7 @@ def test_sdl_enum_with_member_description(assert_schema_equals):
     assert result.data == {"level": "ADMIN"}
 
 
-def test_sdl_enum_with_member_schema_description(assert_schema_equals):
+def test_schema_enum_with_member_schema_description(assert_schema_equals):
     class UserLevel(GraphQLEnum):
         __schema__ = """
             enum UserLevel {

@@ -4,7 +4,7 @@ from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLObject
 
 
-def test_object_type_validation_fails_for_invalid_type_schema(snapshot):
+def test_schema_object_type_validation_fails_for_invalid_type_schema(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -13,7 +13,7 @@ def test_object_type_validation_fails_for_invalid_type_schema(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_names_not_matching(snapshot):
+def test_schema_object_type_validation_fails_for_names_not_matching(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -29,7 +29,7 @@ def test_object_type_validation_fails_for_names_not_matching(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_two_descriptions(snapshot):
+def test_schema_object_type_validation_fails_for_two_descriptions(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -46,7 +46,7 @@ def test_object_type_validation_fails_for_two_descriptions(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_schema_missing_fields(snapshot):
+def test_schema_object_type_validation_fails_for_missing_fields(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -68,7 +68,7 @@ def test_object_type_validation_fails_for_undefined_attr_resolver(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_undefined_field_resolver(snapshot):
+def test_schema_object_type_validation_fails_for_undefined_field_resolver(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class QueryType(GraphQLObject):
@@ -200,7 +200,7 @@ def test_object_type_validation_fails_for_multiple_field_resolvers(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_multiple_schema_field_resolvers(snapshot):
+def test_schema_object_type_validation_fails_for_multiple_field_resolvers(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -238,7 +238,7 @@ def test_object_type_validation_fails_for_field_with_multiple_descriptions(
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_schema_field_with_multiple_descriptions(
+def test_schema_object_type_validation_fails_for_field_with_multiple_descriptions(
     snapshot,
 ):
     with pytest.raises(ValueError) as exc_info:
@@ -258,7 +258,7 @@ def test_object_type_validation_fails_for_schema_field_with_multiple_description
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_schema_field_with_invalid_arg_name(
+def test_schema_object_type_validation_fails_for_field_with_invalid_arg_name(
     snapshot,
 ):
     with pytest.raises(ValueError) as exc_info:
@@ -279,7 +279,7 @@ def test_object_type_validation_fails_for_schema_field_with_invalid_arg_name(
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_schema_field_with_arg_name(
+def test_schema_object_type_validation_fails_for_arg_with_name_option(
     snapshot,
 ):
     with pytest.raises(ValueError) as exc_info:
@@ -300,7 +300,7 @@ def test_object_type_validation_fails_for_schema_field_with_arg_name(
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_schema_field_with_arg_type(
+def test_schema_object_type_validation_fails_for_arg_with_type_option(
     snapshot,
 ):
     with pytest.raises(ValueError) as exc_info:
@@ -321,7 +321,7 @@ def test_object_type_validation_fails_for_schema_field_with_arg_type(
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_schema_field_with_arg_double_description(
+def test_schema_object_type_validation_fails_for_arg_with_double_description(
     snapshot,
 ):
     with pytest.raises(ValueError) as exc_info:
@@ -375,7 +375,7 @@ def test_object_type_validation_fails_for_invalid_alias(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_invalid_schema_alias(snapshot):
+def test_schema_object_type_validation_fails_for_invalid_alias(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -411,7 +411,7 @@ def test_object_type_validation_fails_for_resolver_alias(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_schema_resolver_alias(snapshot):
+def test_schema_object_type_validation_fails_for_resolver_alias(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -434,7 +434,7 @@ def test_object_type_validation_fails_for_schema_resolver_alias(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_schema_with_field_instance(snapshot):
+def test_schema_object_type_validation_fails_for_field_instance(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -481,7 +481,7 @@ def test_object_type_validation_fails_for_unsupported_resolver_arg_default_optio
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_unsupported_schema_resolver_arg_default(
+def test_schema_object_type_validation_fails_for_unsupported_resolver_arg_default(
     snapshot,
 ):
     with pytest.raises(TypeError) as exc_info:
@@ -502,7 +502,7 @@ def test_object_type_validation_fails_for_unsupported_schema_resolver_arg_defaul
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_unsupported_schema_resolver_arg_option_default(
+def test_schema_object_type_validation_fails_for_unsupported_resolver_arg_option_default(
     snapshot,
 ):
     with pytest.raises(TypeError) as exc_info:

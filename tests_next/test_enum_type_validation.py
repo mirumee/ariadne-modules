@@ -6,7 +6,7 @@ from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLEnum
 
 
-def test_enum_type_validation_fails_for_invalid_type_schema(snapshot):
+def test_schema_enum_type_validation_fails_for_invalid_type_schema(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
@@ -15,7 +15,7 @@ def test_enum_type_validation_fails_for_invalid_type_schema(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_enum_type_validation_fails_for_name_mismatch_between_schema_and_attr(
+def test_schema_enum_type_validation_fails_for_names_not_matching(
     snapshot,
 ):
     with pytest.raises(ValueError) as exc_info:
@@ -34,7 +34,7 @@ def test_enum_type_validation_fails_for_name_mismatch_between_schema_and_attr(
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_enum_type_validation_fails_for_empty_enum(snapshot):
+def test_schema_enum_type_validation_fails_for_empty_enum(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
@@ -43,7 +43,7 @@ def test_enum_type_validation_fails_for_empty_enum(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_enum_type_validation_fails_for_two_descriptions(snapshot):
+def test_schema_enum_type_validation_fails_for_two_descriptions(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
@@ -61,7 +61,7 @@ def test_enum_type_validation_fails_for_two_descriptions(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_enum_type_validation_fails_for_schema_and_members_list(snapshot):
+def test_schema_enum_type_validation_fails_for_schema_and_members_list(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
@@ -78,7 +78,9 @@ def test_enum_type_validation_fails_for_schema_and_members_list(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_enum_type_validation_fails_for_schema_and_members_dict_mismatch(snapshot):
+def test_schema_enum_type_validation_fails_for_schema_and_members_dict_mismatch(
+    snapshot,
+):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
@@ -98,7 +100,9 @@ def test_enum_type_validation_fails_for_schema_and_members_dict_mismatch(snapsho
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_enum_type_validation_fails_for_schema_and_members_enum_mismatch(snapshot):
+def test_schema_enum_type_validation_fails_for_schema_and_members_enum_mismatch(
+    snapshot,
+):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevelEnum(Enum):
@@ -121,7 +125,7 @@ def test_enum_type_validation_fails_for_schema_and_members_enum_mismatch(snapsho
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_enum_type_validation_fails_for_schema_and_members_duplicated_descriptions(
+def test_schema_enum_type_validation_fails_for_duplicated_members_descriptions(
     snapshot,
 ):
     with pytest.raises(ValueError) as exc_info:
@@ -141,7 +145,7 @@ def test_enum_type_validation_fails_for_schema_and_members_duplicated_descriptio
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_enum_type_validation_fails_for_schema_invalid_members_descriptions(snapshot):
+def test_schema_enum_type_validation_fails_for_invalid_members_descriptions(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):

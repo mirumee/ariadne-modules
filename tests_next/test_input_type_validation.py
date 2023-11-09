@@ -4,7 +4,7 @@ from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLInput
 
 
-def test_input_type_validation_fails_for_invalid_type_schema(snapshot):
+def test_schema_input_type_validation_fails_for_invalid_type_schema(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
@@ -13,7 +13,7 @@ def test_input_type_validation_fails_for_invalid_type_schema(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_input_type_validation_fails_for_names_not_matching(snapshot):
+def test_schema_input_type_validation_fails_for_names_not_matching(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
@@ -29,7 +29,7 @@ def test_input_type_validation_fails_for_names_not_matching(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_input_type_validation_fails_for_two_descriptions(snapshot):
+def test_schema_input_type_validation_fails_for_two_descriptions(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
@@ -46,7 +46,7 @@ def test_input_type_validation_fails_for_two_descriptions(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_input_type_validation_fails_for_schema_missing_fields(snapshot):
+def test_schema_input_type_validation_fails_for_schema_missing_fields(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
@@ -68,7 +68,7 @@ def test_input_type_validation_fails_for_out_names_without_schema(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_input_type_validation_fails_for_invalid_schema_out_name(snapshot):
+def test_schema_input_type_validation_fails_for_invalid_out_name(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
@@ -87,7 +87,7 @@ def test_input_type_validation_fails_for_invalid_schema_out_name(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_input_type_validation_fails_for_duplicate_schema_out_name(snapshot):
+def test_schema_input_type_validation_fails_for_duplicate_out_name(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):

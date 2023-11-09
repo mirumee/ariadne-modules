@@ -19,17 +19,6 @@ class DateScalar(GraphQLScalar[date]):
         return str(value)
 
 
-class SDLDateScalar(GraphQLScalar[date]):
-    __schema__ = "scalar Date"
-
-    @classmethod
-    def serialize(cls, value):
-        if isinstance(value, cls):
-            return str(value.unwrap())
-
-        return str(value)
-
-
 def test_scalar_field_returning_scalar_instance(assert_schema_equals):
     class QueryType(GraphQLObject):
         date: DateScalar
@@ -84,13 +73,24 @@ def test_scalar_field_returning_scalar_wrapped_type(assert_schema_equals):
     assert result.data == {"date": "1989-10-30"}
 
 
-def test_sdl_scalar_field_returning_scalar_instance(assert_schema_equals):
+class SchemaDateScalar(GraphQLScalar[date]):
+    __schema__ = "scalar Date"
+
+    @classmethod
+    def serialize(cls, value):
+        if isinstance(value, cls):
+            return str(value.unwrap())
+
+        return str(value)
+
+
+def test_schema_scalar_field_returning_scalar_instance(assert_schema_equals):
     class QueryType(GraphQLObject):
-        date: SDLDateScalar
+        date: SchemaDateScalar
 
         @GraphQLObject.resolver("date")
-        def resolve_date(*_) -> SDLDateScalar:
-            return SDLDateScalar(date(1989, 10, 30))
+        def resolve_date(*_) -> SchemaDateScalar:
+            return SchemaDateScalar(date(1989, 10, 30))
 
     schema = make_executable_schema(QueryType)
 

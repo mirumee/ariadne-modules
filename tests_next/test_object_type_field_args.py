@@ -153,7 +153,7 @@ def test_object_type_field_instance_with_arg_option_default_value(
     assert result.data == {"hello": "Hello Anon!"}
 
 
-def test_object_type_schema_field_with_arg_default_value(
+def test_schema_object_type_field_with_arg_default_value(
     assert_schema_equals,
 ):
     class QueryType(GraphQLObject):
@@ -184,7 +184,7 @@ def test_object_type_schema_field_with_arg_default_value(
     assert result.data == {"hello": "Hello Anon!"}
 
 
-def test_object_type_schema_field_with_arg_default_value_from_resolver_arg(
+def test_schema_object_type_field_with_arg_default_value_from_resolver_arg(
     assert_schema_equals,
 ):
     class QueryType(GraphQLObject):
@@ -215,7 +215,7 @@ def test_object_type_schema_field_with_arg_default_value_from_resolver_arg(
     assert result.data == {"hello": "Hello Anon!"}
 
 
-def test_object_type_schema_field_with_arg_default_value_from_resolver_arg_option(
+def test_schema_object_type_field_with_arg_default_value_from_resolver_arg_option(
     assert_schema_equals,
 ):
     class QueryType(GraphQLObject):
