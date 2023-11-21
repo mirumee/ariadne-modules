@@ -9,4 +9,4 @@ snapshots = Snapshot()
 
 snapshots['test_object_type_instance_with_invalid_attrs_raising_error 1'] = "CategoryType.__init__() got an unexpected keyword argument 'invalid'. Valid keyword arguments: 'name', 'posts'"
 
-snapshots['test_object_type_with_schema_instance_with_invalid_attrs_raising_error 1'] = "CategoryType.__init__() got an unexpected keyword argument 'invalid'. Valid keyword arguments: 'name', 'posts'"
+snapshots['test_schema_object_type_instance_with_invalid_attrs_raising_error 1'] = "CategoryType.__init__() got an unexpected keyword argument 'invalid'. Valid keyword arguments: 'name', 'posts'"

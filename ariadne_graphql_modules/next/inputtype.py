@@ -328,15 +328,20 @@ def get_input_type_with_schema_kwargs(
 ) -> Dict[str, Any]:
     kwargs: Dict[str, Any] = {}
     for field in definition.fields:
-        if field.default_value:
+        try:
+            python_name = out_names[field.name.value]
+        except KeyError:
+            python_name = convert_graphql_name_to_python(field.name.value)
+
+        attr_default_value = getattr(cls, python_name, None)
+        if attr_default_value is not None and not callable(attr_default_value):
+            default_value = attr_default_value
+        elif field.default_value:
             default_value = get_value_from_node(field.default_value)
         else:
             default_value = None
 
-        try:
-            kwargs[out_names[field.name.value]] = default_value
-        except KeyError:
-            kwargs[convert_graphql_name_to_python(field.name.value)] = default_value
+        kwargs[python_name] = default_value
 
     return kwargs
 

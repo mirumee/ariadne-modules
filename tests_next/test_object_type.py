@@ -27,6 +27,40 @@ def test_object_type_instance_with_omitted_attrs_being_none():
     assert obj.posts == 20
 
 
+def test_object_type_instance_with_aliased_attrs_values():
+    class CategoryType(GraphQLObject):
+        name: str
+        posts: int
+
+        __aliases__ = {"name": "title"}
+
+        title: str
+
+    obj = CategoryType(title="Welcome", posts=20)
+    assert obj.title == "Welcome"
+    assert obj.posts == 20
+
+
+def test_object_type_instance_with_omitted_attrs_being_default_values():
+    class CategoryType(GraphQLObject):
+        name: str = "Hello"
+        posts: int = 42
+
+    obj = CategoryType(posts=20)
+    assert obj.name == "Hello"
+    assert obj.posts == 20
+
+
+def test_object_type_instance_with_all_attrs_being_default_values():
+    class CategoryType(GraphQLObject):
+        name: str = "Hello"
+        posts: int = 42
+
+    obj = CategoryType()
+    assert obj.name == "Hello"
+    assert obj.posts == 42
+
+
 def test_object_type_instance_with_invalid_attrs_raising_error(snapshot):
     class CategoryType(GraphQLObject):
         name: str
@@ -38,7 +72,7 @@ def test_object_type_instance_with_invalid_attrs_raising_error(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_with_schema_instance_with_all_attrs_values():
+def test_schema_object_type_instance_with_all_attrs_values():
     class CategoryType(GraphQLObject):
         __schema__ = gql(
             """
@@ -57,7 +91,7 @@ def test_object_type_with_schema_instance_with_all_attrs_values():
     assert obj.posts == 20
 
 
-def test_object_type_with_schema_instance_with_omitted_attrs_being_none():
+def test_schema_object_type_instance_with_omitted_attrs_being_none():
     class CategoryType(GraphQLObject):
         __schema__ = gql(
             """
@@ -76,7 +110,85 @@ def test_object_type_with_schema_instance_with_omitted_attrs_being_none():
     assert obj.posts == 20
 
 
-def test_object_type_with_schema_instance_with_invalid_attrs_raising_error(snapshot):
+def test_schema_object_type_instance_with_omitted_attrs_being_default_values():
+    class CategoryType(GraphQLObject):
+        __schema__ = gql(
+            """
+            type Category {
+                name: String
+                posts: Int
+            }
+            """
+        )
+
+        name: str = "Hello"
+        posts: int = 42
+
+    obj = CategoryType(posts=20)
+    assert obj.name == "Hello"
+    assert obj.posts == 20
+
+
+def test_schema_object_type_instance_with_all_attrs_being_default_values():
+    class CategoryType(GraphQLObject):
+        __schema__ = gql(
+            """
+            type Category {
+                name: String
+                posts: Int
+            }
+            """
+        )
+
+        name: str = "Hello"
+        posts: int = 42
+
+    obj = CategoryType()
+    assert obj.name == "Hello"
+    assert obj.posts == 42
+
+
+def test_schema_object_type_instance_with_aliased_attrs_values():
+    class CategoryType(GraphQLObject):
+        __schema__ = gql(
+            """
+            type Category {
+                name: String
+                posts: Int
+            }
+            """
+        )
+        __aliases__ = {"name": "title"}
+
+        title: str = "Hello"
+        posts: int = 42
+
+    obj = CategoryType(title="Ok")
+    assert obj.title == "Ok"
+    assert obj.posts == 42
+
+
+def test_schema_object_type_instance_with_aliased_attrs_default_values():
+    class CategoryType(GraphQLObject):
+        __schema__ = gql(
+            """
+            type Category {
+                name: String
+                posts: Int
+            }
+            """
+        )
+        __aliases__ = {"name": "title"}
+
+        title: str = "Hello"
+        posts: int = 42
+
+    obj = CategoryType()
+    assert obj.title == "Hello"
+    assert obj.posts == 42
+
+
+def test_schema_object_type_instance_with_invalid_attrs_raising_error(snapshot):
     class CategoryType(GraphQLObject):
         __schema__ = gql(
             """
@@ -96,7 +208,7 @@ def test_object_type_with_schema_instance_with_invalid_attrs_raising_error(snaps
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_with_schema_instance_with_aliased_attr_value():
+def test_schema_object_type_instance_with_aliased_attr_value():
     class CategoryType(GraphQLObject):
         __schema__ = gql(
             """
@@ -139,9 +251,35 @@ def test_object_type_with_field(assert_schema_equals):
 
 def test_object_type_with_alias(assert_schema_equals):
     class QueryType(GraphQLObject):
+        __aliases__ = {"hello": "welcome_message"}
+
+        hello: str
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          hello: String!
+        }
+        """,
+    )
+
+    result = graphql_sync(
+        schema, "{ hello }", root_value={"welcome_message": "Hello World!"}
+    )
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello World!"}
+
+
+def test_object_type_with_alias_excludes_alias_targets(assert_schema_equals):
+    class QueryType(GraphQLObject):
         __aliases__ = {"hello": "welcome"}
 
         hello: str
+        welcome: str
 
     schema = make_executable_schema(QueryType)
 
@@ -158,6 +296,79 @@ def test_object_type_with_alias(assert_schema_equals):
 
     assert not result.errors
     assert result.data == {"hello": "Hello World!"}
+
+
+def test_object_type_with_alias_includes_aliased_field_instances(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        __aliases__ = {"hello": "welcome"}
+
+        hello: str
+        welcome: str = GraphQLObject.field()
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          hello: String!
+          welcome: String!
+        }
+        """,
+    )
+
+    result = graphql_sync(
+        schema, "{ hello welcome }", root_value={"welcome": "Hello World!"}
+    )
+
+    assert not result.errors
+    assert result.data == {"hello": "Hello World!", "welcome": "Hello World!"}
+
+
+def test_object_type_with_attr_automatic_alias(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        test_message: str
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          testMessage: String!
+        }
+        """,
+    )
+
+    result = graphql_sync(
+        schema, "{ testMessage }", root_value={"test_message": "Hello World!"}
+    )
+
+    assert not result.errors
+    assert result.data == {"testMessage": "Hello World!"}
+
+
+def test_object_type_with_field_instance_automatic_alias(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        message: str = GraphQLObject.field(name="testMessage")
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          testMessage: String!
+        }
+        """,
+    )
+
+    result = graphql_sync(
+        schema, "{ testMessage }", root_value={"message": "Hello World!"}
+    )
+
+    assert not result.errors
+    assert result.data == {"testMessage": "Hello World!"}
 
 
 def test_object_type_with_field_resolver(assert_schema_equals):

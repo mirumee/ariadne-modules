@@ -369,7 +369,7 @@ def test_object_type_validation_fails_for_invalid_alias(snapshot):
             hello: str
 
             __aliases__ = {
-                "invalid": "ok",
+                "invalid": "target",
             }
 
     snapshot.assert_match(str(exc_info.value))
@@ -388,20 +388,20 @@ def test_schema_object_type_validation_fails_for_invalid_alias(snapshot):
             )
 
             __aliases__ = {
-                "invalid": "ok",
+                "invalid": "welcome",
             }
 
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_resolver_alias(snapshot):
+def test_object_type_validation_fails_for_alias_resolver(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
             hello: str
 
             __aliases__ = {
-                "hello": "ok",
+                "hello": "welcome",
             }
 
             @GraphQLObject.resolver("hello")
@@ -411,7 +411,25 @@ def test_object_type_validation_fails_for_resolver_alias(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_resolver_alias(snapshot):
+def test_object_type_validation_fails_for_alias_target_resolver(snapshot):
+    with pytest.raises(ValueError) as exc_info:
+
+        class CustomType(GraphQLObject):
+            hello: str
+            welcome: str
+
+            __aliases__ = {
+                "hello": "welcome",
+            }
+
+            @GraphQLObject.resolver("welcome")
+            def resolve_welcome(*_):
+                return "Hello World!"
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_schema_object_type_validation_fails_for_alias_resolver(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -428,6 +446,31 @@ def test_schema_object_type_validation_fails_for_resolver_alias(snapshot):
             }
 
             @GraphQLObject.resolver("hello")
+            def resolve_hello(*_):
+                return "Hello World!"
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_schema_object_type_validation_fails_for_alias_target_resolver(snapshot):
+    with pytest.raises(ValueError) as exc_info:
+
+        class CustomType(GraphQLObject):
+            __schema__ = gql(
+                """
+                type Query {
+                  hello: String!
+                }
+                """
+            )
+
+            __aliases__ = {
+                "hello": "ok",
+            }
+
+            ok: str
+
+            @GraphQLObject.resolver("ok")
             def resolve_hello(*_):
                 return "Hello World!"
 
