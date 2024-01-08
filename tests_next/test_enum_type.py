@@ -31,14 +31,14 @@ def test_enum_field_returning_enum_value(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         enum UserLevel {
           GUEST
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -69,14 +69,14 @@ def test_enum_field_returning_dict_value(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         enum UserLevel {
           GUEST
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -107,14 +107,14 @@ def test_enum_field_returning_str_value(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         enum UserLevel {
           GUEST
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -138,14 +138,14 @@ def test_enum_type_with_custom_name(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevelEnum!
+        }
+
         enum UserLevelEnum {
           GUEST
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevelEnum!
         }
         """,
     )
@@ -164,15 +164,15 @@ def test_enum_type_with_description(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         \"\"\"Hello world.\"\"\"
         enum UserLevel {
           GUEST
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -191,16 +191,16 @@ def test_enum_type_with_member_description(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         enum UserLevel {
           GUEST
 
           \"\"\"Hello world.\"\"\"
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -229,14 +229,14 @@ def test_schema_enum_field_returning_enum_value(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         enum UserLevel {
           GUEST
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -274,14 +274,14 @@ def test_schema_enum_field_returning_dict_value(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         enum UserLevel {
           GUEST
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -314,14 +314,14 @@ def test_schema_enum_field_returning_str_value(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         enum UserLevel {
           GUEST
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -360,15 +360,15 @@ def test_schema_enum_with_description_attr(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         \"\"\"Hello world.\"\"\"
         enum UserLevel {
           GUEST
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -407,15 +407,15 @@ def test_schema_enum_with_schema_description(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         \"\"\"Hello world.\"\"\"
         enum UserLevel {
           GUEST
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -454,16 +454,16 @@ def test_schema_enum_with_member_description(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         enum UserLevel {
           GUEST
 
           \"\"\"Hello world.\"\"\"
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
@@ -502,16 +502,16 @@ def test_schema_enum_with_member_schema_description(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         enum UserLevel {
           GUEST
 
           \"\"\"Hello world.\"\"\"
           MEMBER
           ADMIN
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )

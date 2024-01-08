@@ -15,7 +15,9 @@ from .executable_schema import make_executable_schema
 from .idtype import GraphQLID
 from .inputtype import GraphQLInput, GraphQLInputModel
 from .objecttype import GraphQLObject, GraphQLObjectModel, object_field
+from .roots import ROOTS_NAMES, merge_root_nodes
 from .scalartype import GraphQLScalar, GraphQScalarModel
+from .sort import sort_schema_document
 from .value import get_value_from_node, get_value_node
 
 __all__ = [
@@ -31,6 +33,7 @@ __all__ = [
     "GraphQLScalar",
     "GraphQScalarModel",
     "GraphQLType",
+    "ROOTS_NAMES",
     "convert_graphql_name_to_python",
     "convert_python_name_to_graphql",
     "create_graphql_enum_model",
@@ -40,5 +43,7 @@ __all__ = [
     "get_value_node",
     "graphql_enum",
     "make_executable_schema",
+    "merge_root_nodes",
     "object_field",
+    "sort_schema_document",
 ]

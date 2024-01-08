@@ -233,15 +233,15 @@ def test_enum_field_returning_enum_instance(assert_schema_equals):
     assert_schema_equals(
         schema,
         """
+        type Query {
+          level: UserLevel!
+        }
+
         enum UserLevel {
           GUEST
           MEMBER
           MODERATOR
           ADMINISTRATOR
-        }
-
-        type Query {
-          level: UserLevel!
         }
         """,
     )
