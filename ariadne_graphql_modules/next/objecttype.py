@@ -565,7 +565,8 @@ def get_field_args_from_resolver(
     else:
         if len(resolver_signature.parameters) < 2:
             raise TypeError(
-                f"Resolver function '{resolver_signature}' should accept at least 'obj' and 'info' positional arguments."
+                f"Resolver function '{resolver_signature}' should accept at least "
+                "'obj' and 'info' positional arguments."
             )
 
         field_args_start = 2
