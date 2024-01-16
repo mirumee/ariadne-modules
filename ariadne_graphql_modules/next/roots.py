@@ -20,12 +20,6 @@ def merge_root_nodes(document_node: DocumentNode) -> DocumentNode:
     final_definitions: DefinitionsList = []
 
     for node in document_node.definitions:
-        if not isinstance(node, TypeDefinitionNode):
-            raise ValueError(
-                "Only type definition nodes can be merged. "
-                f"Found unsupported node: '{node}'"
-            )
-
         if node.name.value in roots_definitions:
             roots_definitions[node.name.value].append(node)
         else:

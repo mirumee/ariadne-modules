@@ -72,6 +72,10 @@ def get_type_node(
         type_node = NamedTypeNode(
             name=NameNode(value=metadata.get_graphql_name(parent_type)),
         )
+    elif isinstance(type_hint, str):
+        type_node = NamedTypeNode(
+            name=NameNode(value=type_hint),
+        )
     elif isclass(type_hint):
         if issubclass(type_hint, GraphQLID):
             type_node = NamedTypeNode(name=NameNode(value="ID"))

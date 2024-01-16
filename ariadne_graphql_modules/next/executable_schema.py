@@ -5,8 +5,9 @@ from ariadne import (
     SchemaBindable,
     SchemaDirectiveVisitor,
     SchemaNameConverter,
+    convert_schema_names,
     repair_schema_default_enum_values,
-    validate_schema_default_enum_values
+    validate_schema_default_enum_values,
 )
 from graphql import (
     DocumentNode,
@@ -48,7 +49,7 @@ def make_executable_schema(
             schema_bindables.append(type_def)
         else:
             schema_bindables.append(metadata.get_graphql_model(type_def))
-    
+
     schema_models: List[GraphQLModel] = [
         type_def for type_def in schema_bindables if isinstance(type_def, GraphQLModel)
     ]
@@ -81,6 +82,9 @@ def make_executable_schema(
     document_node = sort_schema_document(document_node)
     schema = build_ast_schema(document_node)
 
+    if directives:
+        SchemaDirectiveVisitor.visit_schema_directives(schema, directives)
+
     assert_valid_schema(schema)
     validate_schema_default_enum_values(schema)
     repair_schema_default_enum_values(schema)
@@ -89,7 +93,10 @@ def make_executable_schema(
         schema_bindable.bind_to_schema(schema)
 
     if convert_names_case:
-        pass
+        convert_schema_names(
+            schema,
+            convert_names_case if callable(convert_names_case) else None,
+        )
 
     return schema
 

@@ -1,7 +1,15 @@
-import pytest
-from graphql import graphql_sync
+from typing import Union
 
-from ariadne import QueryType
+import pytest
+from graphql import (
+    GraphQLField,
+    GraphQLInterfaceType,
+    GraphQLObjectType,
+    default_field_resolver,
+    graphql_sync,
+)
+
+from ariadne import QueryType, SchemaDirectiveVisitor
 from ariadne_graphql_modules.next import GraphQLObject, make_executable_schema
 
 
@@ -15,7 +23,7 @@ def test_executable_schema_from_vanilla_schema_definition(assert_schema_equals):
           message: String!
         }
         """,
-        query_type
+        query_type,
     )
 
     assert_schema_equals(
@@ -27,13 +35,15 @@ def test_executable_schema_from_vanilla_schema_definition(assert_schema_equals):
         """,
     )
 
-    result = graphql_sync(schema, '{ message }')
+    result = graphql_sync(schema, "{ message }")
 
     assert not result.errors
     assert result.data == {"message": "Hello world!"}
 
 
-def test_executable_schema_from_combined_vanilla_and_new_schema_definition(assert_schema_equals):
+def test_executable_schema_from_combined_vanilla_and_new_schema_definition(
+    assert_schema_equals,
+):
     class UserType(GraphQLObject):
         name: str
         email: str
@@ -67,7 +77,7 @@ def test_executable_schema_from_combined_vanilla_and_new_schema_definition(asser
         """,
     )
 
-    result = graphql_sync(schema, '{ user { name email } }')
+    result = graphql_sync(schema, "{ user { name email } }")
 
     assert not result.errors
     assert result.data == {
@@ -163,3 +173,116 @@ def test_multiple_roots_fail_validation_if_merge_roots_is_disabled(snapshot):
         make_executable_schema(FirstRoot, SecondRoot, ThirdRoot, merge_roots=False)
 
     snapshot.assert_match(str(exc_info.value))
+
+
+def test_schema_validation_fails_if_lazy_type_doesnt_exist(snapshot):
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(type=list["Missing"])
+        def other(obj, info):
+            return None
+
+    with pytest.raises(TypeError) as exc_info:
+        make_executable_schema(QueryType)
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_schema_validation_passes_if_lazy_type_exists():
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(type=list["Exists"])
+        def other(obj, info):
+            return None
+
+    type_def = """
+        type Exists {
+            id: ID!
+        }
+        """
+
+    make_executable_schema(QueryType, type_def)
+
+
+def test_make_executable_schema_raises_error_if_called_without_any_types(snapshot):
+    with pytest.raises(ValueError) as exc_info:
+        make_executable_schema(QueryType)
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_make_executable_schema_raises_error_if_called_without_any_types(snapshot):
+    with pytest.raises(ValueError) as exc_info:
+        make_executable_schema(QueryType)
+
+    snapshot.assert_match(str(exc_info.value))
+
+
+def test_make_executable_schema_doesnt_set_resolvers_if_convert_names_case_is_not_enabled():
+    class QueryType(GraphQLObject):
+        other_field: str
+
+    type_def = """
+        type Query {
+            firstField: String!
+        }
+        """
+
+    schema = make_executable_schema(QueryType, type_def)
+    result = graphql_sync(
+        schema,
+        "{ firstField otherField }",
+        root_value={"firstField": "first", "other_field": "other"},
+    )
+    assert result.data == {"firstField": "first", "otherField": "other"}
+
+
+def test_make_executable_schema_sets_resolvers_if_convert_names_case_is_enabled():
+    class QueryType(GraphQLObject):
+        other_field: str
+
+    type_def = """
+        type Query {
+            firstField: String!
+        }
+        """
+
+    schema = make_executable_schema(QueryType, type_def, convert_names_case=True)
+    result = graphql_sync(
+        schema,
+        "{ firstField otherField }",
+        root_value={"first_field": "first", "other_field": "other"},
+    )
+    assert result.data == {"firstField": "first", "otherField": "other"}
+
+
+class UpperDirective(SchemaDirectiveVisitor):
+    def visit_field_definition(
+        self,
+        field: GraphQLField,
+        object_type: Union[GraphQLObjectType, GraphQLInterfaceType],
+    ) -> GraphQLField:
+        resolver = field.resolve or default_field_resolver
+
+        def resolve_upper(obj, info, **kwargs):
+            result = resolver(obj, info, **kwargs)
+            return result.upper()
+
+        field.resolve = resolve_upper
+        return field
+
+
+def test_make_executable_schema_supports_vanilla_directives():
+    type_def = """
+        directive @upper on FIELD_DEFINITION
+
+        type Query {
+            field: String! @upper
+        }
+        """
+
+    schema = make_executable_schema(type_def, directives={"upper": UpperDirective})
+    result = graphql_sync(
+        schema,
+        "{ field }",
+        root_value={"field": "first"},
+    )
+    assert result.data == {"field": "FIRST"}
