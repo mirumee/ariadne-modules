@@ -42,8 +42,7 @@ def test_get_graphql_type_from_python_builtin_type_returns_none(metadata):
 
 
 def test_get_graphql_type_from_graphql_type_subclass_returns_type(metadata):
-    class UserType(GraphQLObject):
-        ...
+    class UserType(GraphQLObject): ...
 
     assert get_graphql_type(UserType) == UserType
     assert get_graphql_type(Optional[UserType]) == UserType
@@ -79,8 +78,7 @@ def test_get_non_null_graphql_type_node_from_python_builtin_type(metadata):
 
 
 def test_get_graphql_type_node_from_graphql_type(metadata):
-    class UserType(GraphQLObject):
-        ...
+    class UserType(GraphQLObject): ...
 
     assert_non_null_type(get_type_node(metadata, UserType), "User")
     assert_named_type(get_type_node(metadata, Optional[UserType]), "User")
