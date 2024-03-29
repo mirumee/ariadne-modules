@@ -74,7 +74,7 @@ def test_scalar_field_returning_scalar_wrapped_type(assert_schema_equals):
 
 
 class SchemaDateScalar(GraphQLScalar[date]):
-    __schema__ = "scalar Date"
+    __schema__ = gql("scalar Date")
 
     @classmethod
     def serialize(cls, value):

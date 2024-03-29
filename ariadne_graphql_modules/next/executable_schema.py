@@ -152,6 +152,7 @@ def flatten_schema_types(
     dedupe: bool,
 ) -> List[SchemaType]:
     flat_list: List[SchemaType] = []
+    checked_types: List[Type[GraphQLType]] = []
 
     for type_def in types:
         if isinstance(type_def, str):
@@ -161,7 +162,7 @@ def flatten_schema_types(
         elif isinstance(type_def, SchemaBindable):
             flat_list.append(type_def)
         elif issubclass(type_def, GraphQLType):
-            flat_list += type_def.__get_graphql_types__(metadata)
+            add_graphql_type_to_flat_list(flat_list, checked_types, type_def, metadata)
         elif get_graphql_type_name(type_def):
             flat_list.append(type_def)
 
@@ -174,6 +175,23 @@ def flatten_schema_types(
             unique_list.append(type_def)
 
     return unique_list
+
+
+def add_graphql_type_to_flat_list(
+    flat_list: List[SchemaType],
+    checked_types: List[Type[GraphQLType]],
+    type_def: GraphQLType,
+    metadata: GraphQLMetadata,
+) -> List[SchemaType]:
+    if type_def in checked_types:
+        return
+
+    checked_types.append(type_def)
+
+    for child_type in type_def.__get_graphql_types__(metadata):
+        flat_list.append(child_type)
+
+        add_graphql_type_to_flat_list(flat_list, checked_types, child_type, metadata)
 
 
 def get_graphql_type_name(type_def: SchemaType) -> Optional[str]:

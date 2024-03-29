@@ -16,8 +16,9 @@ from .idtype import GraphQLID
 from .inputtype import GraphQLInput, GraphQLInputModel
 from .objecttype import GraphQLObject, GraphQLObjectModel, object_field
 from .roots import ROOTS_NAMES, merge_root_nodes
-from .scalartype import GraphQLScalar, GraphQScalarModel
+from .scalartype import GraphQLScalar, GraphQLScalarModel
 from .sort import sort_schema_document
+from .uniontype import GraphQLUnion, GraphQLUnionModel
 from .value import get_value_from_node, get_value_node
 
 __all__ = [
@@ -31,8 +32,10 @@ __all__ = [
     "GraphQLObject",
     "GraphQLObjectModel",
     "GraphQLScalar",
-    "GraphQScalarModel",
+    "GraphQLScalarModel",
     "GraphQLType",
+    "GraphQLUnion",
+    "GraphQLUnionModel",
     "ROOTS_NAMES",
     "convert_graphql_name_to_python",
     "convert_python_name_to_graphql",

@@ -948,3 +948,68 @@ def test_object_type_return_instance(
             "color": "#FF00FF",
         },
     }
+
+
+def test_object_type_nested_type(
+    assert_schema_equals,
+):
+    class UserType(GraphQLObject):
+        username: str
+
+    class CategoryType(GraphQLObject):
+        name: str
+        parent: Optional["CategoryType"]
+        owner: UserType
+
+    class QueryType(GraphQLObject):
+        category: CategoryType
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          category: Category!
+        }
+
+        type Category {
+          name: String!
+          parent: Category
+          owner: User!
+        }
+
+        type User {
+          username: String!
+        }
+        """,
+    )
+
+    result = graphql_sync(
+        schema,
+        "{ category { name parent { name } owner { username } } }",
+        root_value={
+            "category": {
+                "name": "Lorem",
+                "parent": {
+                    "name": "Ipsum",
+                },
+                "owner": {
+                    "username": "John",
+                },
+            },
+        },
+    )
+
+    assert not result.errors
+    assert result.data == {
+        "category": {
+            "name": "Lorem",
+            "parent": {
+                "name": "Ipsum",
+            },
+            "owner": {
+                "username": "John",
+            },
+        },
+    }

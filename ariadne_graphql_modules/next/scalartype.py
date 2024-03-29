@@ -55,7 +55,7 @@ class GraphQLScalar(GraphQLType, Generic[T]):
             parse_definition(ScalarTypeDefinitionNode, cls.__schema__),
         )
 
-        return GraphQScalarModel(
+        return GraphQLScalarModel(
             name=definition.name.value,
             ast_type=ScalarTypeDefinitionNode,
             ast=definition,
@@ -68,7 +68,7 @@ class GraphQLScalar(GraphQLType, Generic[T]):
     def __get_graphql_model_without_schema__(
         cls, metadata: GraphQLMetadata, name: str
     ) -> "GraphQLModel":
-        return GraphQScalarModel(
+        return GraphQLScalarModel(
             name=name,
             ast_type=ScalarTypeDefinitionNode,
             ast=ScalarTypeDefinitionNode(
@@ -104,7 +104,7 @@ class GraphQLScalar(GraphQLType, Generic[T]):
 
 
 @dataclass(frozen=True)
-class GraphQScalarModel(GraphQLModel):
+class GraphQLScalarModel(GraphQLModel):
     serialize: Callable[[Any], Any]
     parse_value: Callable[[Any], Any]
     parse_literal: Callable[[ValueNode, Optional[Dict[str, Any]]], Any]
