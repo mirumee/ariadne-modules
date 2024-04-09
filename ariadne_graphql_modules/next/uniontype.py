@@ -133,17 +133,17 @@ def validate_union_type_with_schema(cls: Type[GraphQLUnion]) -> NoReturn:
 
     class_type_names = {t.__get_graphql_name__() for t in cls.__types__}
     if not class_type_names.issubset(schema_type_names):
-        missing_in_schema = class_type_names - schema_type_names
-        missing_in_schema_str = ", ".join(f"__{name}__" for name in missing_in_schema)
+        missing_in_schema = sorted(class_type_names - schema_type_names)
+        missing_in_schema_str = "', '".join(missing_in_schema)
         raise ValueError(
-            f"Types {missing_in_schema_str} are defined in __types__ but not present in the __schema__."
+            f"Types '{missing_in_schema_str}' are in '__types__' but not in '__schema__'."
         )
 
     if not schema_type_names.issubset(class_type_names):
-        missing_in_types = schema_type_names - class_type_names
-        missing_in_types_str = ", ".join(f"__{name}__" for name in missing_in_types)
+        missing_in_types = sorted(schema_type_names - class_type_names)
+        missing_in_types_str = "', '".join(missing_in_types)
         raise ValueError(
-            f"Types {missing_in_types_str} are present in the __schema__ but not defined in __types__."
+            f"Types '{missing_in_types_str}' are in '__schema__' but not in '__types__'."
         )
 
 

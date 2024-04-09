@@ -7,6 +7,6 @@ from snapshottest import Snapshot
 
 snapshots = Snapshot()
 
-snapshots['test_missing_type_in_schema 1'] = "Types __Comment__ are defined in __types__ but not present in the __schema__."
+snapshots['test_missing_type_in_schema 1'] = "Types 'Comment', 'Post' are in '__types__' but not in '__schema__'."
 
-snapshots['test_missing_type_in_types 1'] = "Types __Comment__ are present in the __schema__ but not defined in __types__."
+snapshots['test_missing_type_in_types 1'] = "Types 'Comment' are in '__schema__' but not in '__types__'."
