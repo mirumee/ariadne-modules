@@ -1,9 +1,7 @@
-from datetime import date
 from typing import List
 
 from graphql import graphql_sync
 
-from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import (
     GraphQLID,
     GraphQLObject,
@@ -80,5 +78,146 @@ def test_union_field_returning_object_instance(assert_schema_equals):
         "search": [
             {"id": "1", "username": "Bob"},
             {"id": "2", "content": "Hello World!"},
+        ]
+    }
+
+
+def test_union_field_returning_empty_list():
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(type=List[ResultType])
+        def search(*_) -> List[UserType | CommentType]:
+            return []
+
+    schema = make_executable_schema(QueryType)
+
+    result = graphql_sync(
+        schema,
+        """
+        {
+            search {
+                ... on User {
+                    id
+                    username
+                }
+                ... on Comment {
+                    id
+                    content
+                }
+            }
+        }
+        """,
+    )
+    assert not result.errors
+    assert result.data == {"search": []}
+
+
+def test_union_field_with_invalid_type_access(assert_schema_equals):
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(type=List[ResultType])
+        def search(*_) -> List[UserType | CommentType]:
+            return [
+                UserType(id=1, username="Bob"),
+                "InvalidType",
+            ]
+
+    schema = make_executable_schema(QueryType)
+
+    result = graphql_sync(
+        schema,
+        """
+        {
+            search {
+                ... on User {
+                    id
+                    username
+                }
+                ... on Comment {
+                    id
+                    content
+                }
+            }
+        }
+        """,
+    )
+    assert result.errors
+    assert "InvalidType" in str(result.errors)
+
+
+def test_serialization_error_handling(assert_schema_equals):
+    class InvalidType:
+        def __init__(self, value):
+            self.value = value
+
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(type=List[ResultType])
+        def search(*_) -> List[UserType | CommentType | InvalidType]:
+            return [InvalidType("This should cause an error")]
+
+    schema = make_executable_schema(QueryType)
+
+    result = graphql_sync(
+        schema,
+        """
+        {
+            search {
+                ... on User {
+                    id
+                    username
+                }
+            }
+        }
+        """,
+    )
+    assert result.errors
+
+
+def test_union_with_schema_definition(assert_schema_equals):
+    class SearchResultUnion(GraphQLUnion):
+        __schema__ = """
+        union SearchResult = User | Comment
+        """
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(type=List[SearchResultUnion])
+        def search(*_) -> List[UserType | CommentType]:
+            return [
+                UserType(id="1", username="Alice"),
+                CommentType(id="2", content="Test post"),
+            ]
+
+    schema = make_executable_schema([QueryType, SearchResultUnion])
+
+    result = graphql_sync(
+        schema,
+        """
+        {
+            search {
+                ... on User {
+                    id
+                    username
+                }
+                ... on Comment {
+                    id
+                    content
+                }
+            }
+        }
+        """,
+    )
+    assert not result.errors
+    assert result.data == {
+        "search": [
+            {"id": "1", "username": "Alice"},
+            {"id": "2", "content": "Test post"},
         ]
     }
