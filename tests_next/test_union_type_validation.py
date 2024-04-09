@@ -17,11 +17,16 @@ class CommentType(GraphQLObject):
     content: str
 
 
+class PostType(GraphQLObject):
+    id: GraphQLID
+    content: str
+
+
 def test_missing_type_in_schema(snapshot):
     with pytest.raises(ValueError) as exc_info:
 
         class MyUnion(GraphQLUnion):
-            __types__ = [UserType, CommentType]
+            __types__ = [UserType, CommentType, PostType]
             __schema__ = """
             union MyUnion = User
             """
