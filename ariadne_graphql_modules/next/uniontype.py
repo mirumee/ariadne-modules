@@ -3,7 +3,6 @@ from typing import (
     Any,
     Callable,
     Iterable,
-    List,
     NoReturn,
     Sequence,
     Type,
@@ -92,10 +91,6 @@ class GraphQLUnion(GraphQLType):
         cls, metadata: "GraphQLMetadata"
     ) -> Iterable["GraphQLType"]:
         """Returns iterable with GraphQL types associated with this type"""
-
-        if getattr(cls, "__schema__", None):
-            return cls.__get_graphql_types_with_schema__(metadata)
-
         return [cls] + cls.__types__
 
     @staticmethod
@@ -103,7 +98,9 @@ class GraphQLUnion(GraphQLType):
         if isinstance(obj, GraphQLObject):
             return obj.__get_graphql_name__()
 
-        raise ValueError("TODO")
+        raise ValueError(
+            f"Cannot resolve GraphQL type {obj} for object of type '{type(obj).__name__}'."
+        )
 
 
 def validate_union_type(cls: Type[GraphQLUnion]) -> NoReturn:
@@ -131,6 +128,21 @@ def validate_union_type_with_schema(cls: Type[GraphQLUnion]) -> NoReturn:
 
     validate_name(cls, definition)
     validate_description(cls, definition)
+
+    schema_type_names = {type_node.name.value for type_node in definition.types}
+
+    class_type_names = {t.__get_graphql_name__() for t in cls.__types__}
+    if not class_type_names.issubset(schema_type_names):
+        missing_in_schema = class_type_names - schema_type_names
+        raise ValueError(
+            f"Types {missing_in_schema} are defined in __types__ but not present in the __schema__."
+        )
+
+    if not schema_type_names.issubset(class_type_names):
+        missing_in_types = schema_type_names - class_type_names
+        raise ValueError(
+            f"Types {missing_in_types} are present in the __schema__ but not defined in __types__."
+        )
 
 
 @dataclass(frozen=True)
