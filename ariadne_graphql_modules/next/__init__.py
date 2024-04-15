@@ -20,6 +20,7 @@ from .scalartype import GraphQLScalar, GraphQLScalarModel
 from .sort import sort_schema_document
 from .uniontype import GraphQLUnion, GraphQLUnionModel
 from .value import get_value_from_node, get_value_node
+from .interfacetype import GraphQLInterface, GraphQLInterfaceModel
 
 __all__ = [
     "GraphQLEnum",
@@ -27,6 +28,8 @@ __all__ = [
     "GraphQLID",
     "GraphQLInput",
     "GraphQLInputModel",
+    "GraphQLInterface",
+    "GraphQLInterfaceModel",
     "GraphQLMetadata",
     "GraphQLModel",
     "GraphQLObject",

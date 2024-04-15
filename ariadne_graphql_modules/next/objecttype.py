@@ -1,7 +1,6 @@
 from copy import deepcopy
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from enum import Enum
-from inspect import signature
 from typing import (
     Any,
     Dict,
@@ -24,6 +23,21 @@ from graphql import (
     InputValueDefinitionNode,
     NameNode,
     ObjectTypeDefinitionNode,
+    NamedTypeNode,
+)
+
+from .field import (
+    GraphQLObjectField,
+    GraphQLObjectFieldArg,
+    get_field_type_from_resolver,
+)
+from .metadata import (
+    get_graphql_object_data,
+)
+from .objectmixin import GraphQLModelHelpersMixin
+from .resolver import (
+    GraphQLObjectResolver,
+    get_field_args_from_resolver,
 )
 
 from ..utils import parse_definition
@@ -35,13 +49,14 @@ from .validators import validate_description, validate_name
 from .value import get_value_node
 
 
-class GraphQLObject(GraphQLType):
+class GraphQLObject(GraphQLType, GraphQLModelHelpersMixin):
     __kwargs__: Dict[str, Any]
     __abstract__: bool = True
     __schema__: Optional[str]
     __description__: Optional[str]
     __aliases__: Optional[Dict[str, str]]
     __requires__: Optional[Iterable[Union[Type[GraphQLType], Type[Enum]]]]
+    __implements__: Optional[Iterable[Union[Type[GraphQLType], Type[Enum]]]]
 
     def __init__(self, **kwargs: Any):
         for kwarg in kwargs:
@@ -63,6 +78,7 @@ class GraphQLObject(GraphQLType):
             return
 
         cls.__abstract__ = False
+        # cls.__validate_interfaces__()
 
         if cls.__dict__.get("__schema__"):
             cls.__kwargs__ = validate_object_type_with_schema(cls)
@@ -88,74 +104,9 @@ class GraphQLObject(GraphQLType):
             parse_definition(ObjectTypeDefinitionNode, cls.__schema__),
         )
 
-        descriptions: Dict[str, str] = {}
-        args_descriptions: Dict[str, Dict[str, str]] = {}
-        args_defaults: Dict[str, Dict[str, Any]] = {}
-        resolvers: Dict[str, Resolver] = {}
+        resolvers: Dict[str, Resolver] = cls.collect_resolvers_with_schema()
         out_names: Dict[str, Dict[str, str]] = {}
-
-        for attr_name in dir(cls):
-            cls_attr = getattr(cls, attr_name)
-            if isinstance(cls_attr, GraphQLObjectResolver):
-                resolvers[cls_attr.field] = cls_attr.resolver
-                if cls_attr.description:
-                    descriptions[cls_attr.field] = get_description_node(
-                        cls_attr.description
-                    )
-
-                field_args = get_field_args_from_resolver(cls_attr.resolver)
-                if field_args:
-                    args_descriptions[cls_attr.field] = {}
-                    args_defaults[cls_attr.field] = {}
-
-                    final_args = update_field_args_options(field_args, cls_attr.args)
-
-                    for arg_name, arg_options in final_args.items():
-                        arg_description = get_description_node(arg_options.description)
-                        if arg_description:
-                            args_descriptions[cls_attr.field][
-                                arg_name
-                            ] = arg_description
-
-                        arg_default = arg_options.default_value
-                        if arg_default is not None:
-                            args_defaults[cls_attr.field][arg_name] = get_value_node(
-                                arg_default
-                            )
-
-        fields: List[FieldDefinitionNode] = []
-        for field in definition.fields:
-            field_args_descriptions = args_descriptions.get(field.name.value, {})
-            field_args_defaults = args_defaults.get(field.name.value, {})
-
-            args: List[InputValueDefinitionNode] = []
-            for arg in field.arguments:
-                arg_name = arg.name.value
-                args.append(
-                    InputValueDefinitionNode(
-                        description=(
-                            arg.description or field_args_descriptions.get(arg_name)
-                        ),
-                        name=arg.name,
-                        directives=arg.directives,
-                        type=arg.type,
-                        default_value=(
-                            arg.default_value or field_args_defaults.get(arg_name)
-                        ),
-                    )
-                )
-
-            fields.append(
-                FieldDefinitionNode(
-                    name=field.name,
-                    description=(
-                        field.description or descriptions.get(field.name.value)
-                    ),
-                    directives=field.directives,
-                    arguments=tuple(args),
-                    type=field.type,
-                )
-            )
+        fields: List[FieldDefinitionNode] = cls.gather_fields_with_schema(definition)
 
         return GraphQLObjectModel(
             name=definition.name.value,
@@ -163,6 +114,7 @@ class GraphQLObject(GraphQLType):
             ast=ObjectTypeDefinitionNode(
                 name=NameNode(value=definition.name.value),
                 fields=tuple(fields),
+                interfaces=definition.interfaces,
             ),
             resolvers=resolvers,
             aliases=getattr(cls, "__aliases__", {}),
@@ -174,26 +126,16 @@ class GraphQLObject(GraphQLType):
         cls, metadata: GraphQLMetadata, name: str
     ) -> "GraphQLObjectModel":
         type_data = get_graphql_object_data(metadata, cls)
-        type_aliases = getattr(cls, "__aliases__", None) or {}
 
-        fields_ast: List[FieldDefinitionNode] = []
-        resolvers: Dict[str, Resolver] = {}
-        aliases: Dict[str, str] = {}
-        out_names: Dict[str, Dict[str, str]] = {}
-
-        for attr_name, field in type_data.fields.items():
-            fields_ast.append(get_field_node_from_obj_field(cls, metadata, field))
-
-            if attr_name in type_aliases:
-                aliases[field.name] = type_aliases[attr_name]
-            elif attr_name != field.name:
-                aliases[field.name] = attr_name
-
-            if field.resolver:
-                resolvers[field.name] = field.resolver
-
-            if field.args:
-                out_names[field.name] = get_field_args_out_names(field.args)
+        fields_ast: List[FieldDefinitionNode] = cls.gather_fields_without_schema(
+            metadata
+        )
+        interfaces_ast: List[NamedTypeNode] = cls.gather_interfaces_without_schema(
+            type_data
+        )
+        resolvers: Dict[str, Resolver] = cls.collect_resolvers_without_schema(type_data)
+        aliases: Dict[str, str] = cls.collect_aliases(type_data)
+        out_names: Dict[str, Dict[str, str]] = cls.collect_out_names(type_data)
 
         return GraphQLObjectModel(
             name=name,
@@ -204,6 +146,7 @@ class GraphQLObject(GraphQLType):
                     getattr(cls, "__description__", None),
                 ),
                 fields=tuple(fields_ast),
+                interfaces=tuple(interfaces_ast),
             ),
             resolvers=resolvers,
             aliases=aliases,
@@ -301,150 +244,12 @@ class GraphQLObject(GraphQLType):
             options["default_value"] = default_value
         return options
 
-
-@dataclass(frozen=True)
-class GraphQLObjectData:
-    fields: Dict[str, "GraphQLObjectField"]
-
-
-def get_graphql_object_data(
-    metadata: GraphQLMetadata, cls: Type[GraphQLObject]
-) -> GraphQLObjectData:
-    try:
-        return metadata.get_data(cls)
-    except KeyError:
-        if getattr(cls, "__schema__", None):
-            raise NotImplementedError(
-                "'get_graphql_object_data' is not supported for "
-                "objects with '__schema__'."
-            )
-        else:
-            object_data = create_graphql_object_data_without_schema(cls)
-
-        metadata.set_data(cls, object_data)
-        return object_data
-
-
-def create_graphql_object_data_without_schema(
-    cls: Type[GraphQLObject],
-) -> GraphQLObjectData:
-    fields_types: Dict[str, str] = {}
-    fields_names: Dict[str, str] = {}
-    fields_descriptions: Dict[str, str] = {}
-    fields_args: Dict[str, Dict[str, GraphQLObjectFieldArg]] = {}
-    fields_resolvers: Dict[str, Resolver] = {}
-    fields_defaults: Dict[str, Any] = {}
-    fields_order: List[str] = []
-
-    type_hints = cls.__annotations__
-
-    aliases: Dict[str, str] = getattr(cls, "__aliases__", None) or {}
-    aliases_targets: List[str] = list(aliases.values())
-
-    for attr_name, attr_type in type_hints.items():
-        if attr_name.startswith("__"):
-            continue
-
-        if attr_name in aliases_targets:
-            # Alias target is not included in schema
-            # unless its explicit field
-            cls_attr = getattr(cls, attr_name, None)
-            if not isinstance(cls_attr, GraphQLObjectField):
-                continue
-
-        fields_order.append(attr_name)
-
-        fields_names[attr_name] = convert_python_name_to_graphql(attr_name)
-        fields_types[attr_name] = attr_type
-
-    for attr_name in dir(cls):
-        if attr_name.startswith("__"):
-            continue
-
-        cls_attr = getattr(cls, attr_name)
-        if isinstance(cls_attr, GraphQLObjectField):
-            if attr_name not in fields_order:
-                fields_order.append(attr_name)
-
-            fields_names[attr_name] = cls_attr.name or convert_python_name_to_graphql(
-                attr_name
-            )
-
-            if cls_attr.type and attr_name not in fields_types:
-                fields_types[attr_name] = cls_attr.type
-            if cls_attr.description:
-                fields_descriptions[attr_name] = cls_attr.description
-            if cls_attr.resolver:
-                fields_resolvers[attr_name] = cls_attr.resolver
-                field_args = get_field_args_from_resolver(cls_attr.resolver)
-                if field_args:
-                    fields_args[attr_name] = update_field_args_options(
-                        field_args, cls_attr.args
-                    )
-            if cls_attr.default_value:
-                fields_defaults[attr_name] = cls_attr.default_value
-
-        elif isinstance(cls_attr, GraphQLObjectResolver):
-            if cls_attr.type and cls_attr.field not in fields_types:
-                fields_types[cls_attr.field] = cls_attr.type
-            if cls_attr.description:
-                fields_descriptions[cls_attr.field] = cls_attr.description
-            if cls_attr.resolver:
-                fields_resolvers[cls_attr.field] = cls_attr.resolver
-                field_args = get_field_args_from_resolver(cls_attr.resolver)
-                if field_args:
-                    fields_args[cls_attr.field] = update_field_args_options(
-                        field_args, cls_attr.args
-                    )
-
-        elif attr_name not in aliases_targets and not callable(cls_attr):
-            fields_defaults[attr_name] = cls_attr
-
-    fields: Dict[str, "GraphQLObjectField"] = {}
-    for field_name in fields_order:
-        fields[field_name] = GraphQLObjectField(
-            name=fields_names[field_name],
-            description=fields_descriptions.get(field_name),
-            type=fields_types[field_name],
-            args=fields_args.get(field_name),
-            resolver=fields_resolvers.get(field_name),
-            default_value=fields_defaults.get(field_name),
-        )
-
-    return GraphQLObjectData(fields=fields)
-
-
-class GraphQLObjectField:
-    name: Optional[str]
-    description: Optional[str]
-    type: Optional[Any]
-    args: Optional[Dict[str, dict]]
-    resolver: Optional[Resolver]
-    default_value: Optional[Any]
-
-    def __init__(
-        self,
-        *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        type: Optional[Any] = None,
-        args: Optional[Dict[str, dict]] = None,
-        resolver: Optional[Resolver] = None,
-        default_value: Optional[Any] = None,
-    ):
-        self.name = name
-        self.description = description
-        self.type = type
-        self.args = args
-        self.resolver = resolver
-        self.default_value = default_value
-
-    def __call__(self, resolver: Resolver):
-        """Makes GraphQLObjectField instances work as decorators."""
-        self.resolver = resolver
-        if not self.type:
-            self.type = get_field_type_from_resolver(resolver)
-        return self
+    @classmethod
+    def __validate_interfaces__(cls):
+        if getattr(cls, "__implements__", None):
+            for interface in cls.__implements__:
+                if not issubclass(interface, GraphQLType):
+                    raise TypeError()
 
 
 def object_field(
@@ -468,19 +273,6 @@ def object_field(
         resolver=resolver,
         default_value=default_value,
     )
-
-
-def get_field_type_from_resolver(resolver: Resolver) -> Any:
-    return resolver.__annotations__.get("return")
-
-
-@dataclass(frozen=True)
-class GraphQLObjectResolver:
-    resolver: Resolver
-    field: str
-    description: Optional[str] = None
-    args: Optional[Dict[str, dict]] = None
-    type: Optional[Any] = None
 
 
 def object_resolver(
@@ -537,62 +329,8 @@ def get_field_node_from_obj_field(
     )
 
 
-@dataclass(frozen=True)
-class GraphQLObjectFieldArg:
-    name: Optional[str]
-    out_name: Optional[str]
-    type: Optional[Any]
-    description: Optional[str] = None
-    default_value: Optional[Any] = None
-
-
-def get_field_args_from_resolver(
-    resolver: Resolver,
-) -> Dict[str, GraphQLObjectFieldArg]:
-    resolver_signature = signature(resolver)
-    type_hints = resolver.__annotations__
-    type_hints.pop("return", None)
-
-    field_args: Dict[str, GraphQLObjectFieldArg] = {}
-    field_args_start = 0
-
-    # Fist pass: (arg, *_, something, something) or (arg, *, something, something):
-    for i, param in enumerate(resolver_signature.parameters.values()):
-        param_repr = str(param)
-        if param_repr.startswith("*") and not param_repr.startswith("**"):
-            field_args_start = i + 1
-            break
-    else:
-        if len(resolver_signature.parameters) < 2:
-            raise TypeError(
-                f"Resolver function '{resolver_signature}' should accept at least "
-                "'obj' and 'info' positional arguments."
-            )
-
-        field_args_start = 2
-
-    args_parameters = tuple(resolver_signature.parameters.items())[field_args_start:]
-    if not args_parameters:
-        return field_args
-
-    for param_name, param in args_parameters:
-        if param.default != param.empty:
-            param_default = param.default
-        else:
-            param_default = None
-
-        field_args[param_name] = GraphQLObjectFieldArg(
-            name=convert_python_name_to_graphql(param_name),
-            out_name=param_name,
-            type=type_hints.get(param_name),
-            default_value=param_default,
-        )
-
-    return field_args
-
-
 def get_field_args_out_names(
-    field_args: Dict[str, GraphQLObjectFieldArg]
+    field_args: Dict[str, GraphQLObjectFieldArg],
 ) -> Dict[str, str]:
     out_names: Dict[str, str] = {}
     for field_arg in field_args.values():
@@ -627,38 +365,6 @@ def get_field_arg_node_from_obj_field_arg(
         type=get_type_node(metadata, field_arg.type),
         default_value=default_value,
     )
-
-
-def update_field_args_options(
-    field_args: Dict[str, GraphQLObjectFieldArg],
-    args_options: Optional[Dict[str, dict]],
-) -> Dict[str, GraphQLObjectFieldArg]:
-    if not args_options:
-        return field_args
-
-    updated_args: Dict[str, GraphQLObjectFieldArg] = {}
-    for arg_name in field_args:
-        arg_options = args_options.get(arg_name)
-        if not arg_options:
-            updated_args[arg_name] = field_args[arg_name]
-            continue
-
-        args_update = {}
-        if arg_options.get("name"):
-            args_update["name"] = arg_options["name"]
-        if arg_options.get("description"):
-            args_update["description"] = arg_options["description"]
-        if arg_options.get("default_value") is not None:
-            args_update["default_value"] = arg_options["default_value"]
-        if arg_options.get("type"):
-            args_update["type"] = arg_options["type"]
-
-        if args_update:
-            updated_args[arg_name] = replace(field_args[arg_name], **args_update)
-        else:
-            updated_args[arg_name] = field_args[arg_name]
-
-    return updated_args
 
 
 def validate_object_type_with_schema(cls: Type[GraphQLObject]) -> Dict[str, Any]:
