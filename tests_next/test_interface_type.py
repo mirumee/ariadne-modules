@@ -102,7 +102,7 @@ def test_interface_with_schema(assert_schema_equals):
                 CommentType(id=2, content="Hello World!"),
             ]
 
-    schema = make_executable_schema(QueryType, UserInterface, UserType)
+    schema = make_executable_schema(QueryType, UserType)
 
     assert_schema_equals(
         schema,
@@ -119,15 +119,15 @@ def test_interface_with_schema(assert_schema_equals):
           summary: String!
           score: Int!
         }
+        
+        interface UserInterface {
+          summary: String!
+          score: Int!
+        }
 
         type Comment {
           id: ID!
           content: String!
-        }
-
-        interface UserInterface {
-          summary: String!
-          score: Int!
         }
 
         """,

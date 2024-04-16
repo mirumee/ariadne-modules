@@ -44,7 +44,7 @@ class GraphQLObject(GraphQLType):
     __description__: Optional[str]
     __aliases__: Optional[Dict[str, str]]
     __requires__: Optional[Iterable[Union[Type[GraphQLType], Type[Enum]]]]
-    __implements__: Optional[Iterable[Union[Type[GraphQLType], Type[Enum]]]]
+    __implements__: Optional[Iterable[Type[GraphQLType]]]
 
     def __init__(self, **kwargs: Any):
         for kwarg in kwargs:
@@ -236,6 +236,7 @@ class GraphQLObject(GraphQLType):
     ) -> Iterable["GraphQLType"]:
         types: List[GraphQLType] = [cls]
         types.extend(getattr(cls, "__requires__", []))
+        types.extend(getattr(cls, "__implements__", []))
         return types
 
     @classmethod
@@ -607,7 +608,7 @@ def get_field_args_from_resolver(
 
 
 def get_field_args_out_names(
-    field_args: Dict[str, GraphQLObjectFieldArg]
+    field_args: Dict[str, GraphQLObjectFieldArg],
 ) -> Dict[str, str]:
     out_names: Dict[str, str] = {}
     for field_arg in field_args.values():
