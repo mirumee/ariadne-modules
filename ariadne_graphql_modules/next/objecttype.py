@@ -337,7 +337,7 @@ def get_graphql_object_data(
 
 
 def create_graphql_object_data_without_schema(
-    cls,
+    cls: Type[GraphQLObject],
 ) -> GraphQLObjectData:
     fields_types: Dict[str, str] = {}
     fields_names: Dict[str, str] = {}
@@ -607,7 +607,7 @@ def get_field_args_from_resolver(
 
 
 def get_field_args_out_names(
-    field_args: Dict[str, GraphQLObjectFieldArg],
+    field_args: Dict[str, GraphQLObjectFieldArg]
 ) -> Dict[str, str]:
     out_names: Dict[str, str] = {}
     for field_arg in field_args.values():
