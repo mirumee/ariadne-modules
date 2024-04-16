@@ -1,16 +1,10 @@
 from dataclasses import dataclass
-from enum import Enum
 from typing import (
     Any,
     Callable,
     Dict,
-    Iterable,
     List,
-    Optional,
-    Type,
-    Union,
     cast,
-    Sequence,
 )
 
 from ariadne import InterfaceType
@@ -39,13 +33,11 @@ from .objecttype import (
 )
 
 from ..utils import parse_definition
-from .base import GraphQLMetadata, GraphQLModel, GraphQLType
+from .base import GraphQLMetadata, GraphQLModel
 from .description import get_description_node
 
 
 class GraphQLInterface(GraphQLObject):
-    __types__: Sequence[Type[GraphQLType]]
-    __implements__: Optional[Iterable[Union[Type[GraphQLType], Type[Enum]]]]
     __valid_type__ = InterfaceTypeDefinitionNode
 
     @classmethod
