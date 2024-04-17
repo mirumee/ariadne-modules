@@ -38,6 +38,7 @@ from .description import get_description_node
 
 
 class GraphQLInterface(GraphQLObject):
+    __abstract__: bool = True
     __valid_type__ = InterfaceTypeDefinitionNode
 
     @classmethod
