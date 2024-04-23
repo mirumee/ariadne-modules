@@ -197,7 +197,7 @@ class GraphQLInput(GraphQLType):
                         types.append(field_graphql_type)
 
         type_hints = cls.__annotations__
-        for hint_name, hint_type in type_hints.values():
+        for hint_name, hint_type in type_hints.items():
             if hint_name.startswith("__"):
                 continue
 

@@ -161,6 +161,8 @@ def flatten_schema_types(
             flat_list += flatten_schema_types(type_def, metadata, dedupe=False)
         elif isinstance(type_def, SchemaBindable):
             flat_list.append(type_def)
+        elif issubclass(type_def, Enum):
+            flat_list.append(type_def)
         elif issubclass(type_def, GraphQLType):
             add_graphql_type_to_flat_list(flat_list, checked_types, type_def, metadata)
         elif get_graphql_type_name(type_def):
@@ -191,7 +193,10 @@ def add_graphql_type_to_flat_list(
     for child_type in type_def.__get_graphql_types__(metadata):
         flat_list.append(child_type)
 
-        add_graphql_type_to_flat_list(flat_list, checked_types, child_type, metadata)
+        if issubclass(child_type, GraphQLType):
+            add_graphql_type_to_flat_list(
+                flat_list, checked_types, child_type, metadata
+            )
 
 
 def get_graphql_type_name(type_def: SchemaType) -> Optional[str]:
