@@ -22,7 +22,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-  "ariadne==0.22.0b1",
+  "ariadne==0.23.0",
 ]
 
 [project.optional-dependencies]
@@ -75,7 +75,7 @@ exclude = '''
 '''
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests_next"]
 asyncio_mode = "strict"
 
 [tool.mypy]
