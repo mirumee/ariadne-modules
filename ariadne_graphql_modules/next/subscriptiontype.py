@@ -4,11 +4,12 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
     cast,
 )
 
-from ariadne import InterfaceType
-from ariadne.types import Resolver
+from ariadne import SubscriptionType
+from ariadne.types import Resolver, Subscriber
 from graphql import (
     FieldDefinitionNode,
     GraphQLField,
@@ -17,18 +18,22 @@ from graphql import (
     InputValueDefinitionNode,
     NameNode,
     NamedTypeNode,
-    InterfaceTypeDefinitionNode,
+    ObjectTypeDefinitionNode,
 )
+
 
 from .value import get_value_node
 
 from .objecttype import (
     GraphQLObject,
     GraphQLObjectResolver,
+    GraphQLObjectSource,
     get_field_args_from_resolver,
+    get_field_args_from_subscriber,
     get_field_args_out_names,
     get_field_node_from_obj_field,
     get_graphql_object_data,
+    object_subscriber,
     update_field_args_options,
 )
 
@@ -37,23 +42,24 @@ from .base import GraphQLMetadata, GraphQLModel
 from .description import get_description_node
 
 
-class GraphQLInterface(GraphQLObject):
+class GraphQLSubscription(GraphQLObject):
     __abstract__: bool = True
-    __valid_type__ = InterfaceTypeDefinitionNode
+    __valid_type__ = ObjectTypeDefinitionNode
 
     @classmethod
     def __get_graphql_model_with_schema__(
         cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLInterfaceModel":
+    ) -> "GraphQLSubscriptionModel":
         definition = cast(
-            InterfaceTypeDefinitionNode,
-            parse_definition(InterfaceTypeDefinitionNode, cls.__schema__),
+            ObjectTypeDefinitionNode,
+            parse_definition(ObjectTypeDefinitionNode, cls.__schema__),
         )
 
         descriptions: Dict[str, str] = {}
         args_descriptions: Dict[str, Dict[str, str]] = {}
         args_defaults: Dict[str, Dict[str, Any]] = {}
         resolvers: Dict[str, Resolver] = {}
+        subscribers: Dict[str, Subscriber] = {}
         out_names: Dict[str, Dict[str, str]] = {}
 
         for attr_name in dir(cls):
@@ -66,6 +72,32 @@ class GraphQLInterface(GraphQLObject):
                     )
 
                 field_args = get_field_args_from_resolver(cls_attr.resolver)
+                if field_args:
+                    args_descriptions[cls_attr.field] = {}
+                    args_defaults[cls_attr.field] = {}
+
+                    final_args = update_field_args_options(field_args, cls_attr.args)
+
+                    for arg_name, arg_options in final_args.items():
+                        arg_description = get_description_node(arg_options.description)
+                        if arg_description:
+                            args_descriptions[cls_attr.field][
+                                arg_name
+                            ] = arg_description
+
+                        arg_default = arg_options.default_value
+                        if arg_default is not None:
+                            args_defaults[cls_attr.field][arg_name] = get_value_node(
+                                arg_default
+                            )
+            if isinstance(cls_attr, GraphQLObjectSource):
+                subscribers[cls_attr.field] = cls_attr.subscriber
+                if cls_attr.description:
+                    descriptions[cls_attr.field] = get_description_node(
+                        cls_attr.description
+                    )
+
+                field_args = get_field_args_from_subscriber(cls_attr.subscriber)
                 if field_args:
                     args_descriptions[cls_attr.field] = {}
                     args_defaults[cls_attr.field] = {}
@@ -119,16 +151,17 @@ class GraphQLInterface(GraphQLObject):
                 )
             )
 
-        return GraphQLInterfaceModel(
+        return GraphQLSubscriptionModel(
             name=definition.name.value,
-            ast_type=InterfaceTypeDefinitionNode,
-            ast=InterfaceTypeDefinitionNode(
+            ast_type=ObjectTypeDefinitionNode,
+            ast=ObjectTypeDefinitionNode(
                 name=NameNode(value=definition.name.value),
                 fields=tuple(fields),
                 interfaces=definition.interfaces,
             ),
             resolve_type=cls.resolve_type,
             resolvers=resolvers,
+            subscribers=subscribers,
             aliases=getattr(cls, "__aliases__", {}),
             out_names=out_names,
         )
@@ -136,18 +169,18 @@ class GraphQLInterface(GraphQLObject):
     @classmethod
     def __get_graphql_model_without_schema__(
         cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLInterfaceModel":
+    ) -> "GraphQLSubscriptionModel":
         type_data = get_graphql_object_data(metadata, cls)
         type_aliases = getattr(cls, "__aliases__", None) or {}
 
         fields_ast: List[FieldDefinitionNode] = []
         resolvers: Dict[str, Resolver] = {}
+        subscribers: Dict[str, Subscriber] = {}
         aliases: Dict[str, str] = {}
         out_names: Dict[str, Dict[str, str]] = {}
 
         for attr_name, field in type_data.fields.items():
             fields_ast.append(get_field_node_from_obj_field(cls, metadata, field))
-
             if attr_name in type_aliases:
                 aliases[field.name] = type_aliases[attr_name]
             elif attr_name != field.name and not field.resolver:
@@ -156,6 +189,9 @@ class GraphQLInterface(GraphQLObject):
             if field.resolver:
                 resolvers[field.name] = field.resolver
 
+            if field.subscriber:
+                subscribers[field.name] = field.subscriber
+
             if field.args:
                 out_names[field.name] = get_field_args_out_names(field.args)
 
@@ -163,10 +199,10 @@ class GraphQLInterface(GraphQLObject):
         for interface_name in type_data.interfaces:
             interfaces_ast.append(NamedTypeNode(name=NameNode(value=interface_name)))
 
-        return GraphQLInterfaceModel(
+        return GraphQLSubscriptionModel(
             name=name,
-            ast_type=InterfaceTypeDefinitionNode,
-            ast=InterfaceTypeDefinitionNode(
+            ast_type=ObjectTypeDefinitionNode,
+            ast=ObjectTypeDefinitionNode(
                 name=NameNode(value=name),
                 description=get_description_node(
                     getattr(cls, "__description__", None),
@@ -178,32 +214,50 @@ class GraphQLInterface(GraphQLObject):
             resolvers=resolvers,
             aliases=aliases,
             out_names=out_names,
+            subscribers=subscribers,
         )
 
     @staticmethod
     def resolve_type(obj: Any, *args) -> str:
-        if isinstance(obj, GraphQLInterface):
+        if isinstance(obj, GraphQLSubscription):
             return obj.__get_graphql_name__()
 
         raise ValueError(
             f"Cannot resolve GraphQL type {obj} for object of type '{type(obj).__name__}'."
         )
 
+    @staticmethod
+    def source(
+        field: str,
+        type: Optional[Any] = None,
+        args: Optional[Dict[str, dict]] = None,
+        description: Optional[str] = None,
+    ):
+        """Shortcut for object_resolver()"""
+        return object_subscriber(
+            args=args,
+            field=field,
+            type=type,
+            description=description,
+        )
+
 
 @dataclass(frozen=True)
-class GraphQLInterfaceModel(GraphQLModel):
+class GraphQLSubscriptionModel(GraphQLModel):
     resolvers: Dict[str, Resolver]
     resolve_type: Callable[[Any], Any]
     out_names: Dict[str, Dict[str, str]]
     aliases: Dict[str, str]
+    subscribers: Dict[str, Subscriber]
 
     def bind_to_schema(self, schema: GraphQLSchema):
-        bindable = InterfaceType(self.name, self.resolve_type)
+        bindable = SubscriptionType()
         for field, resolver in self.resolvers.items():
             bindable.set_field(field, resolver)
         for alias, target in self.aliases.items():
             bindable.set_alias(alias, target)
-
+        for source, generator in self.subscribers.items():
+            bindable.set_source(source, generator)
         bindable.bind_to_schema(schema)
 
         graphql_type = cast(GraphQLObjectType, schema.get_type(self.name))
