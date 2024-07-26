@@ -21,6 +21,7 @@ from .sort import sort_schema_document
 from .uniontype import GraphQLUnion, GraphQLUnionModel
 from .value import get_value_from_node, get_value_node
 from .interfacetype import GraphQLInterface, GraphQLInterfaceModel
+from .subscriptiontype import GraphQLSubscription, GraphQLSubscriptionModel
 
 __all__ = [
     "GraphQLEnum",
@@ -30,6 +31,8 @@ __all__ = [
     "GraphQLInputModel",
     "GraphQLInterface",
     "GraphQLInterfaceModel",
+    "GraphQLSubscription",
+    "GraphQLSubscriptionModel",
     "GraphQLMetadata",
     "GraphQLModel",
     "GraphQLObject",

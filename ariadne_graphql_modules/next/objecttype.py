@@ -15,7 +15,7 @@ from typing import (
 )
 
 from ariadne import ObjectType as ObjectTypeBindable
-from ariadne.types import Resolver
+from ariadne.types import Resolver, Subscriber
 from graphql import (
     FieldDefinitionNode,
     GraphQLField,
@@ -117,9 +117,9 @@ class GraphQLObject(GraphQLType):
                     for arg_name, arg_options in final_args.items():
                         arg_description = get_description_node(arg_options.description)
                         if arg_description:
-                            args_descriptions[cls_attr.field][arg_name] = (
-                                arg_description
-                            )
+                            args_descriptions[cls_attr.field][
+                                arg_name
+                            ] = arg_description
 
                         arg_default = arg_options.default_value
                         if arg_default is not None:
@@ -191,7 +191,7 @@ class GraphQLObject(GraphQLType):
 
             if attr_name in type_aliases:
                 aliases[field.name] = type_aliases[attr_name]
-            elif attr_name != field.name:
+            elif attr_name != field.name and not field.resolver:
                 aliases[field.name] = attr_name
 
             if field.resolver:
@@ -345,6 +345,7 @@ def create_graphql_object_data_without_schema(
     fields_descriptions: Dict[str, str] = {}
     fields_args: Dict[str, Dict[str, GraphQLObjectFieldArg]] = {}
     fields_resolvers: Dict[str, Resolver] = {}
+    fields_subscribers: Dict[str, Subscriber] = {}
     fields_defaults: Dict[str, Any] = {}
     fields_order: List[str] = []
 
@@ -408,6 +409,18 @@ def create_graphql_object_data_without_schema(
             if cls_attr.resolver:
                 fields_resolvers[cls_attr.field] = cls_attr.resolver
                 field_args = get_field_args_from_resolver(cls_attr.resolver)
+                if field_args and not fields_args.get(cls_attr.field):
+                    fields_args[cls_attr.field] = update_field_args_options(
+                        field_args, cls_attr.args
+                    )
+        elif isinstance(cls_attr, GraphQLObjectSource):
+            if cls_attr.type and cls_attr.field not in fields_types:
+                fields_types[cls_attr.field] = cls_attr.type
+            if cls_attr.description:
+                fields_descriptions[cls_attr.field] = cls_attr.description
+            if cls_attr.subscriber:
+                fields_subscribers[cls_attr.field] = cls_attr.subscriber
+                field_args = get_field_args_from_subscriber(cls_attr.subscriber)
                 if field_args:
                     fields_args[cls_attr.field] = update_field_args_options(
                         field_args, cls_attr.args
@@ -424,6 +437,7 @@ def create_graphql_object_data_without_schema(
             type=fields_types[field_name],
             args=fields_args.get(field_name),
             resolver=fields_resolvers.get(field_name),
+            subscriber=fields_subscribers.get(field_name),
             default_value=fields_defaults.get(field_name),
         )
 
@@ -436,6 +450,7 @@ class GraphQLObjectField:
     type: Optional[Any]
     args: Optional[Dict[str, dict]]
     resolver: Optional[Resolver]
+    subscriber: Optional[Subscriber]
     default_value: Optional[Any]
 
     def __init__(
@@ -446,6 +461,7 @@ class GraphQLObjectField:
         type: Optional[Any] = None,
         args: Optional[Dict[str, dict]] = None,
         resolver: Optional[Resolver] = None,
+        subscriber: Optional[Subscriber] = None,
         default_value: Optional[Any] = None,
     ):
         self.name = name
@@ -453,6 +469,7 @@ class GraphQLObjectField:
         self.type = type
         self.args = args
         self.resolver = resolver
+        self.subscriber = subscriber
         self.default_value = default_value
 
     def __call__(self, resolver: Resolver):
@@ -515,6 +532,37 @@ def object_resolver(
         )
 
     return object_resolver_factory
+
+
+@dataclass(frozen=True)
+class GraphQLObjectSource:
+    subscriber: Subscriber
+    field: str
+    description: Optional[str] = None
+    args: Optional[Dict[str, dict]] = None
+    type: Optional[Any] = None
+
+
+def object_subscriber(
+    field: str,
+    type: Optional[Any] = None,
+    args: Optional[Dict[str, dict]] = None,
+    description: Optional[str] = None,
+):
+    def object_subscriber_factory(f: Optional[Subscriber]) -> GraphQLObjectSource:
+        return GraphQLObjectSource(
+            args=args,
+            description=description,
+            subscriber=f,
+            field=field,
+            type=type or get_field_type_from_subscriber(f),
+        )
+
+    return object_subscriber_factory
+
+
+def get_field_type_from_subscriber(subscriber: Subscriber) -> Any:
+    return subscriber.__annotations__.get("return")
 
 
 @dataclass(frozen=True)
@@ -607,6 +655,51 @@ def get_field_args_from_resolver(
     return field_args
 
 
+def get_field_args_from_subscriber(
+    subscriber: Subscriber,
+) -> Dict[str, GraphQLObjectFieldArg]:
+    subscriber_signature = signature(subscriber)
+    type_hints = subscriber.__annotations__
+    type_hints.pop("return", None)
+
+    field_args: Dict[str, GraphQLObjectFieldArg] = {}
+    field_args_start = 0
+
+    # Fist pass: (arg, *_, something, something) or (arg, *, something, something):
+    for i, param in enumerate(subscriber_signature.parameters.values()):
+        param_repr = str(param)
+        if param_repr.startswith("*") and not param_repr.startswith("**"):
+            field_args_start = i + 1
+            break
+    else:
+        if len(subscriber_signature.parameters) < 2:
+            raise TypeError(
+                f"Subscriber function '{subscriber_signature}' should accept at least "
+                "'obj' and 'info' positional arguments."
+            )
+
+        field_args_start = 2
+
+    args_parameters = tuple(subscriber_signature.parameters.items())[field_args_start:]
+    if not args_parameters:
+        return field_args
+
+    for param_name, param in args_parameters:
+        if param.default != param.empty:
+            param_default = param.default
+        else:
+            param_default = None
+
+        field_args[param_name] = GraphQLObjectFieldArg(
+            name=convert_python_name_to_graphql(param_name),
+            out_name=param_name,
+            type=type_hints.get(param_name),
+            default_value=param_default,
+        )
+
+    return field_args
+
+
 def get_field_args_out_names(
     field_args: Dict[str, GraphQLObjectFieldArg],
 ) -> Dict[str, str]:
@@ -658,7 +751,6 @@ def update_field_args_options(
         if not arg_options:
             updated_args[arg_name] = field_args[arg_name]
             continue
-
         args_update = {}
         if arg_options.get("name"):
             args_update["name"] = arg_options["name"]
@@ -706,6 +798,7 @@ def validate_object_type_with_schema(
     }
 
     fields_resolvers: List[str] = []
+    source_fields: List[str] = []
 
     for attr_name in dir(cls):
         cls_attr = getattr(cls, attr_name)
@@ -784,6 +877,75 @@ def validate_object_type_with_schema(
                 validate_field_arg_default_value(
                     cls, cls_attr.field, arg_name, arg_obj.default_value
                 )
+        if isinstance(cls_attr, GraphQLObjectSource):
+            if cls_attr.field not in field_names:
+                valid_fields: str = "', '".join(sorted(field_names))
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines source for an undefined "
+                    f"field '{cls_attr.field}'. (Valid fields: '{valid_fields}')"
+                )
+
+            if cls_attr.field in source_fields:
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines multiple sources for field "
+                    f"'{cls_attr.field}'."
+                )
+
+            source_fields.append(cls_attr.field)
+
+            if cls_attr.description and field_definitions[cls_attr.field].description:
+                raise ValueError(
+                    f"Class '{cls.__name__}' defines multiple descriptions "
+                    f"for field '{cls_attr.field}'."
+                )
+
+            if cls_attr.args:
+                field_args = {
+                    arg.name.value: arg
+                    for arg in field_definitions[cls_attr.field].arguments
+                }
+
+                for arg_name, arg_options in cls_attr.args.items():
+                    if arg_name not in field_args:
+                        raise ValueError(
+                            f"Class '{cls.__name__}' defines options for '{arg_name}' "
+                            f"argument of the '{cls_attr.field}' field "
+                            "that doesn't exist."
+                        )
+
+                    if arg_options.get("name"):
+                        raise ValueError(
+                            f"Class '{cls.__name__}' defines 'name' option for "
+                            f"'{arg_name}' argument of the '{cls_attr.field}' field. "
+                            "This is not supported for types defining '__schema__'."
+                        )
+
+                    if arg_options.get("type"):
+                        raise ValueError(
+                            f"Class '{cls.__name__}' defines 'type' option for "
+                            f"'{arg_name}' argument of the '{cls_attr.field}' field. "
+                            "This is not supported for types defining '__schema__'."
+                        )
+
+                    if (
+                        arg_options.get("description")
+                        and field_args[arg_name].description
+                    ):
+                        raise ValueError(
+                            f"Class '{cls.__name__}' defines duplicate descriptions "
+                            f"for '{arg_name}' argument "
+                            f"of the '{cls_attr.field}' field."
+                        )
+
+                    validate_field_arg_default_value(
+                        cls, cls_attr.field, arg_name, arg_options.get("default_value")
+                    )
+
+            subscriber_args = get_field_args_from_subscriber(cls_attr.subscriber)
+            for arg_name, arg_obj in subscriber_args.items():
+                validate_field_arg_default_value(
+                    cls, cls_attr.field, arg_name, arg_obj.default_value
+                )
 
     aliases: Dict[str, str] = getattr(cls, "__aliases__", None) or {}
     validate_object_aliases(cls, aliases, field_names, fields_resolvers)
@@ -825,6 +987,7 @@ def validate_object_type_without_schema(cls: Type[GraphQLObject]) -> Dict[str, A
     validate_object_resolvers(
         cls, data.fields_attrs, data.fields_instances, data.resolvers_instances
     )
+    validate_object_subscribers(cls, data.fields_attrs, data.sources_instances)
     validate_object_fields_args(cls)
 
     # Gather names of field attrs with defined resolver
@@ -902,6 +1065,45 @@ def validate_object_resolvers(
                     f"Class '{cls.__name__}' defines multiple arguments options "
                     f"('args') for field '{resolver.field}'."
                 )
+
+
+def validate_object_subscribers(
+    cls: Type[GraphQLObject],
+    fields_names: List[str],
+    sources_instances: Dict[str, GraphQLObjectSource],
+):
+    source_fields: List[str] = []
+
+    for key, source in sources_instances.items():
+        if not isinstance(source.field, str):
+            raise ValueError(f"The field name for {key} must be a string.")
+        if source.field not in fields_names:
+            valid_fields: str = "', '".join(sorted(fields_names))
+            raise ValueError(
+                f"Class '{cls.__name__}' defines source for an undefined "
+                f"field '{source.field}'. (Valid fields: '{valid_fields}')"
+            )
+        if source.field in source_fields:
+            raise ValueError(
+                f"Class '{cls.__name__}' defines multiple sources for field "
+                f"'{source.field}'."
+            )
+
+        source_fields.append(source.field)
+
+        if source.description is not None and not isinstance(source.description, str):
+            raise ValueError(f"The description for {key} must be a string if provided.")
+
+        if source.args is not None:
+            if not isinstance(source.args, dict):
+                raise ValueError(
+                    f"The args for {key} must be a dictionary if provided."
+                )
+            for arg_name, arg_info in source.args.items():
+                if not isinstance(arg_info, dict):
+                    raise ValueError(
+                        f"Argument {arg_name} for {key} must have a dict as its info."
+                    )
 
 
 def validate_object_fields_args(cls: Type[GraphQLObject]):
@@ -984,6 +1186,7 @@ class GraphQLObjectValidationData:
     fields_attrs: List[str]
     fields_instances: Dict[str, GraphQLObjectField]
     resolvers_instances: Dict[str, GraphQLObjectResolver]
+    sources_instances: Dict[str, GraphQLObjectSource]
 
 
 def get_object_type_validation_data(
@@ -995,6 +1198,7 @@ def get_object_type_validation_data(
 
     fields_instances: Dict[str, GraphQLObjectField] = {}
     resolvers_instances: Dict[str, GraphQLObjectResolver] = {}
+    sources_instances: Dict[str, GraphQLObjectSource] = {}
 
     for attr_name in dir(cls):
         if attr_name.startswith("__"):
@@ -1003,6 +1207,11 @@ def get_object_type_validation_data(
         cls_attr = getattr(cls, attr_name)
         if isinstance(cls_attr, GraphQLObjectResolver):
             resolvers_instances[attr_name] = cls_attr
+            if attr_name in fields_attrs:
+                fields_attrs.remove(attr_name)
+
+        if isinstance(cls_attr, GraphQLObjectSource):
+            sources_instances[attr_name] = cls_attr
             if attr_name in fields_attrs:
                 fields_attrs.remove(attr_name)
 
@@ -1021,6 +1230,7 @@ def get_object_type_validation_data(
         fields_attrs=fields_attrs,
         fields_instances=fields_instances,
         resolvers_instances=resolvers_instances,
+        sources_instances=sources_instances,
     )
 
 
