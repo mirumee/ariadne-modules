@@ -31,17 +31,19 @@ class UnionType(BindableType):
 
         cls.__abstract__ = False
 
-        graphql_def = cls.__validate_schema__(
+        cls.graphql_def = cls.__validate_schema__(
             parse_definition(cls.__name__, cls.__schema__)
         )
 
-        cls.graphql_name = graphql_def.name.value
-        cls.graphql_type = type(graphql_def)
+        cls.graphql_name = cls.graphql_def.name.value
+        cls.graphql_type = type(cls.graphql_def)
 
         requirements = cls.__get_requirements__()
-        cls.__validate_requirements_contain_extended_type__(graphql_def, requirements)
+        cls.__validate_requirements_contain_extended_type__(
+            cls.graphql_def, requirements
+        )
 
-        dependencies = cls.__get_dependencies__(graphql_def)
+        dependencies = cls.__get_dependencies__(cls.graphql_def)
         cls.__validate_requirements__(requirements, dependencies)
 
     @classmethod

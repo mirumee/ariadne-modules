@@ -20,6 +20,7 @@ class InputType(BindableType):
     __args__: Optional[Union[Args, Callable[..., Args]]] = None
 
     graphql_fields: InputFieldsDict
+    graphql_def: InputNodeType
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
@@ -29,13 +30,13 @@ class InputType(BindableType):
 
         cls.__abstract__ = False
 
-        graphql_def = cls.__validate_schema__(
+        cls.graphql_def = cls.__validate_schema__(
             parse_definition(cls.__name__, cls.__schema__)
         )
 
-        cls.graphql_name = graphql_def.name.value
-        cls.graphql_type = type(graphql_def)
-        cls.graphql_fields = cls.__get_fields__(graphql_def)
+        cls.graphql_name = cls.graphql_def.name.value
+        cls.graphql_type = type(cls.graphql_def)
+        cls.graphql_fields = cls.__get_fields__(cls.graphql_def)
 
         if callable(cls.__args__):
             # pylint: disable=not-callable
@@ -44,9 +45,11 @@ class InputType(BindableType):
         cls.__validate_args__()
 
         requirements = cls.__get_requirements__()
-        cls.__validate_requirements_contain_extended_type__(graphql_def, requirements)
+        cls.__validate_requirements_contain_extended_type__(
+            cls.graphql_def, requirements
+        )
 
-        dependencies = cls.__get_dependencies__(graphql_def)
+        dependencies = cls.__get_dependencies__(cls.graphql_def)
         cls.__validate_requirements__(requirements, dependencies)
 
     @classmethod
