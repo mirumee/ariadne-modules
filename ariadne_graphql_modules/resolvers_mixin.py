@@ -1,6 +1,6 @@
-from typing import Callable, Dict, Optional, Union
+from typing import Callable, Dict, Optional, Tuple, Union
 
-from graphql import GraphQLFieldResolver
+from graphql import GraphQLFieldResolver, NamedTypeNode
 
 from .types import FieldsDict
 from .utils import create_alias_resolver
@@ -19,6 +19,7 @@ class ResolversMixin:
     graphql_fields: FieldsDict
 
     resolvers: Dict[str, GraphQLFieldResolver]
+    interfaces: Tuple[NamedTypeNode, ...]
 
     @classmethod
     def __validate_aliases__(cls):

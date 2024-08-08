@@ -39,6 +39,7 @@ class ObjectType(BindableType, ResolversMixin):
         cls.graphql_name = graphql_def.name.value
         cls.graphql_type = type(graphql_def)
         cls.graphql_fields = cls.__get_fields__(graphql_def)
+        cls.interfaces = graphql_def.interfaces
 
         requirements = cls.__get_requirements__()
         cls.__validate_requirements_contain_extended_type__(graphql_def, requirements)

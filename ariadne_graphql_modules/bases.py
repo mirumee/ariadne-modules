@@ -1,6 +1,11 @@
 from typing import List, Type, Union
 
-from graphql import DefinitionNode, GraphQLSchema, ObjectTypeDefinitionNode
+from graphql import (
+    DefinitionNode,
+    GraphQLSchema,
+    ObjectTypeDefinitionNode,
+    TypeDefinitionNode,
+)
 
 from .dependencies import Dependencies
 from .types import RequirementsDict
@@ -31,6 +36,7 @@ class DefinitionType(BaseType):
 
     graphql_name: str
     graphql_type: Type[DefinitionNode]
+    graphql_def: TypeDefinitionNode
 
     @classmethod
     def __get_requirements__(cls) -> RequirementsDict:
