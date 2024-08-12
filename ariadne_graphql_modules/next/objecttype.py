@@ -1,3 +1,4 @@
+# pylint: disable=C0302
 from copy import deepcopy
 from dataclasses import dataclass, replace
 from enum import Enum
@@ -79,14 +80,12 @@ class GraphQLObject(GraphQLType):
         metadata.set_graphql_name(cls, name)
 
         if getattr(cls, "__schema__", None):
-            return cls.__get_graphql_model_with_schema__(metadata, name)
+            return cls.__get_graphql_model_with_schema__()
 
         return cls.__get_graphql_model_without_schema__(metadata, name)
 
     @classmethod
-    def __get_graphql_model_with_schema__(
-        cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLObjectModel":
+    def __get_graphql_model_with_schema__(cls) -> "GraphQLObjectModel":
         definition = cast(
             ObjectTypeDefinitionNode,
             parse_definition(ObjectTypeDefinitionNode, cls.__schema__),
@@ -232,7 +231,7 @@ class GraphQLObject(GraphQLType):
 
     @classmethod
     def __get_graphql_types_with_schema__(
-        cls, metadata: "GraphQLMetadata"
+        cls, _: "GraphQLMetadata"
     ) -> Iterable["GraphQLType"]:
         types: List[GraphQLType] = [cls]
         types.extend(getattr(cls, "__requires__", []))
@@ -247,13 +246,13 @@ class GraphQLObject(GraphQLType):
         type_data = get_graphql_object_data(metadata, cls)
 
         for field in type_data.fields.values():
-            field_type = get_graphql_type(field.type)
+            field_type = get_graphql_type(field.field_type)
             if field_type and field_type not in types:
                 types.append(field_type)
 
             if field.args:
                 for field_arg in field.args.values():
-                    field_arg_type = get_graphql_type(field_arg.type)
+                    field_arg_type = get_graphql_type(field_arg.field_type)
                     if field_arg_type and field_arg_type not in types:
                         types.append(field_arg_type)
 
@@ -264,17 +263,17 @@ class GraphQLObject(GraphQLType):
         f: Optional[Resolver] = None,
         *,
         name: Optional[str] = None,
-        type: Optional[Any] = None,
+        graphql_type: Optional[Any] = None,
         args: Optional[Dict[str, dict]] = None,
         description: Optional[str] = None,
         default_value: Optional[Any] = None,
-    ):
+    ) -> Any:
         """Shortcut for object_field()"""
         return object_field(
             f,
             args=args,
             name=name,
-            type=type,
+            graphql_type=graphql_type,
             description=description,
             default_value=default_value,
         )
@@ -282,7 +281,7 @@ class GraphQLObject(GraphQLType):
     @staticmethod
     def resolver(
         field: str,
-        type: Optional[Any] = None,
+        graphql_type: Optional[Any] = None,
         args: Optional[Dict[str, dict]] = None,
         description: Optional[str] = None,
     ):
@@ -290,7 +289,7 @@ class GraphQLObject(GraphQLType):
         return object_resolver(
             args=args,
             field=field,
-            type=type,
+            graphql_type=graphql_type,
             description=description,
         )
 
@@ -298,7 +297,7 @@ class GraphQLObject(GraphQLType):
     def argument(
         name: Optional[str] = None,
         description: Optional[str] = None,
-        type: Optional[Any] = None,
+        graphql_type: Optional[Any] = None,
         default_value: Optional[Any] = None,
     ) -> dict:
         options: dict = {}
@@ -306,8 +305,8 @@ class GraphQLObject(GraphQLType):
             options["name"] = name
         if description:
             options["description"] = description
-        if type:
-            options["type"] = type
+        if graphql_type:
+            options["type"] = graphql_type
         if default_value:
             options["default_value"] = default_value
         return options
@@ -324,14 +323,13 @@ def get_graphql_object_data(
 ) -> GraphQLObjectData:
     try:
         return metadata.get_data(cls)
-    except KeyError:
+    except KeyError as exc:
         if getattr(cls, "__schema__", None):
             raise NotImplementedError(
                 "'get_graphql_object_data' is not supported for "
                 "objects with '__schema__'."
-            )
-        else:
-            object_data = create_graphql_object_data_without_schema(cls)
+            ) from exc
+        object_data = create_graphql_object_data_without_schema(cls)
 
         metadata.set_data(cls, object_data)
         return object_data
@@ -387,8 +385,8 @@ def create_graphql_object_data_without_schema(
                 attr_name
             )
 
-            if cls_attr.type and attr_name not in fields_types:
-                fields_types[attr_name] = cls_attr.type
+            if cls_attr.field_type:
+                fields_types[attr_name] = cls_attr.field_type
             if cls_attr.description:
                 fields_descriptions[attr_name] = cls_attr.description
             if cls_attr.resolver:
@@ -402,8 +400,8 @@ def create_graphql_object_data_without_schema(
                 fields_defaults[attr_name] = cls_attr.default_value
 
         elif isinstance(cls_attr, GraphQLObjectResolver):
-            if cls_attr.type and cls_attr.field not in fields_types:
-                fields_types[cls_attr.field] = cls_attr.type
+            if cls_attr.field_type and cls_attr.field not in fields_types:
+                fields_types[cls_attr.field] = cls_attr.field_type
             if cls_attr.description:
                 fields_descriptions[cls_attr.field] = cls_attr.description
             if cls_attr.resolver:
@@ -414,8 +412,8 @@ def create_graphql_object_data_without_schema(
                         field_args, cls_attr.args
                     )
         elif isinstance(cls_attr, GraphQLObjectSource):
-            if cls_attr.type and cls_attr.field not in fields_types:
-                fields_types[cls_attr.field] = cls_attr.type
+            if cls_attr.field_type and cls_attr.field not in fields_types:
+                fields_types[cls_attr.field] = cls_attr.field_type
             if cls_attr.description:
                 fields_descriptions[cls_attr.field] = cls_attr.description
             if cls_attr.subscriber:
@@ -434,7 +432,7 @@ def create_graphql_object_data_without_schema(
         fields[field_name] = GraphQLObjectField(
             name=fields_names[field_name],
             description=fields_descriptions.get(field_name),
-            type=fields_types[field_name],
+            field_type=fields_types[field_name],
             args=fields_args.get(field_name),
             resolver=fields_resolvers.get(field_name),
             subscriber=fields_subscribers.get(field_name),
@@ -447,7 +445,7 @@ def create_graphql_object_data_without_schema(
 class GraphQLObjectField:
     name: Optional[str]
     description: Optional[str]
-    type: Optional[Any]
+    field_type: Optional[Any]
     args: Optional[Dict[str, dict]]
     resolver: Optional[Resolver]
     subscriber: Optional[Subscriber]
@@ -458,7 +456,7 @@ class GraphQLObjectField:
         *,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        type: Optional[Any] = None,
+        field_type: Optional[Any] = None,
         args: Optional[Dict[str, dict]] = None,
         resolver: Optional[Resolver] = None,
         subscriber: Optional[Subscriber] = None,
@@ -466,7 +464,7 @@ class GraphQLObjectField:
     ):
         self.name = name
         self.description = description
-        self.type = type
+        self.field_type = field_type
         self.args = args
         self.resolver = resolver
         self.subscriber = subscriber
@@ -475,8 +473,8 @@ class GraphQLObjectField:
     def __call__(self, resolver: Resolver):
         """Makes GraphQLObjectField instances work as decorators."""
         self.resolver = resolver
-        if not self.type:
-            self.type = get_field_type_from_resolver(resolver)
+        if not self.field_type:
+            self.field_type = get_field_type_from_resolver(resolver)
         return self
 
 
@@ -486,17 +484,17 @@ def object_field(
     args: Optional[Dict[str, dict]] = None,
     name: Optional[str] = None,
     description: Optional[str] = None,
-    type: Optional[Any] = None,
+    graphql_type: Optional[Any] = None,
     default_value: Optional[Any] = None,
 ) -> GraphQLObjectField:
-    field_type: Any = type
-    if not type and resolver:
+    field_type: Any = graphql_type
+    if not graphql_type and resolver:
         field_type = get_field_type_from_resolver(resolver)
 
     return GraphQLObjectField(
         name=name,
         description=description,
-        type=field_type,
+        field_type=field_type,
         args=args,
         resolver=resolver,
         default_value=default_value,
@@ -513,12 +511,12 @@ class GraphQLObjectResolver:
     field: str
     description: Optional[str] = None
     args: Optional[Dict[str, dict]] = None
-    type: Optional[Any] = None
+    field_type: Optional[Any] = None
 
 
 def object_resolver(
     field: str,
-    type: Optional[Any] = None,
+    graphql_type: Optional[Any] = None,
     args: Optional[Dict[str, dict]] = None,
     description: Optional[str] = None,
 ):
@@ -528,7 +526,7 @@ def object_resolver(
             description=description,
             resolver=f,
             field=field,
-            type=type or get_field_type_from_resolver(f),
+            field_type=graphql_type or get_field_type_from_resolver(f),
         )
 
     return object_resolver_factory
@@ -540,12 +538,12 @@ class GraphQLObjectSource:
     field: str
     description: Optional[str] = None
     args: Optional[Dict[str, dict]] = None
-    type: Optional[Any] = None
+    field_type: Optional[Any] = None
 
 
 def object_subscriber(
     field: str,
-    type: Optional[Any] = None,
+    graphql_type: Optional[Any] = None,
     args: Optional[Dict[str, dict]] = None,
     description: Optional[str] = None,
 ):
@@ -555,7 +553,7 @@ def object_subscriber(
             description=description,
             subscriber=f,
             field=field,
-            type=type or get_field_type_from_subscriber(f),
+            field_type=graphql_type or get_field_type_from_subscriber(f),
         )
 
     return object_subscriber_factory
@@ -596,7 +594,7 @@ def get_field_node_from_obj_field(
     return FieldDefinitionNode(
         description=get_description_node(field.description),
         name=NameNode(value=field.name),
-        type=get_type_node(metadata, field.type, parent_type),
+        type=get_type_node(metadata, field.field_type, parent_type),
         arguments=get_field_args_nodes_from_obj_field_args(metadata, field.args),
     )
 
@@ -605,7 +603,7 @@ def get_field_node_from_obj_field(
 class GraphQLObjectFieldArg:
     name: Optional[str]
     out_name: Optional[str]
-    type: Optional[Any]
+    field_type: Optional[Any]
     description: Optional[str] = None
     default_value: Optional[Any] = None
 
@@ -648,7 +646,7 @@ def get_field_args_from_resolver(
         field_args[param_name] = GraphQLObjectFieldArg(
             name=convert_python_name_to_graphql(param_name),
             out_name=param_name,
-            type=type_hints.get(param_name),
+            field_type=type_hints.get(param_name),
             default_value=param_default,
         )
 
@@ -693,7 +691,7 @@ def get_field_args_from_subscriber(
         field_args[param_name] = GraphQLObjectFieldArg(
             name=convert_python_name_to_graphql(param_name),
             out_name=param_name,
-            type=type_hints.get(param_name),
+            field_type=type_hints.get(param_name),
             default_value=param_default,
         )
 
@@ -733,7 +731,7 @@ def get_field_arg_node_from_obj_field_arg(
     return InputValueDefinitionNode(
         description=get_description_node(field_arg.description),
         name=NameNode(value=field_arg.name),
-        type=get_type_node(metadata, field_arg.type),
+        type=get_type_node(metadata, field_arg.field_type),
         default_value=default_value,
     )
 

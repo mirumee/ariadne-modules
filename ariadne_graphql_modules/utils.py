@@ -10,7 +10,7 @@ from graphql import (
 )
 
 
-def parse_definition(type_name: str, schema: Any) -> DefinitionNode:
+def parse_definition(type_name: Any, schema: Any) -> DefinitionNode:
     if not isinstance(schema, str):
         raise TypeError(
             f"{type_name} class was defined with __schema__ of invalid type: "

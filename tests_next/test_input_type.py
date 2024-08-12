@@ -542,7 +542,7 @@ def test_input_type_with_field_instance_default_value(assert_schema_equals):
 
 def test_input_type_with_field_type(assert_schema_equals):
     class SearchInput(GraphQLInput):
-        query: str = GraphQLInput.field(type=int)
+        query: str = GraphQLInput.field(graphql_type=int)
 
     class QueryType(GraphQLObject):
         search: str

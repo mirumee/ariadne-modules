@@ -32,7 +32,7 @@ def test_interface_without_schema(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=List[ResultType])
+        @GraphQLObject.field(graphql_type=List[ResultType])
         def search(*_) -> List[UserType | CommentType]:
             return [
                 UserType(id=1, username="Bob"),
@@ -95,7 +95,7 @@ def test_interface_with_schema(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=List[ResultType])
+        @GraphQLObject.field(graphql_type=List[ResultType])
         def search(*_) -> List[UserType | CommentType]:
             return [
                 UserType(id=1, username="Bob"),

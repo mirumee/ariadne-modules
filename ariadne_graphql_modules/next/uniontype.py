@@ -4,6 +4,7 @@ from typing import (
     Callable,
     Iterable,
     NoReturn,
+    Optional,
     Sequence,
     Type,
     cast,
@@ -26,6 +27,7 @@ from .validators import validate_description, validate_name
 
 class GraphQLUnion(GraphQLType):
     __types__: Sequence[Type[GraphQLType]]
+    __schema__: Optional[str]
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
@@ -46,14 +48,12 @@ class GraphQLUnion(GraphQLType):
         metadata.set_graphql_name(cls, name)
 
         if getattr(cls, "__schema__", None):
-            return cls.__get_graphql_model_with_schema__(metadata, name)
+            return cls.__get_graphql_model_with_schema__()
 
-        return cls.__get_graphql_model_without_schema__(metadata, name)
+        return cls.__get_graphql_model_without_schema__(name)
 
     @classmethod
-    def __get_graphql_model_with_schema__(
-        cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLModel":
+    def __get_graphql_model_with_schema__(cls) -> "GraphQLModel":
         definition = cast(
             UnionTypeDefinitionNode,
             parse_definition(UnionTypeDefinitionNode, cls.__schema__),
@@ -67,9 +67,7 @@ class GraphQLUnion(GraphQLType):
         )
 
     @classmethod
-    def __get_graphql_model_without_schema__(
-        cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLModel":
+    def __get_graphql_model_without_schema__(cls, name: str) -> "GraphQLModel":
         return GraphQLUnionModel(
             name=name,
             ast_type=UnionTypeDefinitionNode,
@@ -87,14 +85,12 @@ class GraphQLUnion(GraphQLType):
         )
 
     @classmethod
-    def __get_graphql_types__(
-        cls, metadata: "GraphQLMetadata"
-    ) -> Iterable["GraphQLType"]:
+    def __get_graphql_types__(cls, _: "GraphQLMetadata") -> Iterable["GraphQLType"]:
         """Returns iterable with GraphQL types associated with this type"""
         return [cls] + cls.__types__
 
     @staticmethod
-    def resolve_type(obj: Any, *args) -> str:
+    def resolve_type(obj: Any, *_) -> str:
         if isinstance(obj, GraphQLObject):
             return obj.__get_graphql_name__()
 
@@ -112,6 +108,7 @@ def validate_union_type(cls: Type[GraphQLUnion]) -> NoReturn:
         )
 
 
+# pylint: disable=E1101
 def validate_union_type_with_schema(cls: Type[GraphQLUnion]) -> NoReturn:
     definition = cast(
         UnionTypeDefinitionNode,
