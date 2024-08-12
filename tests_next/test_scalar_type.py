@@ -48,9 +48,9 @@ def test_scalar_field_returning_scalar_instance(assert_schema_equals):
 
 def test_scalar_field_returning_scalar_wrapped_type(assert_schema_equals):
     class QueryType(GraphQLObject):
-        date: DateScalar
+        scalar_date: DateScalar
 
-        @GraphQLObject.resolver("date", type=DateScalar)
+        @GraphQLObject.resolver("scalar_date", graphql_type=DateScalar)
         def resolve_date(*_) -> date:
             return date(1989, 10, 30)
 
@@ -62,15 +62,15 @@ def test_scalar_field_returning_scalar_wrapped_type(assert_schema_equals):
         scalar Date
 
         type Query {
-          date: Date!
+          scalarDate: Date!
         }
         """,
     )
 
-    result = graphql_sync(schema, "{ date }")
+    result = graphql_sync(schema, "{ scalarDate }")
 
     assert not result.errors
-    assert result.data == {"date": "1989-10-30"}
+    assert result.data == {"scalarDate": "1989-10-30"}
 
 
 class SchemaDateScalar(GraphQLScalar[date]):

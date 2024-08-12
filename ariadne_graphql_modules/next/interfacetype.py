@@ -42,9 +42,7 @@ class GraphQLInterface(GraphQLObject):
     __valid_type__ = InterfaceTypeDefinitionNode
 
     @classmethod
-    def __get_graphql_model_with_schema__(
-        cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLInterfaceModel":
+    def __get_graphql_model_with_schema__(cls) -> "GraphQLInterfaceModel":
         definition = cast(
             InterfaceTypeDefinitionNode,
             parse_definition(InterfaceTypeDefinitionNode, cls.__schema__),
@@ -153,10 +151,10 @@ class GraphQLInterface(GraphQLObject):
             elif attr_name != field.name and not field.resolver:
                 aliases[field.name] = attr_name
 
-            if field.resolver:
+            if field.resolver and field.name:
                 resolvers[field.name] = field.resolver
 
-            if field.args:
+            if field.args and field.name:
                 out_names[field.name] = get_field_args_out_names(field.args)
 
         interfaces_ast: List[NamedTypeNode] = []
@@ -181,7 +179,7 @@ class GraphQLInterface(GraphQLObject):
         )
 
     @staticmethod
-    def resolve_type(obj: Any, *args) -> str:
+    def resolve_type(obj: Any, *_) -> str:
         if isinstance(obj, GraphQLInterface):
             return obj.__get_graphql_name__()
 

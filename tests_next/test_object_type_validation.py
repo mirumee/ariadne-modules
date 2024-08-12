@@ -313,7 +313,7 @@ def test_schema_object_type_validation_fails_for_arg_with_type_option(
                 """
 
             @GraphQLObject.resolver(
-                "hello", args={"name": GraphQLObject.argument(type=str)}
+                "hello", args={"name": GraphQLObject.argument(graphql_type=str)}
             )
             def ipsum(*_, name: str) -> str:
                 return "Hello World!"

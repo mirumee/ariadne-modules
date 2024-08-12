@@ -177,7 +177,7 @@ def test_multiple_roots_fail_validation_if_merge_roots_is_disabled(snapshot):
 
 def test_schema_validation_fails_if_lazy_type_doesnt_exist(snapshot):
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=list["Missing"])
+        @GraphQLObject.field(graphql_type=list["Missing"])
         def other(obj, info):
             return None
 
@@ -189,7 +189,7 @@ def test_schema_validation_fails_if_lazy_type_doesnt_exist(snapshot):
 
 def test_schema_validation_passes_if_lazy_type_exists():
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=list["Exists"])
+        @GraphQLObject.field(graphql_type=list["Exists"])
         def other(obj, info):
             return None
 

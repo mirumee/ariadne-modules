@@ -396,7 +396,7 @@ def test_object_type_with_field_resolver(assert_schema_equals):
 
 def test_object_type_with_typed_field_instance(assert_schema_equals):
     class QueryType(GraphQLObject):
-        hello = GraphQLObject.field(lambda *_: "Hello World!", type=str)
+        hello = GraphQLObject.field(lambda *_: "Hello World!", graphql_type=str)
 
     schema = make_executable_schema(QueryType)
 
@@ -499,7 +499,7 @@ def test_object_type_with_nested_types(assert_schema_equals):
     class QueryType(GraphQLObject):
         user: UserType
 
-        @GraphQLObject.field(type=PostType)
+        @GraphQLObject.field(graphql_type=PostType)
         def post(obj, info):
             return {"message": "test"}
 

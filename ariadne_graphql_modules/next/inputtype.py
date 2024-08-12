@@ -24,6 +24,7 @@ from .value import get_value_from_node, get_value_node
 
 class GraphQLInput(GraphQLType):
     __kwargs__: Dict[str, Any]
+    __schema__: Optional[str]
     __out_names__: Optional[Dict[str, str]] = None
 
     def __init__(self, **kwargs: Any):
@@ -62,14 +63,12 @@ class GraphQLInput(GraphQLType):
         metadata.set_graphql_name(cls, name)
 
         if getattr(cls, "__schema__", None):
-            return cls.__get_graphql_model_with_schema__(metadata, name)
+            return cls.__get_graphql_model_with_schema__()
 
         return cls.__get_graphql_model_without_schema__(metadata, name)
 
     @classmethod
-    def __get_graphql_model_with_schema__(
-        cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLInputModel":
+    def __get_graphql_model_with_schema__(cls) -> "GraphQLInputModel":
         definition = cast(
             InputObjectTypeDefinitionNode,
             parse_definition(InputObjectTypeDefinitionNode, cls.__schema__),
@@ -111,12 +110,11 @@ class GraphQLInput(GraphQLType):
         cls, metadata: GraphQLMetadata, name: str
     ) -> "GraphQLInputModel":
         type_hints = cls.__annotations__
-        fields_instances: Dict[str, GraphQLInputField] = {}
-
-        for attr_name in dir(cls):
-            cls_attr = getattr(cls, attr_name)
-            if isinstance(cls_attr, GraphQLInputField):
-                fields_instances[attr_name] = cls_attr
+        fields_instances: Dict[str, GraphQLInputField] = {
+            attr_name: getattr(cls, attr_name)
+            for attr_name in dir(cls)
+            if isinstance(getattr(cls, attr_name), GraphQLInputField)
+        }
 
         fields_ast: List[InputValueDefinitionNode] = []
         out_names: Dict[str, str] = {}
@@ -127,13 +125,14 @@ class GraphQLInput(GraphQLType):
 
             cls_attr = getattr(cls, hint_name, None)
             default_name = convert_python_name_to_graphql(hint_name)
+
             if isinstance(cls_attr, GraphQLInputField):
                 fields_ast.append(
                     get_field_node_from_type_hint(
                         cls,
                         metadata,
                         cls_attr.name or default_name,
-                        cls_attr.type or hint_type,
+                        cls_attr.graphql_type or hint_type,
                         cls_attr.description,
                         cls_attr.default_value,
                     )
@@ -153,19 +152,19 @@ class GraphQLInput(GraphQLType):
                 )
                 out_names[default_name] = hint_name
 
-        for attr_name, field_instance in fields_instances:
-            default_name = convert_python_name_to_graphql(hint_name)
+        for attr_name, field_instance in fields_instances.items():
+            default_name = convert_python_name_to_graphql(attr_name)
             fields_ast.append(
                 get_field_node_from_type_hint(
                     cls,
                     metadata,
                     field_instance.name or default_name,
-                    field_instance.type,
+                    field_instance.graphql_type,
                     field_instance.description,
                     field_instance.default_value,
                 )
             )
-            out_names[cls_attr.name or default_name] = hint_name
+            out_names[field_instance.name or default_name] = attr_name
 
         return GraphQLInputModel(
             name=name,
@@ -182,17 +181,15 @@ class GraphQLInput(GraphQLType):
         )
 
     @classmethod
-    def __get_graphql_types__(
-        cls, metadata: "GraphQLMetadata"
-    ) -> Iterable["GraphQLType"]:
+    def __get_graphql_types__(cls, _: "GraphQLMetadata") -> Iterable["GraphQLType"]:
         """Returns iterable with GraphQL types associated with this type"""
         types: List[GraphQLType] = [cls]
 
         for attr_name in dir(cls):
             cls_attr = getattr(cls, attr_name)
             if isinstance(cls_attr, GraphQLInputField):
-                if cls_attr.type:
-                    field_graphql_type = get_graphql_type(cls_attr.type)
+                if cls_attr.graphql_type:
+                    field_graphql_type = get_graphql_type(cls_attr.graphql_type)
                     if field_graphql_type and field_graphql_type not in types:
                         types.append(field_graphql_type)
 
@@ -211,14 +208,14 @@ class GraphQLInput(GraphQLType):
     def field(
         *,
         name: Optional[str] = None,
-        type: Optional[Any] = None,
+        graphql_type: Optional[Any] = None,
         description: Optional[str] = None,
         default_value: Optional[Any] = None,
-    ):
+    ) -> Any:
         """Shortcut for GraphQLInputField()"""
         return GraphQLInputField(
             name=name,
-            type=type,
+            graphql_type=graphql_type,
             description=description,
             default_value=default_value,
         )
@@ -227,7 +224,7 @@ class GraphQLInput(GraphQLType):
 class GraphQLInputField:
     name: Optional[str]
     description: Optional[str]
-    type: Optional[Any]
+    graphql_type: Optional[Any]
     default_value: Optional[Any]
 
     def __init__(
@@ -235,12 +232,12 @@ class GraphQLInputField:
         *,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        type: Optional[Any] = None,
+        graphql_type: Optional[Any] = None,
         default_value: Optional[Any] = None,
     ):
         self.name = name
         self.description = description
-        self.type = type
+        self.graphql_type = graphql_type
         self.default_value = default_value
 
 
