@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union, cast
+from typing import Dict, List, Union, cast
 
 from graphql import (
     DirectiveNode,

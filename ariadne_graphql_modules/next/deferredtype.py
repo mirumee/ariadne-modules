@@ -12,7 +12,7 @@ def deferred(module_path: str) -> DeferredTypeData:
     if not module_path.startswith("."):
         return DeferredTypeData(module_path)
 
-    frame = sys._getframe(2)
+    frame = sys._getframe(2)  # pylint: disable=protected-access
     if not frame:
         raise RuntimeError(
             "'deferred' can't be called outside of class's attribute's "

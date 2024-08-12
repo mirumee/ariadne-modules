@@ -37,12 +37,12 @@ async def test_basic_subscription_without_schema(assert_schema_equals):
             while True:
                 yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-        @GraphQLSubscription.resolver("message_added", type=Message)
+        @GraphQLSubscription.resolver("message_added", graphql_type=Message)
         async def resolve_message_added(message, info):
             return message
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=str)
+        @GraphQLObject.field(graphql_type=str)
         def search_sth(*_) -> str:
             return "search"
 
@@ -102,13 +102,13 @@ async def test_subscription_with_arguments_without_schema(assert_schema_equals):
 
         @GraphQLSubscription.resolver(
             "message_added",
-            type=Message,
+            graphql_type=Message,
         )
         async def resolve_message_added(message, *_, channel: GraphQLID):
             return message
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=str)
+        @GraphQLObject.field(graphql_type=str)
         def search_sth(*_) -> str:
             return "search"
 
@@ -172,7 +172,7 @@ async def test_multiple_supscriptions_without_schema(assert_schema_equals):
 
         @GraphQLSubscription.resolver(
             "message_added",
-            type=Message,
+            graphql_type=Message,
         )
         async def resolve_message_added(message, *_, channel: GraphQLID):
             return message
@@ -189,13 +189,13 @@ async def test_multiple_supscriptions_without_schema(assert_schema_equals):
 
         @GraphQLSubscription.resolver(
             "user_joined",
-            type=Message,
+            graphql_type=Message,
         )
         async def resolve_user_joined(user, *_):
             return user
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=str)
+        @GraphQLObject.field(graphql_type=str)
         def search_sth(*_) -> str:
             return "search"
 
@@ -264,13 +264,13 @@ async def test_subscription_with_complex_data_without_schema(assert_schema_equal
 
         @GraphQLSubscription.resolver(
             "messages_in_channel",
-            type=Message,
+            graphql_type=Message,
         )
         async def resolve_message_added(message, *_, channel_id: GraphQLID):
             return message
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=str)
+        @GraphQLObject.field(graphql_type=str)
         def search_sth(*_) -> str:
             return "search"
 
@@ -337,7 +337,7 @@ async def test_subscription_with_union_without_schema(assert_schema_equals):
             return message
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=str)
+        @GraphQLObject.field(graphql_type=str)
         def search_sth(*_) -> str:
             return "search"
 
@@ -399,12 +399,12 @@ async def test_basic_subscription_with_schema(assert_schema_equals):
             while True:
                 yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-        @GraphQLSubscription.resolver("messageAdded", type=Message)
+        @GraphQLSubscription.resolver("messageAdded", graphql_type=Message)
         async def resolve_message_added(message, info):
             return message
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=str)
+        @GraphQLObject.field(graphql_type=str)
         def search_sth(*_) -> str:
             return "search"
 
@@ -469,13 +469,13 @@ async def test_subscription_with_arguments_with_schema(assert_schema_equals):
 
         @GraphQLSubscription.resolver(
             "messageAdded",
-            type=Message,
+            graphql_type=Message,
         )
         async def resolve_message_added(message, *_, channel: GraphQLID):
             return message
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=str)
+        @GraphQLObject.field(graphql_type=str)
         def search_sth(*_) -> str:
             return "search"
 
@@ -562,7 +562,7 @@ async def test_multiple_supscriptions_with_schema(assert_schema_equals):
             return user
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=str)
+        @GraphQLObject.field(graphql_type=str)
         def search_sth(*_) -> str:
             return "search"
 
@@ -638,7 +638,7 @@ async def test_subscription_with_complex_data_with_schema(assert_schema_equals):
             return message
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=str)
+        @GraphQLObject.field(graphql_type=str)
         def search_sth(*_) -> str:
             return "search"
 
@@ -708,7 +708,7 @@ async def test_subscription_with_union_with_schema(assert_schema_equals):
             return message
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=str)
+        @GraphQLObject.field(graphql_type=str)
         def search_sth(*_) -> str:
             return "search"
 

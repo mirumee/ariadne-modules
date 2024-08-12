@@ -25,7 +25,7 @@ def test_union_field_returning_object_instance(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=List[ResultType])
+        @GraphQLObject.field(graphql_type=List[ResultType])
         def search(*_) -> List[UserType | CommentType]:
             return [
                 UserType(id=1, username="Bob"),
@@ -87,7 +87,7 @@ def test_union_field_returning_empty_list():
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=List[ResultType])
+        @GraphQLObject.field(graphql_type=List[ResultType])
         def search(*_) -> List[UserType | CommentType]:
             return []
 
@@ -119,7 +119,7 @@ def test_union_field_with_invalid_type_access(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=List[ResultType])
+        @GraphQLObject.field(graphql_type=List[ResultType])
         def search(*_) -> List[UserType | CommentType]:
             return [
                 UserType(id=1, username="Bob"),
@@ -158,7 +158,7 @@ def test_serialization_error_handling(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=List[ResultType])
+        @GraphQLObject.field(graphql_type=List[ResultType])
         def search(*_) -> List[UserType | CommentType | InvalidType]:
             return [InvalidType("This should cause an error")]
 
@@ -188,7 +188,7 @@ def test_union_with_schema_definition(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(type=List[SearchResultUnion])
+        @GraphQLObject.field(graphql_type=List[SearchResultUnion])
         def search(*_) -> List[UserType | CommentType]:
             return [
                 UserType(id="1", username="Alice"),

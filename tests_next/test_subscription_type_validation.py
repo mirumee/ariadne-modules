@@ -262,7 +262,7 @@ async def test_arg_with_type_in_source_with_schema(snapshot):
                 "messageAdded",
                 args={
                     "channel": GraphQLObject.argument(
-                        type=str, description="Lorem ipsum."
+                        graphql_type=str, description="Lorem ipsum."
                     )
                 },
             )
@@ -293,7 +293,7 @@ async def test_arg_with_description_in_source_with_schema(snapshot):
                 "messageAdded",
                 args={
                     "channel": GraphQLObject.argument(
-                        type=str, description="Lorem ipsum."
+                        graphql_type=str, description="Lorem ipsum."
                     )
                 },
             )

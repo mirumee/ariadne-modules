@@ -27,7 +27,7 @@ def test_field_has_arg_after_excess_positional_args():
     field_arg = field_args["name"]
     assert field_arg.name == "name"
     assert field_arg.out_name == "name"
-    assert field_arg.type is None
+    assert field_arg.field_type is None
 
 
 def test_field_has_arg_after_positional_args_separator():
@@ -40,7 +40,7 @@ def test_field_has_arg_after_positional_args_separator():
     field_arg = field_args["name"]
     assert field_arg.name == "name"
     assert field_arg.out_name == "name"
-    assert field_arg.type is None
+    assert field_arg.field_type is None
 
 
 def test_field_has_arg_after_obj_and_info_args():
@@ -53,7 +53,7 @@ def test_field_has_arg_after_obj_and_info_args():
     field_arg = field_args["name"]
     assert field_arg.name == "name"
     assert field_arg.out_name == "name"
-    assert field_arg.type is None
+    assert field_arg.field_type is None
 
 
 def test_field_has_multiple_args_after_excess_positional_args():
@@ -66,12 +66,12 @@ def test_field_has_multiple_args_after_excess_positional_args():
     name_arg = field_args["name"]
     assert name_arg.name == "name"
     assert name_arg.out_name == "name"
-    assert name_arg.type is None
+    assert name_arg.field_type is None
 
     age_arg = field_args["age_cutoff"]
     assert age_arg.name == "ageCutoff"
     assert age_arg.out_name == "age_cutoff"
-    assert age_arg.type is int
+    assert age_arg.field_type is int
 
 
 def test_field_has_multiple_args_after_positional_args_separator():
@@ -84,12 +84,12 @@ def test_field_has_multiple_args_after_positional_args_separator():
     name_arg = field_args["name"]
     assert name_arg.name == "name"
     assert name_arg.out_name == "name"
-    assert name_arg.type is None
+    assert name_arg.field_type is None
 
     age_arg = field_args["age_cutoff"]
     assert age_arg.name == "ageCutoff"
     assert age_arg.out_name == "age_cutoff"
-    assert age_arg.type is int
+    assert age_arg.field_type is int
 
 
 def test_field_has_multiple_args_after_obj_and_info_args():
@@ -102,12 +102,12 @@ def test_field_has_multiple_args_after_obj_and_info_args():
     name_arg = field_args["name"]
     assert name_arg.name == "name"
     assert name_arg.out_name == "name"
-    assert name_arg.type is None
+    assert name_arg.field_type is None
 
     age_arg = field_args["age_cutoff"]
     assert age_arg.name == "ageCutoff"
     assert age_arg.out_name == "age_cutoff"
-    assert age_arg.type is int
+    assert age_arg.field_type is int
 
 
 def test_field_has_arg_after_obj_and_info_args_on_class_function():
@@ -121,7 +121,7 @@ def test_field_has_arg_after_obj_and_info_args_on_class_function():
     field_arg = field_args["name"]
     assert field_arg.name == "name"
     assert field_arg.out_name == "name"
-    assert field_arg.type is None
+    assert field_arg.field_type is None
 
 
 def test_field_has_arg_after_obj_and_info_args_on_class_method():
@@ -136,7 +136,7 @@ def test_field_has_arg_after_obj_and_info_args_on_class_method():
     field_arg = field_args["name"]
     assert field_arg.name == "name"
     assert field_arg.out_name == "name"
-    assert field_arg.type is None
+    assert field_arg.field_type is None
 
 
 def test_field_has_arg_after_obj_and_info_args_on_static_method():
@@ -151,4 +151,4 @@ def test_field_has_arg_after_obj_and_info_args_on_static_method():
     field_arg = field_args["name"]
     assert field_arg.name == "name"
     assert field_arg.out_name == "name"
-    assert field_arg.type is None
+    assert field_arg.field_type is None

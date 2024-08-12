@@ -157,7 +157,7 @@ def flatten_schema_types(
     for type_def in types:
         if isinstance(type_def, str):
             continue
-        elif isinstance(type_def, list):
+        if isinstance(type_def, list):
             flat_list += flatten_schema_types(type_def, metadata, dedupe=False)
         elif isinstance(type_def, SchemaBindable):
             flat_list.append(type_def)

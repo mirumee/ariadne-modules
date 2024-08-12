@@ -20,6 +20,7 @@ T = TypeVar("T")
 
 class GraphQLScalar(GraphQLType, Generic[T]):
     __abstract__: bool = True
+    __schema__: Optional[str]
 
     wrapped_value: T
 
@@ -42,14 +43,12 @@ class GraphQLScalar(GraphQLType, Generic[T]):
         name = cls.__get_graphql_name__()
 
         if getattr(cls, "__schema__", None):
-            return cls.__get_graphql_model_with_schema__(metadata, name)
+            return cls.__get_graphql_model_with_schema__()
 
-        return cls.__get_graphql_model_without_schema__(metadata, name)
+        return cls.__get_graphql_model_without_schema__(name)
 
     @classmethod
-    def __get_graphql_model_with_schema__(
-        cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLModel":
+    def __get_graphql_model_with_schema__(cls) -> "GraphQLModel":
         definition = cast(
             ScalarTypeDefinitionNode,
             parse_definition(ScalarTypeDefinitionNode, cls.__schema__),
@@ -65,9 +64,7 @@ class GraphQLScalar(GraphQLType, Generic[T]):
         )
 
     @classmethod
-    def __get_graphql_model_without_schema__(
-        cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLModel":
+    def __get_graphql_model_without_schema__(cls, name: str) -> "GraphQLModel":
         return GraphQLScalarModel(
             name=name,
             ast_type=ScalarTypeDefinitionNode,

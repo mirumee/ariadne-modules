@@ -47,9 +47,7 @@ class GraphQLType:
         )
 
     @classmethod
-    def __get_graphql_types__(
-        cls, metadata: "GraphQLMetadata"
-    ) -> Iterable["GraphQLType"]:
+    def __get_graphql_types__(cls, _: "GraphQLMetadata") -> Iterable["GraphQLType"]:
         """Returns iterable with GraphQL types associated with this type"""
         return [cls]
 
@@ -59,10 +57,6 @@ class GraphQLModel:
     name: str
     ast: TypeDefinitionNode
     ast_type: Type[TypeDefinitionNode]
-
-    def __init__(self, name: str, ast: TypeDefinitionNode):
-        self.name = name
-        self.ast = ast
 
     def bind_to_schema(self, schema: GraphQLSchema):
         pass
@@ -76,37 +70,45 @@ class GraphQLMetadata:
         default_factory=dict
     )
 
-    def get_data(self, type: Union[Type[GraphQLType], Type[Enum]]) -> Any:
+    def get_data(self, graphql_type: Union[Type[GraphQLType], Type[Enum]]) -> Any:
         try:
-            return self.data[type]
+            return self.data[graphql_type]
         except KeyError as e:
-            raise KeyError(f"No data is set for '{type}'.") from e
+            raise KeyError(f"No data is set for '{graphql_type}'.") from e
 
-    def set_data(self, type: Union[Type[GraphQLType], Type[Enum]], data: Any) -> Any:
-        self.data[type] = data
+    def set_data(
+        self, graphql_type: Union[Type[GraphQLType], Type[Enum]], data: Any
+    ) -> Any:
+        self.data[graphql_type] = data
         return data
 
     def get_graphql_model(
-        self, type: Union[Type[GraphQLType], Type[Enum]]
+        self, graphql_type: Union[Type[GraphQLType], Type[Enum]]
     ) -> GraphQLModel:
-        if type not in self.models:
-            if hasattr(type, "__get_graphql_model__"):
-                self.models[type] = type.__get_graphql_model__(self)
-            elif issubclass(type, Enum):
-                from .enumtype import create_graphql_enum_model
+        if graphql_type not in self.models:
+            if hasattr(graphql_type, "__get_graphql_model__"):
+                self.models[graphql_type] = graphql_type.__get_graphql_model__(self)
+            elif issubclass(graphql_type, Enum):
+                from .enumtype import (  # pylint: disable=R0401,C0415
+                    create_graphql_enum_model,
+                )
 
-                self.models[type] = create_graphql_enum_model(type)
+                self.models[graphql_type] = create_graphql_enum_model(graphql_type)
             else:
-                raise ValueError(f"Can't retrieve GraphQL model for '{type}'.")
+                raise ValueError(f"Can't retrieve GraphQL model for '{graphql_type}'.")
 
-        return self.models[type]
+        return self.models[graphql_type]
 
-    def set_graphql_name(self, type: Union[Type[GraphQLType], Type[Enum]], name: str):
-        self.names[type] = name
+    def set_graphql_name(
+        self, graphql_type: Union[Type[GraphQLType], Type[Enum]], name: str
+    ):
+        self.names[graphql_type] = name
 
-    def get_graphql_name(self, type: Union[Type[GraphQLType], Type[Enum]]) -> str:
-        if type not in self.names:
-            model = self.get_graphql_model(type)
-            self.set_graphql_name(type, model.name)
+    def get_graphql_name(
+        self, graphql_type: Union[Type[GraphQLType], Type[Enum]]
+    ) -> str:
+        if graphql_type not in self.names:
+            model = self.get_graphql_model(graphql_type)
+            self.set_graphql_name(graphql_type, model.name)
 
-        return self.names[type]
+        return self.names[graphql_type]

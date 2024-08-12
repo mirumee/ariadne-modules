@@ -47,9 +47,7 @@ class GraphQLSubscription(GraphQLObject):
     __valid_type__ = ObjectTypeDefinitionNode
 
     @classmethod
-    def __get_graphql_model_with_schema__(
-        cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLSubscriptionModel":
+    def __get_graphql_model_with_schema__(cls, *_) -> "GraphQLSubscriptionModel":
         definition = cast(
             ObjectTypeDefinitionNode,
             parse_definition(ObjectTypeDefinitionNode, cls.__schema__),
@@ -218,7 +216,7 @@ class GraphQLSubscription(GraphQLObject):
         )
 
     @staticmethod
-    def resolve_type(obj: Any, *args) -> str:
+    def resolve_type(obj: Any, *_) -> str:
         if isinstance(obj, GraphQLSubscription):
             return obj.__get_graphql_name__()
 
@@ -229,7 +227,7 @@ class GraphQLSubscription(GraphQLObject):
     @staticmethod
     def source(
         field: str,
-        type: Optional[Any] = None,
+        graphql_type: Optional[Any] = None,
         args: Optional[Dict[str, dict]] = None,
         description: Optional[str] = None,
     ):
@@ -237,7 +235,7 @@ class GraphQLSubscription(GraphQLObject):
         return object_subscriber(
             args=args,
             field=field,
-            type=type,
+            graphql_type=graphql_type,
             description=description,
         )
 
