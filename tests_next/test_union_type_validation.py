@@ -3,7 +3,9 @@ from ariadne_graphql_modules.next import (
     GraphQLObject,
     GraphQLUnion,
 )
-from ariadne_graphql_modules.next.uniontype import validate_union_type_with_schema
+from ariadne_graphql_modules.next.graphql_union.validators import (
+    validate_union_type_with_schema,
+)
 import pytest
 
 

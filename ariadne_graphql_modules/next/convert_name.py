@@ -1,27 +1,13 @@
 def convert_python_name_to_graphql(python_name: str) -> str:
-    final_name = ""
-    for i, c in enumerate(python_name):
-        if not i:
-            final_name += c.lower()
-        else:
-            if c == "_":
-                continue
-            if python_name[i - 1] == "_":
-                final_name += c.upper()
-            else:
-                final_name += c.lower()
-
-    return final_name
+    components = python_name.split("_")
+    return components[0].lower() + "".join(x.capitalize() for x in components[1:])
 
 
 def convert_graphql_name_to_python(graphql_name: str) -> str:
-    final_name = ""
-    for i, c in enumerate(graphql_name.lower()):
-        if not i:
-            final_name += c
+    python_name = ""
+    for c in graphql_name:
+        if c.isupper() or c.isdigit():
+            python_name += "_" + c.lower()
         else:
-            if final_name[-1] != "_" and (c != graphql_name[i] or c.isdigit()):
-                final_name += "_"
-            final_name += c
-
-    return final_name
+            python_name += c
+    return python_name.lstrip("_")

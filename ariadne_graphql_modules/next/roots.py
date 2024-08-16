@@ -2,6 +2,7 @@ from typing import Dict, List, Optional, cast
 
 from graphql import (
     ConstDirectiveNode,
+    DefinitionNode,
     DocumentNode,
     FieldDefinitionNode,
     NamedTypeNode,
@@ -10,17 +11,22 @@ from graphql import (
     TypeDefinitionNode,
 )
 
-DefinitionsList = List[TypeDefinitionNode]
+DefinitionsList = List[DefinitionNode]
 
 ROOTS_NAMES = ("Query", "Mutation", "Subscription")
 
 
 def merge_root_nodes(document_node: DocumentNode) -> DocumentNode:
-    roots_definitions: Dict[str, List] = {root: [] for root in ROOTS_NAMES}
+    roots_definitions: Dict[str, List[TypeDefinitionNode]] = {
+        root: [] for root in ROOTS_NAMES
+    }
     final_definitions: DefinitionsList = []
 
     for node in document_node.definitions:
-        if node.name.value in roots_definitions:
+        if (
+            isinstance(node, TypeDefinitionNode)
+            and node.name.value in roots_definitions
+        ):
             roots_definitions[node.name.value].append(node)
         else:
             final_definitions.append(node)
@@ -60,12 +66,11 @@ def merge_nodes(nodes: List[TypeDefinitionNode]) -> ObjectTypeDefinitionNode:
         for field_node in node.fields:
             field_name = field_node.name.value
             if field_name in fields:
-                other_type_source = fields[field_name][0]
+                other_type_source = fields[field_name]
                 raise ValueError(
                     f"Multiple {root_name} types are defining same field "
                     f"'{field_name}': {other_type_source}, {field_node}"
                 )
-
             fields[field_name] = field_node
 
     return ObjectTypeDefinitionNode(

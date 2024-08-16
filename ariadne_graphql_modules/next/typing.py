@@ -29,7 +29,7 @@ from .idtype import GraphQLID
 def get_type_node(
     metadata: GraphQLMetadata,
     type_hint: Any,
-    parent_type: Optional[GraphQLType] = None,
+    parent_type: Optional[Type[GraphQLType]] = None,
 ) -> TypeNode:
     if is_nullable(type_hint):
         nullable = True
@@ -37,19 +37,19 @@ def get_type_node(
     else:
         nullable = False
 
-    type_node = None
+    type_node: Optional[TypeNode] = None
     if is_list(type_hint):
         list_item_type_hint = unwrap_type(type_hint)
         type_node = ListTypeNode(
             type=get_type_node(metadata, list_item_type_hint, parent_type=parent_type)
         )
-    elif type_hint == str:
+    elif type_hint is str:
         type_node = NamedTypeNode(name=NameNode(value="String"))
-    elif type_hint == int:
+    elif type_hint is int:
         type_node = NamedTypeNode(name=NameNode(value="Int"))
-    elif type_hint == float:
+    elif type_hint is float:
         type_node = NamedTypeNode(name=NameNode(value="Float"))
-    elif type_hint == bool:
+    elif type_hint is bool:
         type_node = NamedTypeNode(name=NameNode(value="Boolean"))
     elif get_origin(type_hint) is Annotated:
         forward_ref, type_meta = get_args(type_hint)
@@ -67,7 +67,10 @@ def get_type_node(
     elif isinstance(type_hint, ForwardRef):
         type_name = type_hint.__forward_arg__
         if not parent_type or parent_type.__name__ != type_name:
-            ...
+            raise ValueError(
+                "Can't create a GraphQL return type"
+                f"for forward reference '{type_name}'."
+            )
 
         type_node = NamedTypeNode(
             name=NameNode(value=metadata.get_graphql_name(parent_type)),
@@ -94,7 +97,7 @@ def get_type_node(
 
 
 def is_list(type_hint: Any) -> bool:
-    return get_origin(type_hint) == list
+    return get_origin(type_hint) is list
 
 
 def is_nullable(type_hint: Any) -> bool:
@@ -119,7 +122,7 @@ def unwrap_type(type_hint: Any) -> Any:
 
 def get_deferred_type(
     type_hint: Any, forward_ref: ForwardRef, deferred_type: DeferredTypeData
-) -> Optional[Union[GraphQLType, Enum]]:
+) -> Union[Type[GraphQLType], Type[Enum]]:
     type_name = forward_ref.__forward_arg__
     module = import_module(deferred_type.path)
     graphql_type = getattr(module, type_name)

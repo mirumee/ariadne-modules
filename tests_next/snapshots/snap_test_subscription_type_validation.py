@@ -25,7 +25,7 @@ snapshots['test_multiple_sourced_for_field_with_schema 1'] = "Class 'Subscriptio
 
 snapshots['test_multiple_sources_without_schema 1'] = "Class 'SubscriptionType' defines multiple sources for field 'message_added'."
 
-snapshots['test_source_args_field_arg_not_dict_without_schema 1'] = 'Argument channel for message_added_generator must have a dict as its info.'
+snapshots['test_source_args_field_arg_not_dict_without_schema 1'] = 'Argument channel for message_added_generator must have a GraphQLObjectFieldArg as its info.'
 
 snapshots['test_source_args_not_dict_without_schema 1'] = 'The args for message_added_generator must be a dictionary if provided.'
 
