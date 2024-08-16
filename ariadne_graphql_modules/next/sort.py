@@ -1,11 +1,13 @@
-from typing import Dict, List, Union, cast
+from typing import Any, Dict, List, Union, cast
 
 from graphql import (
-    DirectiveNode,
+    DefinitionNode,
+    DirectiveDefinitionNode,
     DocumentNode,
     InputObjectTypeDefinitionNode,
     InterfaceTypeDefinitionNode,
     ListTypeNode,
+    NamedTypeNode,
     NonNullTypeNode,
     ObjectTypeDefinitionNode,
     ScalarTypeDefinitionNode,
@@ -18,7 +20,7 @@ from .roots import ROOTS_NAMES
 
 def sort_schema_document(document: DocumentNode) -> DocumentNode:
     unsorted_nodes: Dict[str, TypeDefinitionNode] = {}
-    sorted_nodes: List[TypeDefinitionNode] = []
+    sorted_nodes: List[Union[TypeDefinitionNode, DefinitionNode]] = []
 
     for node in document.definitions:
         cast_node = cast(TypeDefinitionNode, node)
@@ -39,18 +41,17 @@ def sort_schema_document(document: DocumentNode) -> DocumentNode:
 
 
 def get_sorted_directives(
-    unsorted_nodes: Dict[str, TypeDefinitionNode]
-) -> List[DirectiveNode]:
-    directives: List[DirectiveNode] = []
+    unsorted_nodes: Dict[str, Any]
+) -> List[DirectiveDefinitionNode]:
+    directives: List[DirectiveDefinitionNode] = []
     for name, model in tuple(unsorted_nodes.items()):
-        if isinstance(model, DirectiveNode):
+        if isinstance(model, DirectiveDefinitionNode):
             directives.append(unsorted_nodes.pop(name))
-
     return sorted(directives, key=lambda m: m.name.value)
 
 
 def get_sorted_scalars(
-    unsorted_nodes: Dict[str, TypeDefinitionNode]
+    unsorted_nodes: Dict[str, Any]
 ) -> List[ScalarTypeDefinitionNode]:
     scalars: List[ScalarTypeDefinitionNode] = []
     for name, model in tuple(unsorted_nodes.items()):
@@ -89,7 +90,8 @@ def get_sorted_object_dependencies(
         for interface in root_node.interfaces:
             interface_name = interface.name.value
             interface_node = unsorted_nodes.pop(interface_name, None)
-            if interface_node:
+
+            if isinstance(interface_node, InterfaceTypeDefinitionNode):
                 sorted_nodes.append(interface_node)
                 sorted_nodes += get_sorted_object_dependencies(
                     interface_node, unsorted_nodes
@@ -123,5 +125,6 @@ def get_sorted_input_dependencies(
 def unwrap_type_name(type_node: TypeNode) -> str:
     if isinstance(type_node, (ListTypeNode, NonNullTypeNode)):
         return unwrap_type_name(type_node.type)
-
-    return type_node.name.value
+    if isinstance(type_node, NamedTypeNode):
+        return type_node.name.value
+    raise ValueError("Unexpected type node encountered.")

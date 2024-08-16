@@ -11,32 +11,25 @@ class GraphQLType:
     __abstract__: bool = True
 
     @classmethod
-    def __get_graphql_name__(cls) -> "str":
-        if getattr(cls, "__graphql_name__", None):
-            return cls.__graphql_name__
+    def __get_graphql_name__(cls) -> str:
+        name = getattr(cls, "__graphql_name__", None)
+        if name:
+            return name
+
+        name_mappings = [
+            ("GraphQLEnum", "Enum"),
+            ("GraphQLInput", "Input"),
+            ("GraphQLScalar", ""),
+            ("Scalar", ""),
+            ("GraphQL", ""),
+            ("Type", ""),
+            ("GraphQLType", ""),
+        ]
 
         name = cls.__name__
-        if name.endswith("GraphQLEnum"):
-            # 'UserLevelGraphQLEnum' will produce the 'UserLevelEnum' name
-            return f"{name[:-11]}Enum" or name
-        if name.endswith("GraphQLInput"):
-            # 'UserGraphQLInput' will produce the 'UserInput' name
-            return f"{name[:-11]}Input" or name
-        if name.endswith("GraphQLScalar"):
-            # 'DateTimeGraphQLScalar' will produce the 'DateTime' name
-            return name[:-13] or name
-        if name.endswith("Scalar"):
-            # 'DateTimeLScalar' will produce the 'DateTime' name
-            return name[:-6] or name
-        if name.endswith("GraphQL"):
-            # 'UserGraphQL' will produce the 'User' name
-            return name[:-7] or name
-        if name.endswith("Type"):
-            # 'UserType' will produce the 'User' name
-            return name[:-4] or name
-        if name.endswith("GraphQLType"):
-            # 'UserGraphQLType' will produce the 'User' name
-            return name[:-11] or name
+        for suffix, replacement in name_mappings:
+            if name.endswith(suffix):
+                return name[: -len(suffix)] + replacement
 
         return name
 
@@ -47,7 +40,9 @@ class GraphQLType:
         )
 
     @classmethod
-    def __get_graphql_types__(cls, _: "GraphQLMetadata") -> Iterable["GraphQLType"]:
+    def __get_graphql_types__(
+        cls, _: "GraphQLMetadata"
+    ) -> Iterable[Union[Type["GraphQLType"], Type[Enum]]]:
         """Returns iterable with GraphQL types associated with this type"""
         return [cls]
 
@@ -89,7 +84,7 @@ class GraphQLMetadata:
             if hasattr(graphql_type, "__get_graphql_model__"):
                 self.models[graphql_type] = graphql_type.__get_graphql_model__(self)
             elif issubclass(graphql_type, Enum):
-                from .enumtype import (  # pylint: disable=R0401,C0415
+                from .graphql_enum_type import (  # pylint: disable=R0401,C0415
                     create_graphql_enum_model,
                 )
 

@@ -1,4 +1,4 @@
-from ariadne_graphql_modules.next.objecttype import get_field_args_from_resolver
+from ariadne_graphql_modules.next.graphql_object import get_field_args_from_resolver
 
 
 def test_field_has_no_args_after_obj_and_info_args():

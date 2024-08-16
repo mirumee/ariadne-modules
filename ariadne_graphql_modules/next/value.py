@@ -78,7 +78,9 @@ def get_value_from_node(node: ConstValueNode) -> Any:
         return node.value
 
     if isinstance(node, (ConstObjectValueNode, ObjectValueNode)):
-        return {field.name.value: get_value_from_node(field) for field in node.fields}
+        return {
+            field.name.value: get_value_from_node(field.value) for field in node.fields
+        }
 
     if isinstance(node, ListValueNode):
         return [get_value_from_node(value) for value in node.values]

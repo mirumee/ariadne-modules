@@ -6,7 +6,7 @@ class GraphQLID:
 
     value: str
 
-    def __init__(self, value: Union[int, str] = None):
+    def __init__(self, value: Union[int, str]):
         self.value = str(value)
 
     def __eq__(self, value: Any) -> bool:
