@@ -5,7 +5,7 @@ from .convert_name import (
 )
 from .deferredtype import deferred
 from .description import get_description_node
-from .enumtype import (
+from .graphql_enum_type import (
     GraphQLEnum,
     GraphQLEnumModel,
     create_graphql_enum_model,
@@ -13,15 +13,15 @@ from .enumtype import (
 )
 from .executable_schema import make_executable_schema
 from .idtype import GraphQLID
-from .inputtype import GraphQLInput, GraphQLInputModel
-from .objecttype import GraphQLObject, GraphQLObjectModel, object_field
+from .graphql_input import GraphQLInput, GraphQLInputModel
+from .graphql_object import GraphQLObject, GraphQLObjectModel, object_field
 from .roots import ROOTS_NAMES, merge_root_nodes
-from .scalartype import GraphQLScalar, GraphQLScalarModel
+from .graphql_scalar import GraphQLScalar, GraphQLScalarModel
 from .sort import sort_schema_document
-from .uniontype import GraphQLUnion, GraphQLUnionModel
+from .graphql_union import GraphQLUnion, GraphQLUnionModel
 from .value import get_value_from_node, get_value_node
-from .interfacetype import GraphQLInterface, GraphQLInterfaceModel
-from .subscriptiontype import GraphQLSubscription, GraphQLSubscriptionModel
+from .graphql_interface import GraphQLInterface, GraphQLInterfaceModel
+from .graphql_subscription import GraphQLSubscription, GraphQLSubscriptionModel
 
 __all__ = [
     "GraphQLEnum",

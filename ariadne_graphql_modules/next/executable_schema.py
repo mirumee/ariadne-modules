@@ -22,16 +22,11 @@ from .base import GraphQLMetadata, GraphQLModel, GraphQLType
 from .roots import ROOTS_NAMES, merge_root_nodes
 from .sort import sort_schema_document
 
-SchemaType = Union[
-    str,
-    Enum,
-    SchemaBindable,
-    Type[GraphQLType],
-]
+SchemaType = Union[str, Enum, SchemaBindable, Type[GraphQLType], Type[Enum]]
 
 
 def make_executable_schema(
-    *types: Union[SchemaType, List[SchemaType]],
+    *types: SchemaType,
     directives: Optional[Dict[str, Type[SchemaDirectiveVisitor]]] = None,
     convert_names_case: Union[bool, SchemaNameConverter] = False,
     merge_roots: bool = True,
@@ -47,7 +42,7 @@ def make_executable_schema(
     for type_def in types_list:
         if isinstance(type_def, SchemaBindable):
             schema_bindables.append(type_def)
-        else:
+        elif isinstance(type_def, type) and issubclass(type_def, (GraphQLType, Enum)):
             schema_bindables.append(metadata.get_graphql_model(type_def))
 
     schema_models: List[GraphQLModel] = [
@@ -114,19 +109,19 @@ def find_type_defs(types: Sequence[SchemaType]) -> List[str]:
 
 
 def flatten_types(
-    types: Sequence[Union[SchemaType, List[SchemaType]]],
+    types: Sequence[SchemaType],
     metadata: GraphQLMetadata,
-) -> List[Union[Enum, SchemaBindable, GraphQLModel]]:
+) -> List[SchemaType]:
     flat_schema_types_list: List[SchemaType] = flatten_schema_types(
         types, metadata, dedupe=True
     )
 
-    types_list: List[Union[Enum, SchemaBindable, GraphQLModel]] = []
+    types_list: List[SchemaType] = []
     for type_def in flat_schema_types_list:
         if isinstance(type_def, SchemaBindable):
             types_list.append(type_def)
 
-        elif issubclass(type_def, GraphQLType):
+        elif isinstance(type_def, type) and issubclass(type_def, GraphQLType):
             type_name = type_def.__name__
 
             if getattr(type_def, "__abstract__", None):
@@ -137,7 +132,7 @@ def flatten_types(
 
             types_list.append(type_def)
 
-        elif issubclass(type_def, Enum):
+        elif isinstance(type_def, type) and issubclass(type_def, Enum):
             types_list.append(type_def)
 
         elif isinstance(type_def, list):
@@ -161,9 +156,9 @@ def flatten_schema_types(
             flat_list += flatten_schema_types(type_def, metadata, dedupe=False)
         elif isinstance(type_def, SchemaBindable):
             flat_list.append(type_def)
-        elif issubclass(type_def, Enum):
+        elif isinstance(type_def, type) and issubclass(type_def, Enum):
             flat_list.append(type_def)
-        elif issubclass(type_def, GraphQLType):
+        elif isinstance(type_def, type) and issubclass(type_def, GraphQLType):
             add_graphql_type_to_flat_list(flat_list, checked_types, type_def, metadata)
         elif get_graphql_type_name(type_def):
             flat_list.append(type_def)
@@ -182,9 +177,9 @@ def flatten_schema_types(
 def add_graphql_type_to_flat_list(
     flat_list: List[SchemaType],
     checked_types: List[Type[GraphQLType]],
-    type_def: GraphQLType,
+    type_def: Type[GraphQLType],
     metadata: GraphQLMetadata,
-) -> List[SchemaType]:
+) -> None:
     if type_def in checked_types:
         return
 
@@ -203,10 +198,10 @@ def get_graphql_type_name(type_def: SchemaType) -> Optional[str]:
     if isinstance(type_def, SchemaBindable):
         return None
 
-    if issubclass(type_def, Enum):
+    if isinstance(type_def, type) and issubclass(type_def, Enum):
         return type_def.__name__
 
-    if issubclass(type_def, GraphQLType):
+    if isinstance(type_def, type) and issubclass(type_def, GraphQLType):
         return type_def.__get_graphql_name__()
 
     return None
@@ -223,8 +218,9 @@ def assert_types_unique(type_defs: List[SchemaType], merge_roots: bool):
             continue
 
         if type_name in types_names:
+            type_def_name = getattr(type_def, "__name__") or type_def
             raise ValueError(
-                f"Types '{type_def.__name__}' and '{types_names[type_name]}' both define "
+                f"Types '{type_def_name}' and '{types_names[type_name]}' both define "
                 f"GraphQL type with name '{type_name}'."
             )
 
@@ -236,8 +232,10 @@ def assert_types_not_abstract(type_defs: List[SchemaType]):
         if isinstance(type_def, SchemaBindable):
             continue
 
-        if issubclass(type_def, GraphQLType) and getattr(
-            type_def, "__abstract__", None
+        if (
+            isinstance(type_def, type)
+            and issubclass(type_def, GraphQLType)
+            and getattr(type_def, "__abstract__", None)
         ):
             raise ValueError(
                 f"Type '{type_def.__name__}' is an abstract type and can't be used "

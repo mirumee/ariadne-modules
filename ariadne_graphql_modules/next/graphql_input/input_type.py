@@ -1,25 +1,24 @@
 from copy import deepcopy
-from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Dict, Iterable, List, Optional, Type, cast
 
-from ariadne import InputType as InputTypeBindable
-from graphql import (
-    GraphQLSchema,
-    InputObjectTypeDefinitionNode,
-    InputValueDefinitionNode,
-    NameNode,
-)
+from graphql import InputObjectTypeDefinitionNode, InputValueDefinitionNode, NameNode
 
-from ..utils import parse_definition
-from .base import GraphQLMetadata, GraphQLModel, GraphQLType
-from .convert_name import (
+from .input_field import GraphQLInputField
+from ..base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ..convert_name import (
     convert_graphql_name_to_python,
     convert_python_name_to_graphql,
 )
-from .description import get_description_node
-from .typing import get_graphql_type, get_type_node
-from .validators import validate_description, validate_name
-from .value import get_value_from_node, get_value_node
+from ..description import get_description_node
+from ..graphql_input.input_model import GraphQLInputModel
+from ..graphql_input.validators import (
+    validate_input_type,
+    validate_input_type_with_schema,
+)
+from ..typing import get_graphql_type, get_type_node
+from ..value import get_value_node
+from ...utils import parse_definition
 
 
 class GraphQLInput(GraphQLType):
@@ -74,9 +73,7 @@ class GraphQLInput(GraphQLType):
             parse_definition(InputObjectTypeDefinitionNode, cls.__schema__),
         )
 
-        out_names: Dict[str, str] = {}
-        if getattr(cls, "__out_names__"):
-            out_names.update(cls.__out_names__)
+        out_names: Dict[str, str] = getattr(cls, "__out_names__") or {}
 
         fields: List[InputValueDefinitionNode] = []
         for field in definition.fields:
@@ -181,9 +178,11 @@ class GraphQLInput(GraphQLType):
         )
 
     @classmethod
-    def __get_graphql_types__(cls, _: "GraphQLMetadata") -> Iterable["GraphQLType"]:
+    def __get_graphql_types__(
+        cls, _: "GraphQLMetadata"
+    ) -> Iterable[Type["GraphQLType"] | Type[Enum]]:
         """Returns iterable with GraphQL types associated with this type"""
-        types: List[GraphQLType] = [cls]
+        types: List[Type["GraphQLType"] | Type[Enum]] = [cls]
 
         for attr_name in dir(cls):
             cls_attr = getattr(cls, attr_name)
@@ -221,38 +220,8 @@ class GraphQLInput(GraphQLType):
         )
 
 
-class GraphQLInputField:
-    name: Optional[str]
-    description: Optional[str]
-    graphql_type: Optional[Any]
-    default_value: Optional[Any]
-
-    def __init__(
-        self,
-        *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        graphql_type: Optional[Any] = None,
-        default_value: Optional[Any] = None,
-    ):
-        self.name = name
-        self.description = description
-        self.graphql_type = graphql_type
-        self.default_value = default_value
-
-
-@dataclass(frozen=True)
-class GraphQLInputModel(GraphQLModel):
-    out_type: Any
-    out_names: Dict[str, str]
-
-    def bind_to_schema(self, schema: GraphQLSchema):
-        bindable = InputTypeBindable(self.name, self.out_type, self.out_names)
-        bindable.bind_to_schema(schema)
-
-
 def get_field_node_from_type_hint(
-    parent_type: GraphQLInput,
+    parent_type: Type[GraphQLInput],
     metadata: GraphQLMetadata,
     field_name: str,
     field_type: Any,
@@ -270,118 +239,3 @@ def get_field_node_from_type_hint(
         type=get_type_node(metadata, field_type, parent_type),
         default_value=default_value,
     )
-
-
-def validate_input_type_with_schema(cls: Type[GraphQLInput]) -> Dict[str, Any]:
-    definition = cast(
-        InputObjectTypeDefinitionNode,
-        parse_definition(InputObjectTypeDefinitionNode, cls.__schema__),
-    )
-
-    if not isinstance(definition, InputObjectTypeDefinitionNode):
-        raise ValueError(
-            f"Class '{cls.__name__}' defines '__schema__' attribute "
-            "with declaration for an invalid GraphQL type. "
-            f"('{definition.__class__.__name__}' != "
-            f"'{InputObjectTypeDefinitionNode.__name__}')"
-        )
-
-    validate_name(cls, definition)
-    validate_description(cls, definition)
-
-    if not definition.fields:
-        raise ValueError(
-            f"Class '{cls.__name__}' defines '__schema__' attribute "
-            "with declaration for an input type without any fields. "
-        )
-
-    fields_names: List[str] = [field.name.value for field in definition.fields]
-    used_out_names: List[str] = []
-
-    out_names: Dict[str, str] = getattr(cls, "__out_names__", {}) or {}
-    for field_name, out_name in out_names.items():
-        if field_name not in fields_names:
-            raise ValueError(
-                f"Class '{cls.__name__}' defines an outname for '{field_name}' "
-                "field in it's '__out_names__' attribute which is not defined "
-                "in '__schema__'."
-            )
-
-        if out_name in used_out_names:
-            raise ValueError(
-                f"Class '{cls.__name__}' defines multiple fields with an outname "
-                f"'{out_name}' in it's '__out_names__' attribute."
-            )
-
-        used_out_names.append(out_name)
-
-    return get_input_type_with_schema_kwargs(cls, definition, out_names)
-
-
-def get_input_type_with_schema_kwargs(
-    cls: Type[GraphQLInput],
-    definition: InputObjectTypeDefinitionNode,
-    out_names: Dict[str, str],
-) -> Dict[str, Any]:
-    kwargs: Dict[str, Any] = {}
-    for field in definition.fields:
-        try:
-            python_name = out_names[field.name.value]
-        except KeyError:
-            python_name = convert_graphql_name_to_python(field.name.value)
-
-        attr_default_value = getattr(cls, python_name, None)
-        if attr_default_value is not None and not callable(attr_default_value):
-            default_value = attr_default_value
-        elif field.default_value:
-            default_value = get_value_from_node(field.default_value)
-        else:
-            default_value = None
-
-        kwargs[python_name] = default_value
-
-    return kwargs
-
-
-def validate_input_type(cls: Type[GraphQLInput]) -> Dict[str, Any]:
-    if cls.__out_names__:
-        raise ValueError(
-            f"Class '{cls.__name__}' defines '__out_names__' attribute. "
-            "This is not supported for types not defining '__schema__'."
-        )
-
-    return get_input_type_kwargs(cls)
-
-
-def get_input_type_kwargs(cls: Type[GraphQLInput]) -> Dict[str, Any]:
-    kwargs: Dict[str, Any] = {}
-
-    for attr_name in cls.__annotations__:
-        if attr_name.startswith("__"):
-            continue
-
-        attr_value = getattr(cls, attr_name, None)
-        if isinstance(attr_value, GraphQLInputField):
-            validate_field_default_value(cls, attr_name, attr_value.default_value)
-            kwargs[attr_name] = attr_value.default_value
-        elif not callable(attr_value):
-            validate_field_default_value(cls, attr_name, attr_value)
-            kwargs[attr_name] = attr_value
-
-    return kwargs
-
-
-def validate_field_default_value(
-    cls: Type[GraphQLInput], field_name: str, default_value: Any
-):
-    if default_value is None:
-        return
-
-    try:
-        get_value_node(default_value)
-    except TypeError as e:
-        raise TypeError(
-            f"Class '{cls.__name__}' defines default value "
-            f"for the '{field_name}' field that can't be "
-            "represented in GraphQL schema."
-        ) from e

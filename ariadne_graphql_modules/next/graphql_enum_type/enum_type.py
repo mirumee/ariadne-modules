@@ -1,20 +1,13 @@
-from dataclasses import dataclass
 from enum import Enum
 from inspect import isclass
 from typing import Any, Dict, Iterable, List, Optional, Set, Type, Union, cast
 
-from ariadne import EnumType
-from graphql import (
-    EnumTypeDefinitionNode,
-    EnumValueDefinitionNode,
-    GraphQLSchema,
-    NameNode,
-)
-
-from ..utils import parse_definition
-from .base import GraphQLMetadata, GraphQLModel, GraphQLType
-from .description import get_description_node
-from .validators import validate_description, validate_name
+from graphql import EnumTypeDefinitionNode, EnumValueDefinitionNode, NameNode
+from ..base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ..description import get_description_node
+from ..graphql_enum_type.enum_model import GraphQLEnumModel
+from ..validators import validate_description, validate_name
+from ...utils import parse_definition
 
 
 class GraphQLEnum(GraphQLType):
@@ -31,11 +24,7 @@ class GraphQLEnum(GraphQLType):
             return
 
         cls.__abstract__ = False
-
-        if cls.__dict__.get("__schema__"):
-            validate_enum_type_with_schema(cls)
-        else:
-            validate_enum_type(cls)
+        cls._validate()
 
     @classmethod
     def __get_graphql_model__(cls, metadata: GraphQLMetadata) -> "GraphQLModel":
@@ -46,22 +35,25 @@ class GraphQLEnum(GraphQLType):
 
         return cls.__get_graphql_model_without_schema__(name)
 
-    # pylint: disable=E1101
     @classmethod
     def __get_graphql_model_with_schema__(cls, name: str) -> "GraphQLEnumModel":
-        definition = cast(
+        definition: EnumTypeDefinitionNode = cast(
             EnumTypeDefinitionNode,
             parse_definition(EnumTypeDefinitionNode, cls.__schema__),
         )
 
         members = getattr(cls, "__members__", [])
         members_values: Dict[str, Any] = {}
+
         if isinstance(members, dict):
             members_values = dict(members.items())
         elif isclass(members) and issubclass(members, Enum):
-            members_values = {i.name: i for i in members}
+            members_values = {member.name: member for member in members}
         else:
-            members_values = {i.name.value: i.name.value for i in definition.values}
+            members_values = {
+                value.name.value: value.name.value
+                for value in definition.values  # pylint: disable=no-member
+            }
 
         members_descriptions = getattr(cls, "__members_descriptions__", {})
 
@@ -85,7 +77,7 @@ class GraphQLEnum(GraphQLType):
                             )
                         ),
                     )
-                    for value in definition.values
+                    for value in definition.values  # pylint: disable=no-member
                 ),
             ),
         )
@@ -122,6 +114,136 @@ class GraphQLEnum(GraphQLType):
                     for value_name in members_values
                 ),
             ),
+        )
+
+    @classmethod
+    def _validate(cls):
+        if getattr(cls, "__schema__", None):
+            cls._validate_enum_type_with_schema()
+        else:
+            cls._validate_enum_type()
+
+    @classmethod
+    def _validate_enum_type_with_schema(cls):
+        definition = parse_definition(EnumTypeDefinitionNode, cls.__schema__)
+
+        if not isinstance(definition, EnumTypeDefinitionNode):
+            raise ValueError(
+                f"Class '{cls.__name__}' defines '__schema__' attribute "
+                f"with declaration for an invalid GraphQL type. "
+                f"('{definition.__class__.__name__}' != '{EnumTypeDefinitionNode.__name__}')"
+            )
+
+        validate_name(cls, definition)
+        validate_description(cls, definition)
+
+        members_names = {
+            value.name.value for value in definition.values  # pylint: disable=no-member
+        }
+        if not members_names:
+            raise ValueError(
+                f"Class '{cls.__name__}' defines '__schema__' attribute "
+                "that doesn't declare any enum members."
+            )
+
+        members_values = getattr(cls, "__members__", None)
+        if members_values:
+            cls.validate_members_values(members_values, members_names)
+
+        members_descriptions = getattr(cls, "__members_descriptions__", {})
+        cls.validate_enum_members_descriptions(members_names, members_descriptions)
+
+        duplicate_descriptions = [
+            ast_member.name.value
+            for ast_member in definition.values  # pylint: disable=no-member
+            if ast_member.description
+            and ast_member.description.value
+            and members_descriptions.get(ast_member.name.value)
+        ]
+
+        if duplicate_descriptions:
+            raise ValueError(
+                f"Class '{cls.__name__}' '__members_descriptions__' attribute defines "
+                f"descriptions for enum members that also have description in '__schema__' "
+                f"attribute. (members: '{', '.join(duplicate_descriptions)}')"
+            )
+
+    @classmethod
+    def validate_members_values(cls, members_values, members_names):
+        if isinstance(members_values, list):
+            raise ValueError(
+                f"Class '{cls.__name__}' '__members__' attribute "
+                "can't be a list when used together with '__schema__'."
+            )
+
+        missing_members = None
+        if isinstance(members_values, dict):
+            missing_members = members_names - set(members_values)
+        elif isclass(members_values) and issubclass(members_values, Enum):
+            missing_members = members_names - {value.name for value in members_values}
+
+        if missing_members:
+            raise ValueError(
+                f"Class '{cls.__name__}' '__members__' is missing values "
+                f"for enum members defined in '__schema__'. "
+                f"(missing items: '{', '.join(missing_members)}')"
+            )
+
+    @classmethod
+    def _validate_enum_type(cls):
+        members_values = getattr(cls, "__members__", None)
+        if not members_values:
+            raise ValueError(
+                f"Class '{cls.__name__}' '__members__' attribute is either missing or "
+                "empty. Either define it or provide full SDL for this enum using "
+                "the '__schema__' attribute."
+            )
+
+        if not any(
+            [
+                isinstance(members_values, (dict, list)),
+                isclass(members_values) and issubclass(members_values, Enum),
+            ]
+        ):
+            raise ValueError(
+                f"Class '{cls.__name__}' '__members__' attribute is of unsupported type. "
+                f"Expected 'Dict[str, Any]', 'Type[Enum]' or List[str]. "
+                f"(found: '{type(members_values)}')"
+            )
+
+        members_names = cls.get_members_set(members_values)
+        members_descriptions = getattr(cls, "__members_descriptions__", {})
+        cls.validate_enum_members_descriptions(members_names, members_descriptions)
+
+    @classmethod
+    def validate_enum_members_descriptions(
+        cls, members: Set[str], members_descriptions: dict
+    ):
+        invalid_descriptions = set(members_descriptions) - members
+        if invalid_descriptions:
+            invalid_descriptions_str = "', '".join(invalid_descriptions)
+            raise ValueError(
+                f"Class '{cls.__name__}' '__members_descriptions__' attribute defines "
+                f"descriptions for undefined enum members. "
+                f"(undefined members: '{invalid_descriptions_str}')"
+            )
+
+    @staticmethod
+    def get_members_set(
+        members: Optional[Union[Type[Enum], Dict[str, Any], List[str]]]
+    ) -> Set[str]:
+        if isinstance(members, dict):
+            return set(members.keys())
+
+        if isclass(members) and issubclass(members, Enum):
+            return set(member.name for member in members)
+
+        if isinstance(members, list):
+            return set(members)
+
+        raise TypeError(
+            f"Expected members to be of type Dict[str, Any], List[str], or Enum."
+            f"Got {type(members).__name__} instead."
         )
 
 
@@ -190,15 +312,6 @@ def create_graphql_enum_model(
     )
 
 
-@dataclass(frozen=True)
-class GraphQLEnumModel(GraphQLModel):
-    members: Dict[str, Any]
-
-    def bind_to_schema(self, schema: GraphQLSchema):
-        bindable = EnumType(self.name, values=self.members)
-        bindable.bind_to_schema(schema)
-
-
 def graphql_enum(
     cls: Optional[Type[Enum]] = None,
     *,
@@ -218,130 +331,13 @@ def graphql_enum(
             members_exclude=members_exclude,
         )
 
-        @classmethod
         def __get_graphql_model__(*_) -> GraphQLEnumModel:
             return graphql_model
 
-        setattr(cls, "__get_graphql_model__", __get_graphql_model__)
+        setattr(cls, "__get_graphql_model__", classmethod(__get_graphql_model__))
         return cls
 
     if cls:
         return graphql_enum_decorator(cls)
 
     return graphql_enum_decorator
-
-
-# pylint: disable=E1101
-def validate_enum_type_with_schema(cls: Type[GraphQLEnum]):
-    definition = parse_definition(EnumTypeDefinitionNode, cls.__schema__)
-
-    if not isinstance(definition, EnumTypeDefinitionNode):
-        raise ValueError(
-            f"Class '{cls.__name__}' defines '__schema__' attribute "
-            f"with declaration for an invalid GraphQL type. "
-            f"('{definition.__class__.__name__}' != '{EnumTypeDefinitionNode.__name__}')"
-        )
-
-    validate_name(cls, definition)
-    validate_description(cls, definition)
-
-    members_names = {value.name.value for value in definition.values}
-    if not members_names:
-        raise ValueError(
-            f"Class '{cls.__name__}' defines '__schema__' attribute "
-            "that doesn't declare any enum members."
-        )
-
-    members_values = getattr(cls, "__members__", None)
-    if members_values:
-        validate_members_values(cls, members_values, members_names)
-
-    members_descriptions = getattr(cls, "__members_descriptions__", {})
-    validate_enum_members_descriptions(cls, members_names, members_descriptions)
-
-    duplicate_descriptions = [
-        ast_member.name.value
-        for ast_member in definition.values
-        if ast_member.description
-        and ast_member.description.value
-        and members_descriptions.get(ast_member.name.value)
-    ]
-
-    if duplicate_descriptions:
-        raise ValueError(
-            f"Class '{cls.__name__}' '__members_descriptions__' attribute defines "
-            f"descriptions for enum members that also have description in '__schema__' "
-            f"attribute. (members: '{', '.join(duplicate_descriptions)}')"
-        )
-
-
-def validate_members_values(cls, members_values, members_names):
-    if isinstance(members_values, list):
-        raise ValueError(
-            f"Class '{cls.__name__}' '__members__' attribute "
-            "can't be a list when used together with '__schema__'."
-        )
-
-    missing_members = None
-    if isinstance(members_values, dict):
-        missing_members = members_names - set(members_values)
-    elif isclass(members_values) and issubclass(members_values, Enum):
-        missing_members = members_names - {value.name for value in members_values}
-
-    if missing_members:
-        raise ValueError(
-            f"Class '{cls.__name__}' '__members__' is missing values "
-            f"for enum members defined in '__schema__'. "
-            f"(missing items: '{', '.join(missing_members)}')"
-        )
-
-
-def validate_enum_type(cls: Type[GraphQLEnum]):
-    members_values = getattr(cls, "__members__", None)
-    if not members_values:
-        raise ValueError(
-            f"Class '{cls.__name__}' '__members__' attribute is either missing or "
-            "empty. Either define it or provide full SDL for this enum using "
-            "the '__schema__' attribute."
-        )
-
-    if not any(
-        [
-            isinstance(members_values, (dict, list)),
-            isclass(members_values) and issubclass(members_values, Enum),
-        ]
-    ):
-        raise ValueError(
-            f"Class '{cls.__name__}' '__members__' attribute is of unsupported type. "
-            f"Expected 'Dict[str, Any]', 'Type[Enum]' or List[str]. "
-            f"(found: '{type(members_values)}')"
-        )
-
-    members_names = get_members_set(members_values)
-    members_descriptions = getattr(cls, "__members_descriptions__", {})
-    validate_enum_members_descriptions(cls, members_names, members_descriptions)
-
-
-def validate_enum_members_descriptions(
-    cls: Type[GraphQLEnum], members: Set[str], members_descriptions: dict
-):
-    invalid_descriptions = set(members_descriptions) - members
-    if invalid_descriptions:
-        invalid_descriptions_str = "', '".join(invalid_descriptions)
-        raise ValueError(
-            f"Class '{cls.__name__}' '__members_descriptions__' attribute defines "
-            f"descriptions for undefined enum members. "
-            f"(undefined members: '{invalid_descriptions_str}')"
-        )
-
-
-def get_members_set(
-    members: Optional[Union[Type[Enum], Dict[str, Any], List[str]]]
-) -> Set[str]:
-    if isinstance(members, dict):
-        return set(members.keys())
-
-    if isclass(members) and issubclass(members, Enum):
-        return set(member.name for member in members)
-
-    return set(members)
