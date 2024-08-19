@@ -1,0 +1,3 @@
+UserCreateMutation class was defined with attribute 'resolve_mutation' but it's not
+  callable
+...

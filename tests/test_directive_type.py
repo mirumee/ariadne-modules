@@ -5,45 +5,53 @@ from graphql import GraphQLError, default_field_resolver, graphql_sync
 from ariadne_graphql_modules import DirectiveType, ObjectType, make_executable_schema
 
 
-def test_directive_type_raises_attribute_error_when_defined_without_schema(snapshot):
+def test_directive_type_raises_attribute_error_when_defined_without_schema(
+    data_regression,
+):
     with pytest.raises(AttributeError) as err:
         # pylint: disable=unused-variable
         class ExampleDirective(DirectiveType):
             pass
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_directive_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
+def test_directive_type_raises_error_when_defined_with_invalid_schema_type(
+    data_regression,
+):
     with pytest.raises(TypeError) as err:
         # pylint: disable=unused-variable
         class ExampleDirective(DirectiveType):
             __schema__ = True
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_directive_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
+def test_directive_type_raises_error_when_defined_with_invalid_schema_str(
+    data_regression,
+):
     with pytest.raises(GraphQLError) as err:
         # pylint: disable=unused-variable
         class ExampleDirective(DirectiveType):
             __schema__ = "directivo @example on FIELD_DEFINITION"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_directive_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleDirective(DirectiveType):
             __schema__ = "scalar example"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_directive_type_raises_error_when_defined_with_multiple_types_schema(snapshot):
+def test_directive_type_raises_error_when_defined_with_multiple_types_schema(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleDirective(DirectiveType):
@@ -53,16 +61,18 @@ def test_directive_type_raises_error_when_defined_with_multiple_types_schema(sna
             directive @other on OBJECT
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_directive_type_raises_attribute_error_when_defined_without_visitor(snapshot):
+def test_directive_type_raises_attribute_error_when_defined_without_visitor(
+    data_regression,
+):
     with pytest.raises(AttributeError) as err:
         # pylint: disable=unused-variable
         class ExampleDirective(DirectiveType):
             __schema__ = "directive @example on FIELD_DEFINITION"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 class ExampleSchemaVisitor(SchemaDirectiveVisitor):

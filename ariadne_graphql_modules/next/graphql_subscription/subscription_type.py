@@ -145,7 +145,6 @@ class GraphQLSubscription(GraphQLObject):
                 fields=tuple(fields),
                 interfaces=definition.interfaces,
             ),
-            resolve_type=cls.resolve_type,
             resolvers=resolvers,
             subscribers=subscribers,
             aliases=getattr(cls, "__aliases__", {}),
@@ -196,20 +195,10 @@ class GraphQLSubscription(GraphQLObject):
                 fields=tuple(fields_ast),
                 interfaces=tuple(interfaces_ast),
             ),
-            resolve_type=cls.resolve_type,
             resolvers=resolvers,
             aliases=aliases,
             out_names=out_names,
             subscribers=subscribers,
-        )
-
-    @staticmethod
-    def resolve_type(obj: Any, *_) -> str:
-        if isinstance(obj, GraphQLSubscription):
-            return obj.__get_graphql_name__()
-
-        raise ValueError(
-            f"Cannot resolve GraphQL type {obj} for object of type '{type(obj).__name__}'."
         )
 
     @staticmethod

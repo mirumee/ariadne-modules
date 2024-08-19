@@ -1,0 +1,3 @@
+ExtendUserInput requires 'User' to be GraphQL input but other type was provided in
+  '__requires__'
+...

@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, cast
+from typing import Dict, cast
 
 from ariadne import InterfaceType
 from ariadne.types import Resolver
-from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema
+from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLTypeResolver
 
 from ..base import GraphQLModel
 
@@ -11,7 +11,7 @@ from ..base import GraphQLModel
 @dataclass(frozen=True)
 class GraphQLInterfaceModel(GraphQLModel):
     resolvers: Dict[str, Resolver]
-    resolve_type: Callable[[Any], Any]
+    resolve_type: GraphQLTypeResolver
     out_names: Dict[str, Dict[str, str]]
     aliases: Dict[str, str]
 

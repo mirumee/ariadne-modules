@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, cast
+from typing import Dict, cast
 
 from ariadne import SubscriptionType
 from ariadne.types import Resolver, Subscriber
@@ -11,7 +11,6 @@ from ariadne_graphql_modules.next.base import GraphQLModel
 @dataclass(frozen=True)
 class GraphQLSubscriptionModel(GraphQLModel):
     resolvers: Dict[str, Resolver]
-    resolve_type: Callable[[Any], Any]
     out_names: Dict[str, Dict[str, str]]
     aliases: Dict[str, str]
     subscribers: Dict[str, Subscriber]

@@ -1,0 +1,3 @@
+ExtendExampleUnion class was defined without required GraphQL union definition for
+  'Result' in __requires__
+...

@@ -315,18 +315,31 @@ def test_interface_resolvers_and_field_descriptions(assert_schema_equals):
 
         __implements__ = [UserInterface]
 
-    class QueryType(GraphQLObject):
-        @GraphQLObject.field
-        def user(*_) -> UserType:
-            return UserType(id="1")
+    class MyType(GraphQLObject):
+        id: GraphQLID
+        name: str
 
-    schema = make_executable_schema(QueryType, UserType, UserInterface)
+        __implements__ = [UserInterface]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=List[UserInterface])
+        def users(*_) -> List[Union[UserType, MyType]]:
+            return [MyType(id="2", name="old", summary="ss", score=22)]
+
+    schema = make_executable_schema(QueryType, UserType, MyType, UserInterface)
 
     assert_schema_equals(
         schema,
         """
         type Query {
-          user: User!
+          users: [UserInterface!]!
+        }
+
+        interface UserInterface {
+          summary: String!
+
+          \"\"\"Lorem ipsum.\"\"\"
+          score: Int!
         }
 
         type User implements UserInterface {
@@ -337,15 +350,17 @@ def test_interface_resolvers_and_field_descriptions(assert_schema_equals):
           id: ID!
         }
 
-        interface UserInterface {
+        type My implements UserInterface {
           summary: String!
 
           \"\"\"Lorem ipsum.\"\"\"
           score: Int!
+          id: ID!
+          name: String!
         }
         """,
     )
-    result = graphql_sync(schema, "{ user { score } }")
+    result = graphql_sync(schema, "{ users { ... on My { __typename score } } }")
 
     assert not result.errors
-    assert result.data == {"user": {"score": 200}}
+    assert result.data == {"users": [{"__typename": "My", "score": 200}]}

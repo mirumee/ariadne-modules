@@ -36,7 +36,7 @@ class UnionType(BindableType):
         )
 
         cls.graphql_name = cls.graphql_def.name.value
-        cls.graphql_type = type(cls.graphql_def)
+        cls.graphql_type = type(cls.graphql_def)  # type: ignore
 
         requirements = cls.__get_requirements__()
         cls.__validate_requirements_contain_extended_type__(

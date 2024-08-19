@@ -12,45 +12,51 @@ from ariadne_graphql_modules import (
 )
 
 
-def test_scalar_type_raises_attribute_error_when_defined_without_schema(snapshot):
+def test_scalar_type_raises_attribute_error_when_defined_without_schema(
+    data_regression,
+):
     with pytest.raises(AttributeError) as err:
         # pylint: disable=unused-variable
         class DateScalar(ScalarType):
             pass
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_scalar_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
+def test_scalar_type_raises_error_when_defined_with_invalid_schema_type(
+    data_regression,
+):
     with pytest.raises(TypeError) as err:
         # pylint: disable=unused-variable
         class DateScalar(ScalarType):
             __schema__ = True
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_scalar_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
+def test_scalar_type_raises_error_when_defined_with_invalid_schema_str(data_regression):
     with pytest.raises(GraphQLError) as err:
         # pylint: disable=unused-variable
         class DateScalar(ScalarType):
             __schema__ = "scalor Date"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_scalar_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class DateScalar(ScalarType):
             __schema__ = "type DateTime"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_scalar_type_raises_error_when_defined_with_multiple_types_schema(snapshot):
+def test_scalar_type_raises_error_when_defined_with_multiple_types_schema(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class DateScalar(ScalarType):
@@ -60,7 +66,7 @@ def test_scalar_type_raises_error_when_defined_with_multiple_types_schema(snapsh
             scalar DateTime
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_scalar_type_extracts_graphql_name():

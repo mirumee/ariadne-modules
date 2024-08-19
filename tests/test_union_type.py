@@ -12,45 +12,47 @@ from ariadne_graphql_modules import (
 )
 
 
-def test_union_type_raises_attribute_error_when_defined_without_schema(snapshot):
+def test_union_type_raises_attribute_error_when_defined_without_schema(data_regression):
     with pytest.raises(AttributeError) as err:
         # pylint: disable=unused-variable
         class ExampleUnion(UnionType):
             pass
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_union_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
+def test_union_type_raises_error_when_defined_with_invalid_schema_type(data_regression):
     with pytest.raises(TypeError) as err:
         # pylint: disable=unused-variable
         class ExampleUnion(UnionType):
             __schema__ = True
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_union_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
+def test_union_type_raises_error_when_defined_with_invalid_schema_str(data_regression):
     with pytest.raises(GraphQLError) as err:
         # pylint: disable=unused-variable
         class ExampleUnion(UnionType):
             __schema__ = "unien Example = A | B"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_union_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleUnion(UnionType):
             __schema__ = "scalar DateTime"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_union_type_raises_error_when_defined_with_multiple_types_schema(snapshot):
+def test_union_type_raises_error_when_defined_with_multiple_types_schema(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleUnion(UnionType):
@@ -60,7 +62,7 @@ def test_union_type_raises_error_when_defined_with_multiple_types_schema(snapsho
             union B = C | D
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 @dataclass
@@ -135,14 +137,16 @@ def test_union_type_extracts_graphql_name():
     assert ExampleUnion.graphql_name == "Example"
 
 
-def test_union_type_raises_error_when_defined_without_member_type_dependency(snapshot):
+def test_union_type_raises_error_when_defined_without_member_type_dependency(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleUnion(UnionType):
             __schema__ = "union Example = User | Comment"
             __requires__ = [UserType]
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_interface_type_binds_type_resolver():
@@ -216,17 +220,21 @@ def test_union_type_can_be_extended_with_directive():
         __requires__ = [ExampleUnion, ExampleDirective]
 
 
-def test_union_type_raises_error_when_defined_without_extended_dependency(snapshot):
+def test_union_type_raises_error_when_defined_without_extended_dependency(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExtendExampleUnion(UnionType):
             __schema__ = "extend union Result = User"
             __requires__ = [UserType]
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_interface_type_raises_error_when_extended_dependency_is_wrong_type(snapshot):
+def test_union_type_raises_error_when_extended_dependency_is_wrong_type(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleType(ObjectType):
@@ -240,4 +248,4 @@ def test_interface_type_raises_error_when_extended_dependency_is_wrong_type(snap
             __schema__ = "extend union Example = User"
             __requires__ = [ExampleType, UserType]
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))

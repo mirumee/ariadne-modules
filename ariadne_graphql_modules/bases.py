@@ -4,7 +4,7 @@ from graphql import (
     DefinitionNode,
     GraphQLSchema,
     ObjectTypeDefinitionNode,
-    TypeDefinitionNode,
+    TypeSystemDefinitionNode,
 )
 
 from .dependencies import Dependencies
@@ -36,7 +36,7 @@ class DefinitionType(BaseType):
 
     graphql_name: str
     graphql_type: Type[DefinitionNode]
-    graphql_def: TypeDefinitionNode
+    graphql_def: TypeSystemDefinitionNode
 
     @classmethod
     def __get_requirements__(cls) -> RequirementsDict:

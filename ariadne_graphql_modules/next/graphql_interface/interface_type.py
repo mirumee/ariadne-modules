@@ -167,7 +167,7 @@ class GraphQLInterface(GraphQLObject):
 
     @staticmethod
     def resolve_type(obj: Any, *_) -> str:
-        if isinstance(obj, GraphQLInterface):
+        if isinstance(obj, GraphQLObject):
             return obj.__get_graphql_name__()
 
         raise ValueError(

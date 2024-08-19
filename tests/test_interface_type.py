@@ -13,45 +13,53 @@ from ariadne_graphql_modules import (
 )
 
 
-def test_interface_type_raises_attribute_error_when_defined_without_schema(snapshot):
+def test_interface_type_raises_attribute_error_when_defined_without_schema(
+    data_regression,
+):
     with pytest.raises(AttributeError) as err:
         # pylint: disable=unused-variable
         class ExampleInterface(InterfaceType):
             pass
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_interface_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
+def test_interface_type_raises_error_when_defined_with_invalid_schema_type(
+    data_regression,
+):
     with pytest.raises(TypeError) as err:
         # pylint: disable=unused-variable
         class ExampleInterface(InterfaceType):
             __schema__ = True
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_interface_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
+def test_interface_type_raises_error_when_defined_with_invalid_schema_str(
+    data_regression,
+):
     with pytest.raises(GraphQLError) as err:
         # pylint: disable=unused-variable
         class ExampleInterface(InterfaceType):
             __schema__ = "interfaco Example"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_interface_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleInterface(InterfaceType):
             __schema__ = "type Example"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_interface_type_raises_error_when_defined_with_multiple_types_schema(snapshot):
+def test_interface_type_raises_error_when_defined_with_multiple_types_schema(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleInterface(InterfaceType):
@@ -61,16 +69,16 @@ def test_interface_type_raises_error_when_defined_with_multiple_types_schema(sna
             interface Other
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_interface_type_raises_error_when_defined_without_fields(snapshot):
+def test_interface_type_raises_error_when_defined_without_fields(data_regression):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleInterface(InterfaceType):
             __schema__ = "interface Example"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_interface_type_extracts_graphql_name():
@@ -85,7 +93,7 @@ def test_interface_type_extracts_graphql_name():
 
 
 def test_interface_type_raises_error_when_defined_without_return_type_dependency(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -97,7 +105,7 @@ def test_interface_type_raises_error_when_defined_without_return_type_dependency
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_interface_type_verifies_field_dependency():
@@ -130,7 +138,7 @@ def test_interface_type_verifies_circural_dependency():
 
 
 def test_interface_type_raises_error_when_defined_without_argument_type_dependency(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -141,7 +149,7 @@ def test_interface_type_raises_error_when_defined_without_argument_type_dependen
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_interface_type_verifies_circular_dependency_using_deferred_type():
@@ -225,7 +233,9 @@ def test_interface_type_can_be_extended_with_other_interface():
         __requires__ = [ExampleInterface, OtherInterface]
 
 
-def test_interface_type_raises_error_when_defined_without_extended_dependency(snapshot):
+def test_interface_type_raises_error_when_defined_without_extended_dependency(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExtendExampleInterface(ObjectType):
@@ -235,10 +245,12 @@ def test_interface_type_raises_error_when_defined_without_extended_dependency(sn
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_interface_type_raises_error_when_extended_dependency_is_wrong_type(snapshot):
+def test_interface_type_raises_error_when_extended_dependency_is_wrong_type(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleType(ObjectType):
@@ -256,11 +268,11 @@ def test_interface_type_raises_error_when_extended_dependency_is_wrong_type(snap
             """
             __requires__ = [ExampleType]
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_interface_type_raises_error_when_defined_with_alias_for_nonexisting_field(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -274,11 +286,11 @@ def test_interface_type_raises_error_when_defined_with_alias_for_nonexisting_fie
                 "joinedDate": "joined_date",
             }
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_interface_type_raises_error_when_defined_with_resolver_for_nonexisting_field(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -293,7 +305,7 @@ def test_interface_type_raises_error_when_defined_with_resolver_for_nonexisting_
             def resolve_group(*_):
                 return None
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 @dataclass

@@ -34,21 +34,25 @@ def test_definition_parser_parses_definition_with_description():
     assert type_def.description.value == "Test user type"
 
 
-def test_definition_parser_raises_error_when_schema_type_is_invalid(snapshot):
+def test_definition_parser_raises_error_when_schema_type_is_invalid(data_regression):
     with pytest.raises(TypeError) as err:
         parse_definition("MyType", True)
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_definition_parser_raises_error_when_schema_str_has_invalid_syntax(snapshot):
+def test_definition_parser_raises_error_when_schema_str_has_invalid_syntax(
+    data_regression,
+):
     with pytest.raises(GraphQLError) as err:
         parse_definition("MyType", "typo User")
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_definition_parser_raises_error_schema_str_contains_multiple_types(snapshot):
+def test_definition_parser_raises_error_schema_str_contains_multiple_types(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         parse_definition(
             "MyType",
@@ -59,4 +63,4 @@ def test_definition_parser_raises_error_schema_str_contains_multiple_types(snaps
             """,
         )
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
