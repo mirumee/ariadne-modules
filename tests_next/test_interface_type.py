@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from graphql import graphql_sync
 
@@ -33,7 +33,7 @@ def test_interface_without_schema(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
-        def search(*_) -> List[UserType | CommentType]:
+        def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
                 CommentType(id=2, content="Hello World!"),
@@ -100,7 +100,7 @@ def test_interface_inheritance_without_schema(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
-        def search(*_) -> List[UserType | CommentType]:
+        def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(),
                 CommentType(id=2, content="Hello World!"),
@@ -174,7 +174,7 @@ def test_interface_with_schema(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
-        def search(*_) -> List[UserType | CommentType]:
+        def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
                 CommentType(id=2, content="Hello World!"),

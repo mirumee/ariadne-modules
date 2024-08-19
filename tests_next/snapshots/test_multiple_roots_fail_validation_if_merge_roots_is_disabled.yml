@@ -1,0 +1,3 @@
+Types 'SecondRoot' and '<class 'tests_next.test_make_executable_schema.test_multiple_roots_fail_validation_if_merge_roots_is_disabled.<locals>.FirstRoot'>'
+  both define GraphQL type with name 'Query'.
+...

@@ -30,7 +30,7 @@ def test_deferred_returns_deferred_type_with_higher_level_relative_path(monkeypa
     assert MockType.deferred_type.path == "lorem.types"
 
 
-def test_deferred_raises_error_for_invalid_relative_path(monkeypatch, snapshot):
+def test_deferred_raises_error_for_invalid_relative_path(monkeypatch, data_regression):
     frame_mock = Mock(f_globals={"__package__": "lorem"})
     monkeypatch.setattr(
         "ariadne_graphql_modules.next.deferredtype.sys._getframe",
@@ -42,4 +42,4 @@ def test_deferred_raises_error_for_invalid_relative_path(monkeypatch, snapshot):
         class MockType:
             deferred_type = deferred("...types")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))

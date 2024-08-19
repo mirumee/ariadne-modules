@@ -6,17 +6,17 @@ from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLEnum
 
 
-def test_schema_enum_type_validation_fails_for_invalid_type_schema(snapshot):
+def test_schema_enum_type_validation_fails_for_invalid_type_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
             __schema__ = gql("scalar Custom")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_enum_type_validation_fails_for_names_not_matching(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -31,19 +31,19 @@ def test_schema_enum_type_validation_fails_for_names_not_matching(
                 """
             )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_enum_type_validation_fails_for_empty_enum(snapshot):
+def test_schema_enum_type_validation_fails_for_empty_enum(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
             __schema__ = gql("enum UserLevel")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_enum_type_validation_fails_for_two_descriptions(snapshot):
+def test_schema_enum_type_validation_fails_for_two_descriptions(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
@@ -58,10 +58,10 @@ def test_schema_enum_type_validation_fails_for_two_descriptions(snapshot):
                 """
             )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_enum_type_validation_fails_for_schema_and_members_list(snapshot):
+def test_schema_enum_type_validation_fails_for_schema_and_members_list(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
@@ -75,11 +75,11 @@ def test_schema_enum_type_validation_fails_for_schema_and_members_list(snapshot)
             )
             __members__ = ["GUEST", "MEMBER"]
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_enum_type_validation_fails_for_schema_and_members_dict_mismatch(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -97,11 +97,11 @@ def test_schema_enum_type_validation_fails_for_schema_and_members_dict_mismatch(
                 "MODERATOR": 1,
             }
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_enum_type_validation_fails_for_schema_and_members_enum_mismatch(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -122,11 +122,11 @@ def test_schema_enum_type_validation_fails_for_schema_and_members_enum_mismatch(
             )
             __members__ = UserLevelEnum
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_enum_type_validation_fails_for_duplicated_members_descriptions(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -142,10 +142,10 @@ def test_schema_enum_type_validation_fails_for_duplicated_members_descriptions(
             )
             __members_descriptions__ = {"MEMBER": "Other description."}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_enum_type_validation_fails_for_invalid_members_descriptions(snapshot):
+def test_schema_enum_type_validation_fails_for_invalid_members_descriptions(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
@@ -159,22 +159,22 @@ def test_schema_enum_type_validation_fails_for_invalid_members_descriptions(snap
             )
             __members_descriptions__ = {"INVALID": "Other description."}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_enum_type_validation_fails_for_missing_members(snapshot):
+def test_enum_type_validation_fails_for_missing_members(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
             pass
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_enum_type_validation_fails_for_invalid_members(snapshot):
+def test_enum_type_validation_fails_for_invalid_members(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
             __members__ = "INVALID"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))

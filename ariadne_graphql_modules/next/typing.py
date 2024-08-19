@@ -1,6 +1,7 @@
 from enum import Enum
 from importlib import import_module
 from inspect import isclass
+import sys
 from typing import (
     Annotated,
     Any,
@@ -19,12 +20,14 @@ from graphql import (
     NonNullTypeNode,
     TypeNode,
 )
-
 from .base import GraphQLMetadata, GraphQLType
 from .deferredtype import DeferredTypeData
 from .idtype import GraphQLID
 
-UnionType = type(int | str)
+if sys.version_info >= (3, 10):
+    from types import UnionType
+else:
+    UnionType = Union
 
 
 def get_type_node(

@@ -19,7 +19,9 @@ def test_description_validator_passes_type_with_description_attr():
     validate_description(CustomType, parse("scalar Custom").definitions[0])
 
 
-def test_description_validator_raises_error_for_type_with_two_descriptions(snapshot):
+def test_description_validator_raises_error_for_type_with_two_descriptions(
+    data_regression,
+):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType:
@@ -35,7 +37,7 @@ def test_description_validator_raises_error_for_type_with_two_descriptions(snaps
             ).definitions[0],
         )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_name_validator_passes_type_without_explicit_name():
@@ -52,7 +54,7 @@ def test_name_validator_passes_type_with_graphql_name_attr_matching_definition()
     validate_name(CustomType, parse("type Custom").definitions[0])
 
 
-def test_name_validator_raises_error_for_name_and_definition_mismatch(snapshot):
+def test_name_validator_raises_error_for_name_and_definition_mismatch(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType:
@@ -63,4 +65,4 @@ def test_name_validator_raises_error_for_name_and_definition_mismatch(snapshot):
             parse("type Custom").definitions[0],
         )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))

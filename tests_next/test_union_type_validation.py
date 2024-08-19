@@ -24,7 +24,7 @@ class PostType(GraphQLObject):
     content: str
 
 
-def test_missing_type_in_schema(snapshot):
+def test_missing_type_in_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class MyUnion(GraphQLUnion):
@@ -34,10 +34,10 @@ def test_missing_type_in_schema(snapshot):
             """
 
         validate_union_type_with_schema(MyUnion)
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_missing_type_in_types(snapshot):
+def test_missing_type_in_types(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class MyUnion(GraphQLUnion):
@@ -47,7 +47,7 @@ def test_missing_type_in_types(snapshot):
             """
 
         validate_union_type_with_schema(MyUnion)
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_all_types_present():

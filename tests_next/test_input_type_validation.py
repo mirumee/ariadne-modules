@@ -4,16 +4,16 @@ from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLInput
 
 
-def test_schema_input_type_validation_fails_for_invalid_type_schema(snapshot):
+def test_schema_input_type_validation_fails_for_invalid_type_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
             __schema__ = gql("scalar Custom")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_input_type_validation_fails_for_names_not_matching(snapshot):
+def test_schema_input_type_validation_fails_for_names_not_matching(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
@@ -26,10 +26,10 @@ def test_schema_input_type_validation_fails_for_names_not_matching(snapshot):
                 """
             )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_input_type_validation_fails_for_two_descriptions(snapshot):
+def test_schema_input_type_validation_fails_for_two_descriptions(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
@@ -43,19 +43,19 @@ def test_schema_input_type_validation_fails_for_two_descriptions(snapshot):
                 """
             )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_input_type_validation_fails_for_schema_missing_fields(snapshot):
+def test_schema_input_type_validation_fails_for_schema_missing_fields(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
             __schema__ = gql("input Custom")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_input_type_validation_fails_for_out_names_without_schema(snapshot):
+def test_input_type_validation_fails_for_out_names_without_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
@@ -65,10 +65,10 @@ def test_input_type_validation_fails_for_out_names_without_schema(snapshot):
                 "hello": "ok",
             }
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_input_type_validation_fails_for_invalid_out_name(snapshot):
+def test_schema_input_type_validation_fails_for_invalid_out_name(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
@@ -84,10 +84,10 @@ def test_schema_input_type_validation_fails_for_invalid_out_name(snapshot):
                 "invalid": "ok",
             }
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_input_type_validation_fails_for_duplicate_out_name(snapshot):
+def test_schema_input_type_validation_fails_for_duplicate_out_name(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLInput):
@@ -105,28 +105,28 @@ def test_schema_input_type_validation_fails_for_duplicate_out_name(snapshot):
                 "name": "ok",
             }
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 class InvalidType:
     pass
 
 
-def test_input_type_validation_fails_for_unsupported_attr_default(snapshot):
+def test_input_type_validation_fails_for_unsupported_attr_default(data_regression):
     with pytest.raises(TypeError) as exc_info:
 
         class QueryType(GraphQLInput):
             attr: str = InvalidType()
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_input_type_validation_fails_for_unsupported_field_default_option(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(TypeError) as exc_info:
 
         class QueryType(GraphQLInput):
             attr: str = GraphQLInput.field(default_value=InvalidType())
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))

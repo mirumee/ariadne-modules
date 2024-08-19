@@ -152,7 +152,7 @@ def test_executable_schema_with_merged_object_and_vanilla_roots(assert_schema_eq
     )
 
 
-def test_multiple_roots_fail_validation_if_merge_roots_is_disabled(snapshot):
+def test_multiple_roots_fail_validation_if_merge_roots_is_disabled(data_regression):
     class FirstRoot(GraphQLObject):
         __graphql_name__ = "Query"
 
@@ -172,10 +172,10 @@ def test_multiple_roots_fail_validation_if_merge_roots_is_disabled(snapshot):
     with pytest.raises(ValueError) as exc_info:
         make_executable_schema(FirstRoot, SecondRoot, ThirdRoot, merge_roots=False)
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_validation_fails_if_lazy_type_doesnt_exist(snapshot):
+def test_schema_validation_fails_if_lazy_type_doesnt_exist(data_regression):
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=list["Missing"])
         def other(obj, info):
@@ -184,7 +184,7 @@ def test_schema_validation_fails_if_lazy_type_doesnt_exist(snapshot):
     with pytest.raises(TypeError) as exc_info:
         make_executable_schema(QueryType)
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_validation_passes_if_lazy_type_exists():
@@ -202,18 +202,18 @@ def test_schema_validation_passes_if_lazy_type_exists():
     make_executable_schema(QueryType, type_def)
 
 
-def test_make_executable_schema_raises_error_if_called_without_any_types(snapshot):
+def test_make_executable_schema_raises_error_if_called_without_any_types(data_regression):
     with pytest.raises(ValueError) as exc_info:
         make_executable_schema(QueryType)
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_make_executable_schema_raises_error_if_called_without_any_types(snapshot):
+def test_make_executable_schema_raises_error_if_called_without_any_types(data_regression):
     with pytest.raises(ValueError) as exc_info:
         make_executable_schema(QueryType)
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_make_executable_schema_doesnt_set_resolvers_if_convert_names_case_is_not_enabled():

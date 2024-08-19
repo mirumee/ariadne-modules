@@ -1,6 +1,6 @@
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Dict, Iterable, List, Optional, Type, cast
+from typing import Any, Dict, Iterable, List, Optional, Type, Union, cast
 
 from graphql import InputObjectTypeDefinitionNode, InputValueDefinitionNode, NameNode
 
@@ -106,7 +106,7 @@ class GraphQLInput(GraphQLType):
     def __get_graphql_model_without_schema__(
         cls, metadata: GraphQLMetadata, name: str
     ) -> "GraphQLInputModel":
-        type_hints = cls.__annotations__
+        type_hints = cls.__annotations__  # pylint: disable=no-member
         fields_instances: Dict[str, GraphQLInputField] = {
             attr_name: getattr(cls, attr_name)
             for attr_name in dir(cls)
@@ -180,9 +180,9 @@ class GraphQLInput(GraphQLType):
     @classmethod
     def __get_graphql_types__(
         cls, _: "GraphQLMetadata"
-    ) -> Iterable[Type["GraphQLType"] | Type[Enum]]:
+    ) -> Iterable[Union[Type["GraphQLType"], Type[Enum]]]:
         """Returns iterable with GraphQL types associated with this type"""
-        types: List[Type["GraphQLType"] | Type[Enum]] = [cls]
+        types: List[Union[Type["GraphQLType"], Type[Enum]]] = [cls]
 
         for attr_name in dir(cls):
             cls_attr = getattr(cls, attr_name)
@@ -192,7 +192,7 @@ class GraphQLInput(GraphQLType):
                     if field_graphql_type and field_graphql_type not in types:
                         types.append(field_graphql_type)
 
-        type_hints = cls.__annotations__
+        type_hints = cls.__annotations__  # pylint: disable=no-member
         for hint_name, hint_type in type_hints.items():
             if hint_name.startswith("__"):
                 continue

@@ -8,7 +8,7 @@ from ariadne_graphql_modules.next import (
 )
 
 
-def test_interface_with_different_types(snapshot):
+def test_interface_with_different_types(data_regression):
     with pytest.raises(TypeError) as exc_info:
 
         class UserInterface(GraphQLInterface):
@@ -24,10 +24,10 @@ def test_interface_with_different_types(snapshot):
 
         make_executable_schema(UserType, UserInterface)
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_interface_no_interface_in_schema(snapshot):
+def test_interface_no_interface_in_schema(data_regression):
     with pytest.raises(TypeError) as exc_info:
 
         class BaseInterface(GraphQLInterface):
@@ -42,4 +42,4 @@ def test_interface_no_interface_in_schema(snapshot):
 
         make_executable_schema(UserType)
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
