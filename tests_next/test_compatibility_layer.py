@@ -358,18 +358,12 @@ def test_subscription_type(assert_schema_equals):
 
     class ChatSubscription(SubscriptionType):
         __schema__ = """
-        type Subscription {
+        type Subscription implements Interface {
             chat: ID!
-        }
-        """
-
-    class ExtendChatSubscription(SubscriptionType):
-        __schema__ = """
-        extend type Subscription implements Interface {
             threads: ID!
         }
         """
-        __requires__ = [ChatSubscription, ExampleInterface]
+        __requires__ = [ExampleInterface]
 
     class QueryType(ObjectType):
         __schema__ = """
@@ -382,7 +376,6 @@ def test_subscription_type(assert_schema_equals):
         QueryType,
         ExampleInterface,
         ChatSubscription,
-        ExtendChatSubscription,
     )
 
     schema = make_executable_schema(*my_legacy_types)

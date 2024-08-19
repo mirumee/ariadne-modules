@@ -12,45 +12,47 @@ from ariadne_graphql_modules import (
 )
 
 
-def test_enum_type_raises_attribute_error_when_defined_without_schema(snapshot):
+def test_enum_type_raises_attribute_error_when_defined_without_schema(data_regression):
     with pytest.raises(AttributeError) as err:
         # pylint: disable=unused-variable
         class UserRoleEnum(EnumType):
             pass
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_enum_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
+def test_enum_type_raises_error_when_defined_with_invalid_schema_type(data_regression):
     with pytest.raises(TypeError) as err:
         # pylint: disable=unused-variable
         class UserRoleEnum(EnumType):
             __schema__ = True
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_enum_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
+def test_enum_type_raises_error_when_defined_with_invalid_schema_str(data_regression):
     with pytest.raises(GraphQLError) as err:
         # pylint: disable=unused-variable
         class UserRoleEnum(EnumType):
             __schema__ = "enom UserRole"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_enum_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserRoleEnum(EnumType):
             __schema__ = "scalar UserRole"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_enum_type_raises_error_when_defined_with_multiple_types_schema(snapshot):
+def test_enum_type_raises_error_when_defined_with_multiple_types_schema(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserRoleEnum(EnumType):
@@ -67,7 +69,7 @@ def test_enum_type_raises_error_when_defined_with_multiple_types_schema(snapshot
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_enum_type_extracts_graphql_name():
@@ -178,7 +180,7 @@ def test_enum_type_can_be_defined_with_dict_mapping():
 
 
 def test_enum_type_raises_error_when_dict_mapping_misses_items_from_definition(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -196,11 +198,11 @@ def test_enum_type_raises_error_when_dict_mapping_misses_items_from_definition(
                 "ADMIN": 2,
             }
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_enum_type_raises_error_when_dict_mapping_has_extra_items_not_in_definition(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -219,7 +221,7 @@ def test_enum_type_raises_error_when_dict_mapping_has_extra_items_not_in_definit
                 "ADMIN": 3,
             }
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_enum_type_can_be_defined_with_str_enum_mapping():
@@ -256,7 +258,7 @@ def test_enum_type_can_be_defined_with_str_enum_mapping():
 
 
 def test_enum_type_raises_error_when_enum_mapping_misses_items_from_definition(
-    snapshot,
+    data_regression,
 ):
     class RoleEnum(str, Enum):
         USER = "user"
@@ -275,11 +277,11 @@ def test_enum_type_raises_error_when_enum_mapping_misses_items_from_definition(
             """
             __enum__ = RoleEnum
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_enum_type_raises_error_when_enum_mapping_has_extra_items_not_in_definition(
-    snapshot,
+    data_regression,
 ):
     class RoleEnum(str, Enum):
         USER = "user"
@@ -299,4 +301,4 @@ def test_enum_type_raises_error_when_enum_mapping_has_extra_items_not_in_definit
             """
             __enum__ = RoleEnum
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))

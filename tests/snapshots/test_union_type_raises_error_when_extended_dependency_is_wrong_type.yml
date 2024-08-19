@@ -1,0 +1,3 @@
+ExtendExampleUnion requires 'Example' to be GraphQL union but other type was provided
+  in '__requires__'
+...

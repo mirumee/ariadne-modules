@@ -8,45 +8,51 @@ from ariadne_graphql_modules import (
 )
 
 
-def test_mutation_type_raises_attribute_error_when_defined_without_schema(snapshot):
+def test_mutation_type_raises_attribute_error_when_defined_without_schema(
+    data_regression,
+):
     with pytest.raises(AttributeError) as err:
         # pylint: disable=unused-variable
         class UserCreateMutation(MutationType):
             pass
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_mutation_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
+def test_mutation_type_raises_error_when_defined_with_invalid_schema_type(
+    data_regression,
+):
     with pytest.raises(TypeError) as err:
         # pylint: disable=unused-variable
         class UserCreateMutation(MutationType):
             __schema__ = True
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_object_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
+def test_object_type_raises_error_when_defined_with_invalid_schema_str(data_regression):
     with pytest.raises(GraphQLError) as err:
         # pylint: disable=unused-variable
         class UserCreateMutation(MutationType):
             __schema__ = "typo User"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_mutation_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserCreateMutation(MutationType):
             __schema__ = "scalar DateTime"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_mutation_type_raises_error_when_defined_with_multiple_types_schema(snapshot):
+def test_mutation_type_raises_error_when_defined_with_multiple_types_schema(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserCreateMutation(MutationType):
@@ -56,10 +62,12 @@ def test_mutation_type_raises_error_when_defined_with_multiple_types_schema(snap
             type Group
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_mutation_type_raises_error_when_defined_for_different_type_name(snapshot):
+def test_mutation_type_raises_error_when_defined_for_different_type_name(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserCreateMutation(MutationType):
@@ -69,10 +77,10 @@ def test_mutation_type_raises_error_when_defined_for_different_type_name(snapsho
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_mutation_type_raises_error_when_defined_without_fields(snapshot):
+def test_mutation_type_raises_error_when_defined_without_fields(data_regression):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserCreateMutation(MutationType):
@@ -80,10 +88,10 @@ def test_mutation_type_raises_error_when_defined_without_fields(snapshot):
             type Mutation
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_mutation_type_raises_error_when_defined_with_multiple_fields(snapshot):
+def test_mutation_type_raises_error_when_defined_with_multiple_fields(data_regression):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserCreateMutation(MutationType):
@@ -94,11 +102,11 @@ def test_mutation_type_raises_error_when_defined_with_multiple_fields(snapshot):
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_mutation_type_raises_error_when_defined_without_resolve_mutation_attr(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(AttributeError) as err:
         # pylint: disable=unused-variable
@@ -109,11 +117,11 @@ def test_mutation_type_raises_error_when_defined_without_resolve_mutation_attr(
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_mutation_type_raises_error_when_defined_without_callable_resolve_mutation_attr(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(TypeError) as err:
         # pylint: disable=unused-variable
@@ -126,11 +134,11 @@ def test_mutation_type_raises_error_when_defined_without_callable_resolve_mutati
 
             resolve_mutation = True
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_mutation_type_raises_error_when_defined_without_return_type_dependency(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -145,7 +153,7 @@ def test_mutation_type_raises_error_when_defined_without_return_type_dependency(
             def resolve_mutation(*_args):
                 pass
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_mutation_type_verifies_field_dependency():
@@ -171,7 +179,7 @@ def test_mutation_type_verifies_field_dependency():
 
 
 def test_mutation_type_raises_error_when_defined_with_nonexistant_args(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -187,7 +195,7 @@ def test_mutation_type_raises_error_when_defined_with_nonexistant_args(
             def resolve_mutation(*_args):
                 pass
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 class QueryType(ObjectType):

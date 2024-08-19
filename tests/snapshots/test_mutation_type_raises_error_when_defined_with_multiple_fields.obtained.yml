@@ -1,0 +1,3 @@
+UserCreateMutation class subclasses 'MutationType' class which requires __schema__
+  to define exactly one field
+...

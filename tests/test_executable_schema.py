@@ -67,7 +67,7 @@ def test_executable_schema_merges_root_types():
 
 
 def test_executable_schema_raises_value_error_if_merged_types_define_same_field(
-    snapshot,
+    data_regression,
 ):
     class CityQueryType(ObjectType):
         __schema__ = """
@@ -87,4 +87,4 @@ def test_executable_schema_raises_value_error_if_merged_types_define_same_field(
     with pytest.raises(ValueError) as err:
         make_executable_schema(CityQueryType, YearQueryType)
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))

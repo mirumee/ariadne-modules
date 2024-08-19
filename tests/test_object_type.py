@@ -11,45 +11,51 @@ from ariadne_graphql_modules import (
 )
 
 
-def test_object_type_raises_attribute_error_when_defined_without_schema(snapshot):
+def test_object_type_raises_attribute_error_when_defined_without_schema(
+    data_regression,
+):
     with pytest.raises(AttributeError) as err:
         # pylint: disable=unused-variable
         class UserType(ObjectType):
             pass
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_object_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
+def test_object_type_raises_error_when_defined_with_invalid_schema_type(
+    data_regression,
+):
     with pytest.raises(TypeError) as err:
         # pylint: disable=unused-variable
         class UserType(ObjectType):
             __schema__ = True
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_object_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
+def test_object_type_raises_error_when_defined_with_invalid_schema_str(data_regression):
     with pytest.raises(GraphQLError) as err:
         # pylint: disable=unused-variable
         class UserType(ObjectType):
             __schema__ = "typo User"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_object_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserType(ObjectType):
             __schema__ = "scalar DateTime"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_object_type_raises_error_when_defined_with_multiple_types_schema(snapshot):
+def test_object_type_raises_error_when_defined_with_multiple_types_schema(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserType(ObjectType):
@@ -59,16 +65,16 @@ def test_object_type_raises_error_when_defined_with_multiple_types_schema(snapsh
             type Group
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_object_type_raises_error_when_defined_without_fields(snapshot):
+def test_object_type_raises_error_when_defined_without_fields(data_regression):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserType(ObjectType):
             __schema__ = "type User"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_object_type_extracts_graphql_name():
@@ -96,7 +102,9 @@ def test_object_type_accepts_all_builtin_scalar_types():
         """
 
 
-def test_object_type_raises_error_when_defined_without_return_type_dependency(snapshot):
+def test_object_type_raises_error_when_defined_without_return_type_dependency(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UserType(ObjectType):
@@ -107,7 +115,7 @@ def test_object_type_raises_error_when_defined_without_return_type_dependency(sn
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_object_type_verifies_field_dependency():
@@ -140,7 +148,7 @@ def test_object_type_verifies_circular_dependency():
 
 
 def test_object_type_raises_error_when_defined_without_argument_type_dependency(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -151,7 +159,7 @@ def test_object_type_raises_error_when_defined_without_argument_type_dependency(
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_object_type_verifies_circular_dependency_using_deferred_type():
@@ -235,7 +243,9 @@ def test_object_type_can_be_extended_with_interface():
         __requires__ = [UserType, ExampleInterface]
 
 
-def test_object_type_raises_error_when_defined_without_extended_dependency(snapshot):
+def test_object_type_raises_error_when_defined_without_extended_dependency(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExtendUserType(ObjectType):
@@ -245,10 +255,12 @@ def test_object_type_raises_error_when_defined_without_extended_dependency(snaps
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_object_type_raises_error_when_extended_dependency_is_wrong_type(snapshot):
+def test_object_type_raises_error_when_extended_dependency_is_wrong_type(
+    data_regression,
+):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class ExampleInterface(InterfaceType):
@@ -266,11 +278,11 @@ def test_object_type_raises_error_when_extended_dependency_is_wrong_type(snapsho
             """
             __requires__ = [ExampleInterface]
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_object_type_raises_error_when_defined_with_alias_for_nonexisting_field(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -284,11 +296,11 @@ def test_object_type_raises_error_when_defined_with_alias_for_nonexisting_field(
                 "joinedDate": "joined_date",
             }
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_object_type_raises_error_when_defined_with_resolver_for_nonexisting_field(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -303,11 +315,11 @@ def test_object_type_raises_error_when_defined_with_resolver_for_nonexisting_fie
             def resolve_group(*_):
                 return None
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_object_type_raises_error_when_defined_with_field_args_for_nonexisting_field(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -319,11 +331,11 @@ def test_object_type_raises_error_when_defined_with_field_args_for_nonexisting_f
             """
             __fields_args__ = {"group": {}}
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_object_type_raises_error_when_defined_with_field_args_for_nonexisting_arg(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -335,7 +347,7 @@ def test_object_type_raises_error_when_defined_with_field_args_for_nonexisting_a
             """
             __fields_args__ = {"name": {"arg": "arg2"}}
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 class QueryType(ObjectType):

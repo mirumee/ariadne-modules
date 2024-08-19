@@ -1,0 +1,3 @@
+ExampleInterface class was defined without required GraphQL definition for 'UserInput'
+  in __requires__
+...

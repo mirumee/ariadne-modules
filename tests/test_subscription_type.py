@@ -10,62 +10,68 @@ from ariadne_graphql_modules import (
 )
 
 
-def test_subscription_type_raises_attribute_error_when_defined_without_schema(snapshot):
+def test_subscription_type_raises_attribute_error_when_defined_without_schema(
+    data_regression,
+):
     with pytest.raises(AttributeError) as err:
         # pylint: disable=unused-variable
         class UsersSubscription(SubscriptionType):
             pass
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_subscription_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
+def test_subscription_type_raises_error_when_defined_with_invalid_schema_type(
+    data_regression,
+):
     with pytest.raises(TypeError) as err:
         # pylint: disable=unused-variable
         class UsersSubscription(SubscriptionType):
             __schema__ = True
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_subscription_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
+def test_subscription_type_raises_error_when_defined_with_invalid_schema_str(
+    data_regression,
+):
     with pytest.raises(GraphQLError) as err:
         # pylint: disable=unused-variable
         class UsersSubscription(SubscriptionType):
             __schema__ = "typo Subscription"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_subscription_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UsersSubscription(SubscriptionType):
             __schema__ = "scalar Subscription"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_subscription_type_raises_error_when_defined_with_invalid_graphql_type_name(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UsersSubscription(SubscriptionType):
             __schema__ = "type Other"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
-def test_subscription_type_raises_error_when_defined_without_fields(snapshot):
+def test_subscription_type_raises_error_when_defined_without_fields(data_regression):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
         class UsersSubscription(SubscriptionType):
             __schema__ = "type Subscription"
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_subscription_type_extracts_graphql_name():
@@ -80,7 +86,7 @@ def test_subscription_type_extracts_graphql_name():
 
 
 def test_subscription_type_raises_error_when_defined_without_return_type_dependency(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -92,7 +98,7 @@ def test_subscription_type_raises_error_when_defined_without_return_type_depende
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_subscription_type_verifies_field_dependency():
@@ -115,7 +121,7 @@ def test_subscription_type_verifies_field_dependency():
 
 
 def test_subscription_type_raises_error_when_defined_without_argument_type_dependency(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -126,7 +132,7 @@ def test_subscription_type_raises_error_when_defined_without_argument_type_depen
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_subscription_type_can_be_extended_with_new_fields():
@@ -191,7 +197,7 @@ def test_subscription_type_can_be_extended_with_interface():
 
 
 def test_subscription_type_raises_error_when_defined_without_extended_dependency(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -202,11 +208,11 @@ def test_subscription_type_raises_error_when_defined_without_extended_dependency
             }
             """
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_subscription_type_raises_error_when_extended_dependency_is_wrong_type(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -225,11 +231,11 @@ def test_subscription_type_raises_error_when_extended_dependency_is_wrong_type(
             """
             __requires__ = [ExampleInterface]
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_subscription_type_raises_error_when_defined_with_alias_for_nonexisting_field(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -243,11 +249,11 @@ def test_subscription_type_raises_error_when_defined_with_alias_for_nonexisting_
                 "userAlerts": "user_alerts",
             }
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_subscription_type_raises_error_when_defined_with_resolver_for_nonexisting_field(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -262,11 +268,11 @@ def test_subscription_type_raises_error_when_defined_with_resolver_for_nonexisti
             def resolve_group(*_):
                 return None
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_subscription_type_raises_error_when_defined_with_sub_for_nonexisting_field(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as err:
         # pylint: disable=unused-variable
@@ -281,7 +287,7 @@ def test_subscription_type_raises_error_when_defined_with_sub_for_nonexisting_fi
             def subscribe_group(*_):
                 return None
 
-    snapshot.assert_match(err)
+    data_regression.check(str(err.value))
 
 
 def test_subscription_type_binds_resolver_and_subscriber_to_schema():

@@ -1,23 +1,18 @@
-from typing import List, Type
+from enum import Enum
+from inspect import isclass
+from typing import Any, Dict, List, Type, Union, cast
 
 from graphql import (
     EnumTypeDefinitionNode,
     InputObjectTypeDefinitionNode,
     InterfaceTypeDefinitionNode,
-    NameNode,
     ObjectTypeDefinitionNode,
     ScalarTypeDefinitionNode,
+    TypeExtensionNode,
     UnionTypeDefinitionNode,
 )
 
-from ariadne_graphql_modules.executable_schema import get_all_types
-from ariadne_graphql_modules.next.inputtype import GraphQLInputModel
-from ariadne_graphql_modules.next.interfacetype import (
-    GraphQLInterfaceModel,
-)
-from ariadne_graphql_modules.next.scalartype import GraphQLScalarModel
-from ariadne_graphql_modules.next.subscriptiontype import GraphQLSubscriptionModel
-from ariadne_graphql_modules.next.uniontype import GraphQLUnionModel
+from ..executable_schema import get_all_types
 
 from ..directive_type import DirectiveType
 from ..enum_type import EnumType
@@ -30,10 +25,17 @@ from ..union_type import UnionType
 
 from ..object_type import ObjectType
 
-from .description import get_description_node
 from ..bases import BindableType
 from .base import GraphQLModel, GraphQLType
-from . import GraphQLObjectModel, GraphQLEnumModel
+from . import (
+    GraphQLObjectModel,
+    GraphQLEnumModel,
+    GraphQLInputModel,
+    GraphQLScalarModel,
+    GraphQLInterfaceModel,
+    GraphQLSubscriptionModel,
+    GraphQLUnionModel,
+)
 
 
 def wrap_legacy_types(
@@ -53,6 +55,8 @@ class LegacyGraphQLType(GraphQLType):
 
     @classmethod
     def __get_graphql_model__(cls, *_) -> GraphQLModel:
+        if issubclass(cls.__base_type__.graphql_type, TypeExtensionNode):
+            pass
         if issubclass(cls.__base_type__, ObjectType):
             return cls.construct_object_model(cls.__base_type__)
         if issubclass(cls.__base_type__, EnumType):
@@ -69,41 +73,40 @@ class LegacyGraphQLType(GraphQLType):
             return cls.construct_subscription_model(cls.__base_type__)
         if issubclass(cls.__base_type__, UnionType):
             return cls.construct_union_model(cls.__base_type__)
-        else:
-            raise ValueError(f"Unsupported base_type {cls.__base_type__}")
+        raise ValueError(f"Unsupported base_type {cls.__base_type__}")
 
     @classmethod
     def construct_object_model(
-        cls, base_type: Type[ObjectType]
-    ) -> "GraphQLObjectModel":
-        name = base_type.graphql_name
-        description = base_type.__doc__
-
+        cls, base_type: Type[Union[ObjectType, MutationType]]
+    ) -> GraphQLObjectModel:
         return GraphQLObjectModel(
-            name=name,
+            name=base_type.graphql_name,
             ast_type=ObjectTypeDefinitionNode,
-            ast=ObjectTypeDefinitionNode(
-                name=NameNode(value=name),
-                description=get_description_node(description),
-                fields=tuple(base_type.graphql_fields.values()),
-                interfaces=base_type.interfaces,
-            ),
-            resolvers=base_type.resolvers,
-            aliases=base_type.__aliases__ or {},
-            out_names=base_type.__fields_args__ or {},
+            ast=cast(ObjectTypeDefinitionNode, base_type.graphql_def),
+            resolvers=base_type.resolvers,  # type: ignore
+            aliases=base_type.__aliases__ or {},  # type: ignore
+            out_names={},
         )
 
     @classmethod
     def construct_enum_model(cls, base_type: Type[EnumType]) -> GraphQLEnumModel:
+        members = base_type.__enum__ or {}
+        members_values: Dict[str, Any] = {}
+
+        if isinstance(members, dict):
+            members_values = dict(members.items())
+        elif isclass(members) and issubclass(members, Enum):
+            members_values = {member.name: member for member in members}
+
         return GraphQLEnumModel(
             name=base_type.graphql_name,
-            members=base_type.__enum__ or {},
+            members=members_values,
             ast_type=EnumTypeDefinitionNode,
-            ast=base_type.graphql_def,
+            ast=cast(EnumTypeDefinitionNode, base_type.graphql_def),
         )
 
     @classmethod
-    def construct_directive_model(cls, base_type: Type[DirectiveType]) -> GraphQLModel:
+    def construct_directive_model(cls, base_type: Type[DirectiveType]):
         """TODO: https://github.com/mirumee/ariadne-graphql-modules/issues/29"""
 
     @classmethod
@@ -111,9 +114,9 @@ class LegacyGraphQLType(GraphQLType):
         return GraphQLInputModel(
             name=base_type.graphql_name,
             ast_type=InputObjectTypeDefinitionNode,
-            ast=base_type.graphql_def,  # type: ignore
+            ast=cast(InputObjectTypeDefinitionNode, base_type.graphql_def),
             out_type=base_type.graphql_type,
-            out_names=base_type.graphql_fields or {},  # type: ignore
+            out_names={},
         )
 
     @classmethod
@@ -123,11 +126,11 @@ class LegacyGraphQLType(GraphQLType):
         return GraphQLInterfaceModel(
             name=base_type.graphql_name,
             ast_type=InterfaceTypeDefinitionNode,
-            ast=base_type.graphql_def,
+            ast=cast(InterfaceTypeDefinitionNode, base_type.graphql_def),
             resolve_type=base_type.resolve_type,
             resolvers=base_type.resolvers,
             out_names={},
-            aliases=base_type.__aliases__ or {},
+            aliases=base_type.__aliases__ or {},  # type: ignore
         )
 
     @classmethod
@@ -135,7 +138,7 @@ class LegacyGraphQLType(GraphQLType):
         return GraphQLScalarModel(
             name=base_type.graphql_name,
             ast_type=ScalarTypeDefinitionNode,
-            ast=base_type.graphql_def,
+            ast=cast(ScalarTypeDefinitionNode, base_type.graphql_def),
             serialize=base_type.serialize,
             parse_value=base_type.parse_value,
             parse_literal=base_type.parse_literal,
@@ -148,11 +151,10 @@ class LegacyGraphQLType(GraphQLType):
         return GraphQLSubscriptionModel(
             name=base_type.graphql_name,
             ast_type=ObjectTypeDefinitionNode,
-            ast=base_type.graphql_def,
-            resolve_type=None,
+            ast=cast(ObjectTypeDefinitionNode, base_type.graphql_def),
             resolvers=base_type.resolvers,
-            aliases=base_type.__aliases__ or {},
-            out_names=base_type.__fields_args__ or {},
+            aliases=base_type.__aliases__ or {},  # type: ignore
+            out_names={},
             subscribers=base_type.subscribers,
         )
 
@@ -161,6 +163,6 @@ class LegacyGraphQLType(GraphQLType):
         return GraphQLUnionModel(
             name=base_type.graphql_name,
             ast_type=UnionTypeDefinitionNode,
-            ast=base_type.graphql_def,
+            ast=cast(UnionTypeDefinitionNode, base_type.graphql_def),
             resolve_type=base_type.resolve_type,
         )

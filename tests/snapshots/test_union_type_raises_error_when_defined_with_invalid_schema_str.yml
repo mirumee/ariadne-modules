@@ -1,0 +1,2 @@
+"Syntax Error: Unexpected Name 'unien'.\n\nGraphQL request:1:1\n1 | unien Example\
+  \ = A | B\n  | ^"
