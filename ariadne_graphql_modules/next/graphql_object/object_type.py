@@ -67,16 +67,23 @@ class GraphQLObject(GraphQLType):
     __implements__: Optional[Iterable[Type[GraphQLType]]]
 
     def __init__(self, **kwargs: Any):
+        default_values: Dict[str, Any] = {}
+        for interface in getattr(self, "__implements__", []):
+            if hasattr(interface, "__kwargs__"):
+                default_values.update(interface.__kwargs__)
+
+        default_values.update(self.__kwargs__)
+
         for kwarg in kwargs:
-            if kwarg not in self.__kwargs__:
-                valid_kwargs = "', '".join(self.__kwargs__)
+            if kwarg not in default_values:
+                valid_kwargs = "', '".join(default_values)
                 raise TypeError(
                     f"{type(self).__name__}.__init__() got an unexpected "
                     f"keyword argument '{kwarg}'. "
                     f"Valid keyword arguments: '{valid_kwargs}'"
                 )
 
-        for kwarg, default in self.__kwargs__.items():
+        for kwarg, default in default_values.items():
             setattr(self, kwarg, kwargs.get(kwarg, deepcopy(default)))
 
     def __init_subclass__(cls) -> None:
@@ -356,14 +363,18 @@ def create_graphql_object_data_without_schema(
     fields_defaults: Dict[str, Any] = {}
     fields_order: List[str] = []
 
-    type_hints = cls.__annotations__
+    interfaces = getattr(cls, "__implements__", [])
+    interfaces_names: List[str] = [interface.__name__ for interface in interfaces]
+    type_hints: dict[str, Any] = {}
+    aliases: Dict[str, str] = {}
 
-    aliases: Dict[str, str] = getattr(cls, "__aliases__", None) or {}
+    for interface in reversed(interfaces):
+        type_hints.update(interface.__annotations__)
+        aliases.update(getattr(interface, "__aliases__", {}))
+
+    type_hints.update(cls.__annotations__)
+    aliases.update(getattr(cls, "__aliases__", None) or {})
     aliases_targets: List[str] = list(aliases.values())
-
-    interfaces: List[str] = [
-        interface.__name__ for interface in getattr(cls, "__implements__", [])
-    ]
 
     for attr_name, attr_type in type_hints.items():
         if attr_name.startswith("__"):
@@ -381,59 +392,62 @@ def create_graphql_object_data_without_schema(
         fields_names[attr_name] = convert_python_name_to_graphql(attr_name)
         fields_types[attr_name] = attr_type
 
-    for attr_name in dir(cls):
-        if attr_name.startswith("__"):
-            continue
+    def process_class_attributes(target_cls):
+        for attr_name in dir(target_cls):
+            if attr_name.startswith("__"):
+                continue
+            cls_attr = getattr(target_cls, attr_name)
+            if isinstance(cls_attr, GraphQLObjectField):
+                if attr_name not in fields_order:
+                    fields_order.append(attr_name)
 
-        cls_attr = getattr(cls, attr_name)
-        if isinstance(cls_attr, GraphQLObjectField):
-            if attr_name not in fields_order:
-                fields_order.append(attr_name)
+                fields_names[attr_name] = (
+                    cls_attr.name or convert_python_name_to_graphql(attr_name)
+                )
 
-            fields_names[attr_name] = cls_attr.name or convert_python_name_to_graphql(
-                attr_name
-            )
-
-            if cls_attr.field_type:
-                fields_types[attr_name] = cls_attr.field_type
-            if cls_attr.description:
-                fields_descriptions[attr_name] = cls_attr.description
-            if cls_attr.resolver:
-                fields_resolvers[attr_name] = cls_attr.resolver
+                if cls_attr.field_type:
+                    fields_types[attr_name] = cls_attr.field_type
+                if cls_attr.description:
+                    fields_descriptions[attr_name] = cls_attr.description
+                if cls_attr.resolver:
+                    fields_resolvers[attr_name] = cls_attr.resolver
+                    field_args = get_field_args_from_resolver(cls_attr.resolver)
+                    if field_args:
+                        fields_args[attr_name] = update_field_args_options(
+                            field_args, cls_attr.args
+                        )
+                if cls_attr.default_value:
+                    fields_defaults[attr_name] = cls_attr.default_value
+            elif isinstance(cls_attr, GraphQLObjectResolver):
+                if cls_attr.field_type and cls_attr.field not in fields_types:
+                    fields_types[cls_attr.field] = cls_attr.field_type
+                if cls_attr.description and cls_attr.field not in fields_descriptions:
+                    fields_descriptions[cls_attr.field] = cls_attr.description
+                fields_resolvers[cls_attr.field] = cls_attr.resolver
                 field_args = get_field_args_from_resolver(cls_attr.resolver)
-                if field_args:
-                    fields_args[attr_name] = update_field_args_options(
+                if field_args and not fields_args.get(cls_attr.field):
+                    fields_args[cls_attr.field] = update_field_args_options(
                         field_args, cls_attr.args
                     )
-            if cls_attr.default_value:
-                fields_defaults[attr_name] = cls_attr.default_value
+            elif isinstance(cls_attr, GraphQLObjectSource):
+                if cls_attr.field_type and cls_attr.field not in fields_types:
+                    fields_types[cls_attr.field] = cls_attr.field_type
+                if cls_attr.description and cls_attr.field not in fields_descriptions:
+                    fields_descriptions[cls_attr.field] = cls_attr.description
+                fields_subscribers[cls_attr.field] = cls_attr.subscriber
+                field_args = get_field_args_from_subscriber(cls_attr.subscriber)
+                if field_args:
+                    fields_args[cls_attr.field] = update_field_args_options(
+                        field_args, cls_attr.args
+                    )
 
-        elif isinstance(cls_attr, GraphQLObjectResolver):
-            if cls_attr.field_type and cls_attr.field not in fields_types:
-                fields_types[cls_attr.field] = cls_attr.field_type
-            if cls_attr.description:
-                fields_descriptions[cls_attr.field] = cls_attr.description
-            fields_resolvers[cls_attr.field] = cls_attr.resolver
-            field_args = get_field_args_from_resolver(cls_attr.resolver)
-            if field_args and not fields_args.get(cls_attr.field):
-                fields_args[cls_attr.field] = update_field_args_options(
-                    field_args, cls_attr.args
-                )
-        elif isinstance(cls_attr, GraphQLObjectSource):
-            if cls_attr.field_type and cls_attr.field not in fields_types:
-                fields_types[cls_attr.field] = cls_attr.field_type
-            if cls_attr.description:
-                fields_descriptions[cls_attr.field] = cls_attr.description
-            fields_subscribers[cls_attr.field] = cls_attr.subscriber
-            field_args = get_field_args_from_subscriber(cls_attr.subscriber)
-            if field_args:
-                fields_args[cls_attr.field] = update_field_args_options(
-                    field_args, cls_attr.args
-                )
+            elif attr_name not in aliases_targets and not callable(cls_attr):
+                fields_defaults[attr_name] = cls_attr
 
-        elif attr_name not in aliases_targets and not callable(cls_attr):
-            fields_defaults[attr_name] = cls_attr
+    for interface in getattr(cls, "__implements__", []):
+        process_class_attributes(interface)
 
+    process_class_attributes(cls)
     fields: Dict[str, "GraphQLObjectField"] = {}
     for field_name in fields_order:
         fields[field_name] = GraphQLObjectField(
@@ -445,5 +459,4 @@ def create_graphql_object_data_without_schema(
             subscriber=fields_subscribers.get(field_name),
             default_value=fields_defaults.get(field_name),
         )
-
-    return GraphQLObjectData(fields=fields, interfaces=interfaces)
+    return GraphQLObjectData(fields=fields, interfaces=interfaces_names)

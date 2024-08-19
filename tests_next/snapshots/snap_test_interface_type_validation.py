@@ -12,7 +12,3 @@ snapshots['test_interface_no_interface_in_schema 1'] = "Unknown type 'BaseInterf
 snapshots['test_interface_with_different_types 1'] = '''Query root type must be provided.
 
 Interface field UserInterface.score expects type String! but User.score is type Int!.'''
-
-snapshots['test_missing_interface_implementation 1'] = '''Query root type must be provided.
-
-Interface field RequiredInterface.requiredField expected but Implementing does not provide it.'''
