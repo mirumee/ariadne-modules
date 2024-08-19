@@ -180,7 +180,9 @@ def test_graphql_enum_model_is_created_with_members_descriptions(assert_ast_equa
     )
 
 
-def test_value_error_is_raised_if_exclude_and_include_members_are_combined(data_regression):
+def test_value_error_is_raised_if_exclude_and_include_members_are_combined(
+    data_regression,
+):
     with pytest.raises(ValueError) as exc_info:
         create_graphql_enum_model(
             UserLevel,
@@ -191,14 +193,18 @@ def test_value_error_is_raised_if_exclude_and_include_members_are_combined(data_
     data_regression.check(str(exc_info.value))
 
 
-def test_value_error_is_raised_if_member_description_is_set_for_missing_item(data_regression):
+def test_value_error_is_raised_if_member_description_is_set_for_missing_item(
+    data_regression,
+):
     with pytest.raises(ValueError) as exc_info:
         create_graphql_enum_model(UserLevel, members_descriptions={"MISSING": "Hello!"})
 
     data_regression.check(str(exc_info.value))
 
 
-def test_value_error_is_raised_if_member_description_is_set_for_omitted_item(data_regression):
+def test_value_error_is_raised_if_member_description_is_set_for_omitted_item(
+    data_regression,
+):
     with pytest.raises(ValueError) as exc_info:
         create_graphql_enum_model(
             UserLevel,
@@ -209,7 +215,9 @@ def test_value_error_is_raised_if_member_description_is_set_for_omitted_item(dat
     data_regression.check(str(exc_info.value))
 
 
-def test_value_error_is_raised_if_member_description_is_set_for_excluded_item(data_regression):
+def test_value_error_is_raised_if_member_description_is_set_for_excluded_item(
+    data_regression,
+):
     with pytest.raises(ValueError) as exc_info:
         create_graphql_enum_model(
             UserLevel,
