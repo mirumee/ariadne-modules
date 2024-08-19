@@ -51,9 +51,9 @@ def test_interface_without_schema(assert_schema_equals):
         union Result = User | Comment
 
         type User implements UserInterface {
-          name: String!
           summary: String!
           score: Int!
+          name: String!
         }
 
         type Comment {
@@ -68,6 +68,82 @@ def test_interface_without_schema(assert_schema_equals):
 
         """,
     )
+
+
+def test_interface_inheritance_without_schema(assert_schema_equals):
+    def hello_resolver(*_, name: str) -> str:
+        return f"Hello {name}!"
+
+    class UserInterface(GraphQLInterface):
+        summary: str
+        score: str = GraphQLInterface.field(
+            hello_resolver,
+            name="better_score",
+            graphql_type=str,
+            args={"name": GraphQLInterface.argument(name="json")},
+            description="desc",
+            default_value="my_json",
+        )
+
+    class UserType(GraphQLObject):
+        name: str = GraphQLInterface.field(
+            name="name",
+            graphql_type=str,
+            args={"name": GraphQLInterface.argument(name="json")},
+            default_value="my_json",
+        )
+
+        __implements__ = [UserInterface]
+
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=List[ResultType])
+        def search(*_) -> List[UserType | CommentType]:
+            return [
+                UserType(),
+                CommentType(id=2, content="Hello World!"),
+            ]
+
+    schema = make_executable_schema(QueryType, UserInterface, UserType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search: [Result!]!
+        }
+
+        union Result = User | Comment
+
+        type User implements UserInterface {
+          summary: String!
+
+          \"\"\"desc\"\"\"
+          better_score(json: String!): String!
+          name: String!
+        }
+
+        type Comment {
+          id: ID!
+          content: String!
+        }
+
+        interface UserInterface {
+          summary: String!
+
+          \"\"\"desc\"\"\"
+          better_score(json: String!): String!
+        }
+
+        """,
+    )
+
+    result = graphql_sync(schema, '{ search { ... on User{ better_score(json: "test") } } }')
+
+    assert not result.errors
+    assert result.data == {"search": [{"better_score": "Hello test!"}, {}]}
 
 
 def test_interface_with_schema(assert_schema_equals):
@@ -119,7 +195,7 @@ def test_interface_with_schema(assert_schema_equals):
           summary: String!
           score: Int!
         }
-        
+
         interface UserInterface {
           summary: String!
           score: Int!
@@ -139,14 +215,11 @@ def test_interface_inheritance(assert_schema_equals):
         id: GraphQLID
 
     class UserInterface(GraphQLInterface):
-        id: GraphQLID
         username: str
 
         __implements__ = [BaseEntityInterface]
 
     class UserType(GraphQLObject):
-        id: GraphQLID
-        username: str
 
         __implements__ = [UserInterface, BaseEntityInterface]
 
@@ -193,8 +266,6 @@ def test_interface_descriptions(assert_schema_equals):
     class UserType(GraphQLObject):
         id: GraphQLID
         username: str
-        summary: str
-        score: int
 
         __implements__ = [UserInterface]
 
@@ -213,10 +284,10 @@ def test_interface_descriptions(assert_schema_equals):
         }
 
         type User implements UserInterface {
-          id: ID!
-          username: String!
           summary: String!
           score: Int!
+          id: ID!
+          username: String!
         }
 
         \"\"\"Lorem ipsum.\"\"\"
@@ -239,8 +310,6 @@ def test_interface_resolvers_and_field_descriptions(assert_schema_equals):
 
     class UserType(GraphQLObject):
         id: GraphQLID
-        summary: str
-        score: int
 
         __implements__ = [UserInterface]
 
@@ -259,9 +328,11 @@ def test_interface_resolvers_and_field_descriptions(assert_schema_equals):
         }
 
         type User implements UserInterface {
-          id: ID!
           summary: String!
+
+          \"\"\"Lorem ipsum.\"\"\"
           score: Int!
+          id: ID!
         }
 
         interface UserInterface {

@@ -27,22 +27,6 @@ def test_interface_with_different_types(snapshot):
     snapshot.assert_match(str(exc_info.value))
 
 
-def test_missing_interface_implementation(snapshot):
-    with pytest.raises(TypeError) as exc_info:
-
-        class RequiredInterface(GraphQLInterface):
-            required_field: str
-
-        class ImplementingType(GraphQLObject):
-            optional_field: str
-
-            __implements__ = [RequiredInterface]
-
-        make_executable_schema(ImplementingType, RequiredInterface)
-
-    snapshot.assert_match(str(exc_info.value))
-
-
 def test_interface_no_interface_in_schema(snapshot):
     with pytest.raises(TypeError) as exc_info:
 
