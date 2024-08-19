@@ -1,0 +1,3 @@
+Class 'CustomType' defines 'hello' field with extra configuration for 'invalid' argument
+  thats not defined on the resolver function. (function accepts no extra arguments)
+...

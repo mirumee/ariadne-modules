@@ -1,0 +1,5 @@
+'Query root type must be provided.
+
+
+  Interface field UserInterface.score expects type String! but User.score is type
+  Int!.'

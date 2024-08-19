@@ -180,7 +180,7 @@ def test_graphql_enum_model_is_created_with_members_descriptions(assert_ast_equa
     )
 
 
-def test_value_error_is_raised_if_exclude_and_include_members_are_combined(snapshot):
+def test_value_error_is_raised_if_exclude_and_include_members_are_combined(data_regression):
     with pytest.raises(ValueError) as exc_info:
         create_graphql_enum_model(
             UserLevel,
@@ -188,17 +188,17 @@ def test_value_error_is_raised_if_exclude_and_include_members_are_combined(snaps
             members_include=["ADMINISTRATOR"],
         )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_value_error_is_raised_if_member_description_is_set_for_missing_item(snapshot):
+def test_value_error_is_raised_if_member_description_is_set_for_missing_item(data_regression):
     with pytest.raises(ValueError) as exc_info:
         create_graphql_enum_model(UserLevel, members_descriptions={"MISSING": "Hello!"})
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_value_error_is_raised_if_member_description_is_set_for_omitted_item(snapshot):
+def test_value_error_is_raised_if_member_description_is_set_for_omitted_item(data_regression):
     with pytest.raises(ValueError) as exc_info:
         create_graphql_enum_model(
             UserLevel,
@@ -206,10 +206,10 @@ def test_value_error_is_raised_if_member_description_is_set_for_omitted_item(sna
             members_descriptions={"ADMINISTRATOR": "Hello!"},
         )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_value_error_is_raised_if_member_description_is_set_for_excluded_item(snapshot):
+def test_value_error_is_raised_if_member_description_is_set_for_excluded_item(data_regression):
     with pytest.raises(ValueError) as exc_info:
         create_graphql_enum_model(
             UserLevel,
@@ -217,7 +217,7 @@ def test_value_error_is_raised_if_member_description_is_set_for_excluded_item(sn
             members_descriptions={"ADMINISTRATOR": "Hello!"},
         )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_enum_field_returning_enum_instance(assert_schema_equals):

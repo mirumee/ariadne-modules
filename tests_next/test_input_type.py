@@ -61,7 +61,7 @@ def test_input_type_instance_with_all_fields_default_values():
     assert obj.age == 20
 
 
-def test_input_type_instance_with_invalid_attrs_raising_error(snapshot):
+def test_input_type_instance_with_invalid_attrs_raising_error(data_regression):
     class SearchInput(GraphQLInput):
         query: str
         age: int
@@ -69,7 +69,7 @@ def test_input_type_instance_with_invalid_attrs_raising_error(snapshot):
     with pytest.raises(TypeError) as exc_info:
         SearchInput(age=20, invalid="Ok")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_input_type_instance_with_all_attrs_values():
@@ -167,7 +167,7 @@ def test_schema_input_type_instance_with_default_attrs_python_values():
     assert obj.age == 20
 
 
-def test_schema_input_type_instance_with_invalid_attrs_raising_error(snapshot):
+def test_schema_input_type_instance_with_invalid_attrs_raising_error(data_regression):
     class SearchInput(GraphQLInput):
         __schema__ = gql(
             """
@@ -184,7 +184,7 @@ def test_schema_input_type_instance_with_invalid_attrs_raising_error(snapshot):
     with pytest.raises(TypeError) as exc_info:
         SearchInput(age=20, invalid="Ok")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_input_type_arg(assert_schema_equals):

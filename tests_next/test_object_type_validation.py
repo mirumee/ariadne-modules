@@ -4,16 +4,16 @@ from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLObject
 
 
-def test_schema_object_type_validation_fails_for_invalid_type_schema(snapshot):
+def test_schema_object_type_validation_fails_for_invalid_type_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
             __schema__ = gql("scalar Custom")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_names_not_matching(snapshot):
+def test_schema_object_type_validation_fails_for_names_not_matching(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -26,10 +26,10 @@ def test_schema_object_type_validation_fails_for_names_not_matching(snapshot):
                 """
             )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_two_descriptions(snapshot):
+def test_schema_object_type_validation_fails_for_two_descriptions(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -43,19 +43,19 @@ def test_schema_object_type_validation_fails_for_two_descriptions(snapshot):
                 """
             )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_missing_fields(snapshot):
+def test_schema_object_type_validation_fails_for_missing_fields(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
             __schema__ = gql("type Custom")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_undefined_attr_resolver(snapshot):
+def test_object_type_validation_fails_for_undefined_attr_resolver(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class QueryType(GraphQLObject):
@@ -65,10 +65,10 @@ def test_object_type_validation_fails_for_undefined_attr_resolver(snapshot):
             def resolve_hello(*_):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_undefined_field_resolver(snapshot):
+def test_schema_object_type_validation_fails_for_undefined_field_resolver(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class QueryType(GraphQLObject):
@@ -84,11 +84,11 @@ def test_schema_object_type_validation_fails_for_undefined_field_resolver(snapsh
             def resolve_hello(*_):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_object_type_validation_fails_for_multiple_attrs_with_same_graphql_name(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -96,11 +96,11 @@ def test_object_type_validation_fails_for_multiple_attrs_with_same_graphql_name(
             user_id: str
             user__id: str
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_object_type_validation_fails_for_attr_and_field_with_same_graphql_name(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -111,11 +111,11 @@ def test_object_type_validation_fails_for_attr_and_field_with_same_graphql_name(
             def lorem(*_) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_object_type_validation_fails_for_multiple_fields_with_same_graphql_name(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -128,10 +128,10 @@ def test_object_type_validation_fails_for_multiple_fields_with_same_graphql_name
             def ipsum(*_) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_undefined_field_resolver_arg(snapshot):
+def test_object_type_validation_fails_for_undefined_field_resolver_arg(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -139,10 +139,10 @@ def test_object_type_validation_fails_for_undefined_field_resolver_arg(snapshot)
             def hello(*_) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_undefined_resolver_arg(snapshot):
+def test_object_type_validation_fails_for_undefined_resolver_arg(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -154,10 +154,10 @@ def test_object_type_validation_fails_for_undefined_resolver_arg(snapshot):
             def resolve_hello(*_):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_missing_field_resolver_arg(snapshot):
+def test_object_type_validation_fails_for_missing_field_resolver_arg(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -165,10 +165,10 @@ def test_object_type_validation_fails_for_missing_field_resolver_arg(snapshot):
             def hello(*_, name: str) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_missing_resolver_arg(snapshot):
+def test_object_type_validation_fails_for_missing_resolver_arg(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -180,10 +180,10 @@ def test_object_type_validation_fails_for_missing_resolver_arg(snapshot):
             def resolve_hello(*_, name: str):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_multiple_field_resolvers(snapshot):
+def test_object_type_validation_fails_for_multiple_field_resolvers(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -197,10 +197,10 @@ def test_object_type_validation_fails_for_multiple_field_resolvers(snapshot):
             def resolve_hello_other(*_):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_multiple_field_resolvers(snapshot):
+def test_schema_object_type_validation_fails_for_multiple_field_resolvers(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -220,11 +220,11 @@ def test_schema_object_type_validation_fails_for_multiple_field_resolvers(snapsh
             def resolve_hello_other(*_):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_object_type_validation_fails_for_field_with_multiple_descriptions(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -235,11 +235,11 @@ def test_object_type_validation_fails_for_field_with_multiple_descriptions(
             def ipsum(*_) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_object_type_validation_fails_for_field_with_multiple_descriptions(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -255,11 +255,11 @@ def test_schema_object_type_validation_fails_for_field_with_multiple_description
             def ipsum(*_) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_object_type_validation_fails_for_field_with_invalid_arg_name(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -276,11 +276,11 @@ def test_schema_object_type_validation_fails_for_field_with_invalid_arg_name(
             def ipsum(*_, name: str) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_object_type_validation_fails_for_arg_with_name_option(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -297,11 +297,11 @@ def test_schema_object_type_validation_fails_for_arg_with_name_option(
             def ipsum(*_, name: str) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_object_type_validation_fails_for_arg_with_type_option(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -318,11 +318,11 @@ def test_schema_object_type_validation_fails_for_arg_with_type_option(
             def ipsum(*_, name: str) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_object_type_validation_fails_for_arg_with_double_description(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -342,11 +342,11 @@ def test_schema_object_type_validation_fails_for_arg_with_double_description(
             def ipsum(*_, name: str) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_object_type_validation_fails_for_field_with_multiple_args(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -359,10 +359,10 @@ def test_object_type_validation_fails_for_field_with_multiple_args(
             def ipsum(*_) -> str:
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_invalid_alias(snapshot):
+def test_object_type_validation_fails_for_invalid_alias(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -372,10 +372,10 @@ def test_object_type_validation_fails_for_invalid_alias(snapshot):
                 "invalid": "target",
             }
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_invalid_alias(snapshot):
+def test_schema_object_type_validation_fails_for_invalid_alias(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -391,10 +391,10 @@ def test_schema_object_type_validation_fails_for_invalid_alias(snapshot):
                 "invalid": "welcome",
             }
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_alias_resolver(snapshot):
+def test_object_type_validation_fails_for_alias_resolver(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -408,10 +408,10 @@ def test_object_type_validation_fails_for_alias_resolver(snapshot):
             def resolve_hello(*_):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_object_type_validation_fails_for_alias_target_resolver(snapshot):
+def test_object_type_validation_fails_for_alias_target_resolver(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -426,10 +426,10 @@ def test_object_type_validation_fails_for_alias_target_resolver(snapshot):
             def resolve_welcome(*_):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_alias_resolver(snapshot):
+def test_schema_object_type_validation_fails_for_alias_resolver(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -449,10 +449,10 @@ def test_schema_object_type_validation_fails_for_alias_resolver(snapshot):
             def resolve_hello(*_):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_alias_target_resolver(snapshot):
+def test_schema_object_type_validation_fails_for_alias_target_resolver(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -474,10 +474,10 @@ def test_schema_object_type_validation_fails_for_alias_target_resolver(snapshot)
             def resolve_hello(*_):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_field_instance(snapshot):
+def test_schema_object_type_validation_fails_for_field_instance(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -491,14 +491,14 @@ def test_schema_object_type_validation_fails_for_field_instance(snapshot):
 
             hello = GraphQLObject.field(lambda *_: "noop")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 class InvalidType:
     pass
 
 
-def test_object_type_validation_fails_for_unsupported_resolver_arg_default(snapshot):
+def test_object_type_validation_fails_for_unsupported_resolver_arg_default(data_regression):
     with pytest.raises(TypeError) as exc_info:
 
         class QueryType(GraphQLObject):
@@ -506,11 +506,11 @@ def test_object_type_validation_fails_for_unsupported_resolver_arg_default(snaps
             def hello(*_, name: str = InvalidType):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_object_type_validation_fails_for_unsupported_resolver_arg_default_option(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(TypeError) as exc_info:
 
@@ -521,11 +521,11 @@ def test_object_type_validation_fails_for_unsupported_resolver_arg_default_optio
             def hello(*_, name: str):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_object_type_validation_fails_for_unsupported_resolver_arg_default(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(TypeError) as exc_info:
 
@@ -542,11 +542,11 @@ def test_schema_object_type_validation_fails_for_unsupported_resolver_arg_defaul
             def resolve_hello(*_, name: str = InvalidType):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_object_type_validation_fails_for_unsupported_resolver_arg_option_default(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(TypeError) as exc_info:
 
@@ -566,4 +566,4 @@ def test_schema_object_type_validation_fails_for_unsupported_resolver_arg_option
             def resolve_hello(*_, name: str):
                 return "Hello World!"
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))

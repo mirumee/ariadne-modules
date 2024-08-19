@@ -61,7 +61,7 @@ def test_object_type_instance_with_all_attrs_being_default_values():
     assert obj.posts == 42
 
 
-def test_object_type_instance_with_invalid_attrs_raising_error(snapshot):
+def test_object_type_instance_with_invalid_attrs_raising_error(data_regression):
     class CategoryType(GraphQLObject):
         name: str
         posts: int
@@ -69,7 +69,7 @@ def test_object_type_instance_with_invalid_attrs_raising_error(snapshot):
     with pytest.raises(TypeError) as exc_info:
         CategoryType(name="Welcome", invalid="Ok")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_object_type_instance_with_all_attrs_values():
@@ -188,7 +188,7 @@ def test_schema_object_type_instance_with_aliased_attrs_default_values():
     assert obj.posts == 42
 
 
-def test_schema_object_type_instance_with_invalid_attrs_raising_error(snapshot):
+def test_schema_object_type_instance_with_invalid_attrs_raising_error(data_regression):
     class CategoryType(GraphQLObject):
         __schema__ = gql(
             """
@@ -205,7 +205,7 @@ def test_schema_object_type_instance_with_invalid_attrs_raising_error(snapshot):
     with pytest.raises(TypeError) as exc_info:
         CategoryType(name="Welcome", invalid="Ok")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_object_type_instance_with_aliased_attr_value():

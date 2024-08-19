@@ -1,0 +1,2 @@
+'Class ''UserLevel'' ''__members__'' attribute is of unsupported type. Expected ''Dict[str,
+  Any]'', ''Type[Enum]'' or List[str]. (found: ''<class ''str''>'')'

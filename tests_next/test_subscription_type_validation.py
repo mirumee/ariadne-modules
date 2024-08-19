@@ -24,7 +24,7 @@ class Notification(GraphQLUnion):
 
 
 @pytest.mark.asyncio
-async def test_undefined_name_without_schema(snapshot):
+async def test_undefined_name_without_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -35,11 +35,11 @@ async def test_undefined_name_without_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_field_name_not_str_without_schema(snapshot):
+async def test_field_name_not_str_without_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -50,11 +50,11 @@ async def test_field_name_not_str_without_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_multiple_sources_without_schema(snapshot):
+async def test_multiple_sources_without_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -70,11 +70,11 @@ async def test_multiple_sources_without_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_description_not_str_without_schema(snapshot):
+async def test_description_not_str_without_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -85,11 +85,11 @@ async def test_description_not_str_without_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_source_args_field_arg_not_dict_without_schema(snapshot):
+async def test_source_args_field_arg_not_dict_without_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -103,11 +103,11 @@ async def test_source_args_field_arg_not_dict_without_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_source_args_not_dict_without_schema(snapshot):
+async def test_source_args_not_dict_without_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -121,11 +121,11 @@ async def test_source_args_not_dict_without_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_source_for_undefined_field_with_schema(snapshot):
+async def test_source_for_undefined_field_with_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -142,11 +142,11 @@ async def test_source_for_undefined_field_with_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_multiple_sourced_for_field_with_schema(snapshot):
+async def test_multiple_sourced_for_field_with_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -168,11 +168,11 @@ async def test_multiple_sourced_for_field_with_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_multiple_descriptions_for_source_with_schema(snapshot):
+async def test_multiple_descriptions_for_source_with_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -190,11 +190,11 @@ async def test_multiple_descriptions_for_source_with_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_invalid_arg_name_in_source_with_schema(snapshot):
+async def test_invalid_arg_name_in_source_with_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -214,11 +214,11 @@ async def test_invalid_arg_name_in_source_with_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_arg_with_name_in_source_with_schema(snapshot):
+async def test_arg_with_name_in_source_with_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -242,11 +242,11 @@ async def test_arg_with_name_in_source_with_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_arg_with_type_in_source_with_schema(snapshot):
+async def test_arg_with_type_in_source_with_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -270,11 +270,11 @@ async def test_arg_with_type_in_source_with_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 @pytest.mark.asyncio
-async def test_arg_with_description_in_source_with_schema(snapshot):
+async def test_arg_with_description_in_source_with_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class SubscriptionType(GraphQLSubscription):
@@ -301,4 +301,4 @@ async def test_arg_with_description_in_source_with_schema(snapshot):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))

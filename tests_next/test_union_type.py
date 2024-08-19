@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from graphql import graphql_sync
 
@@ -26,7 +26,7 @@ def test_union_field_returning_object_instance(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
-        def search(*_) -> List[UserType | CommentType]:
+        def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
                 CommentType(id=2, content="Hello World!"),
@@ -88,7 +88,7 @@ def test_union_field_returning_empty_list():
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
-        def search(*_) -> List[UserType | CommentType]:
+        def search(*_) -> List[Union[UserType, CommentType]]:
             return []
 
     schema = make_executable_schema(QueryType)
@@ -120,7 +120,7 @@ def test_union_field_with_invalid_type_access(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
-        def search(*_) -> List[UserType | CommentType]:
+        def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
                 "InvalidType",
@@ -159,7 +159,7 @@ def test_serialization_error_handling(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
-        def search(*_) -> List[UserType | CommentType | InvalidType]:
+        def search(*_) -> List[Union[UserType, CommentType, InvalidType]]:
             return [InvalidType("This should cause an error")]
 
     schema = make_executable_schema(QueryType)
@@ -189,13 +189,13 @@ def test_union_with_schema_definition(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[SearchResultUnion])
-        def search(*_) -> List[UserType | CommentType]:
+        def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id="1", username="Alice"),
                 CommentType(id="2", content="Test post"),
             ]
 
-    schema = make_executable_schema([QueryType, SearchResultUnion])
+    schema = make_executable_schema(QueryType, SearchResultUnion)
 
     result = graphql_sync(
         schema,
