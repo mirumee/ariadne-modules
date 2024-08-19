@@ -77,6 +77,3 @@ exclude = '''
 [tool.pytest.ini_options]
 testpaths = ["tests_next"]
 asyncio_mode = "strict"
-
-[tool.mypy]
-plugins = "ariadne_graphql_modules.next.mypy"
