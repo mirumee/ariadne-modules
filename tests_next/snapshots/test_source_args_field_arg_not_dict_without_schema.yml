@@ -1,0 +1,3 @@
+Argument channel for message_added_generator must have a GraphQLObjectFieldArg as
+  its info.
+...

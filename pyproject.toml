@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ariadne-graphql-modules"
-version = "0.7.0"
+version = "1.0.0"
 description = "Ariadne toolkit for defining GraphQL schemas in modular fashion."
 authors = [{ name = "Mirumee Software", email = "hello@mirumee.com" }]
 readme = "README.md"
@@ -15,15 +15,14 @@ classifiers = [
   "License :: OSI Approved :: BSD License",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-dependencies = [
-  "ariadne==0.23.0",
-]
+
+dependencies = ["ariadne==0.23.0"]
 
 [project.optional-dependencies]
 test = [
@@ -32,7 +31,8 @@ test = [
   "pylint",
   "pytest",
   "pytest-asyncio",
-  "snapshottest",
+  "pytest-regressions",
+  "pytest-datadir",
 ]
 
 [project.urls]
@@ -47,16 +47,15 @@ include = [
   "ariadne_graphql_modules/**/*.py",
   "ariadne_graphql_modules/py.typed",
 ]
-exclude = [
-  "tests",
-]
+exclude = ["tests"]
 
 [tool.hatch.envs.default]
 features = ["test"]
+python = "3.12"
 
 [tool.black]
 line-length = 88
-target-version = ["py38", "py39", "py310", "py311"]
+target-version = ["py39", "py310", "py311", "py312"]
 include = '\.pyi?$'
 exclude = '''
 /(

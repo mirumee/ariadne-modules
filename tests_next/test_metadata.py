@@ -14,11 +14,11 @@ def test_metadata_returns_sets_and_returns_data_for_type(metadata):
     assert metadata.get_data(QueryType) == 42
 
 
-def test_metadata_raises_key_error_for_unset_data(snapshot, metadata):
+def test_metadata_raises_key_error_for_unset_data(data_regression, metadata):
     with pytest.raises(KeyError) as exc_info:
         metadata.get_data(QueryType)
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_metadata_returns_model_for_type(assert_ast_equals, metadata):

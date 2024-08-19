@@ -1,3 +1,4 @@
+from pathlib import Path
 from textwrap import dedent
 
 import pytest
@@ -27,3 +28,13 @@ def assert_ast_equals():
 @pytest.fixture
 def metadata():
     return GraphQLMetadata()
+
+
+@pytest.fixture(scope="session")
+def datadir() -> Path:
+    return Path(__file__).parent / "snapshots"
+
+
+@pytest.fixture(scope="session")
+def original_datadir() -> Path:
+    return Path(__file__).parent / "snapshots"

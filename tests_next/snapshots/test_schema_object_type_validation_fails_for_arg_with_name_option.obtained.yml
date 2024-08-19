@@ -1,0 +1,3 @@
+Class 'CustomType' defines 'name' option for 'name' argument of the 'hello' field.
+  This is not supported for types defining '__schema__'.
+...

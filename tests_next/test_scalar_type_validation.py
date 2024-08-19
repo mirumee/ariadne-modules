@@ -4,17 +4,17 @@ from ariadne_graphql_modules import gql
 from ariadne_graphql_modules.next import GraphQLScalar
 
 
-def test_schema_scalar_type_validation_fails_for_invalid_type_schema(snapshot):
+def test_schema_scalar_type_validation_fails_for_invalid_type_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomScalar(GraphQLScalar[str]):
             __schema__ = gql("type Custom")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
 def test_schema_scalar_type_validation_fails_for_different_names(
-    snapshot,
+    data_regression,
 ):
     with pytest.raises(ValueError) as exc_info:
 
@@ -22,10 +22,10 @@ def test_schema_scalar_type_validation_fails_for_different_names(
             __graphql_name__ = "Date"
             __schema__ = gql("scalar Custom")
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
 
 
-def test_schema_scalar_type_validation_fails_for_two_descriptions(snapshot):
+def test_schema_scalar_type_validation_fails_for_two_descriptions(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomScalar(GraphQLScalar[str]):
@@ -37,4 +37,4 @@ def test_schema_scalar_type_validation_fails_for_two_descriptions(snapshot):
                 """
             )
 
-    snapshot.assert_match(str(exc_info.value))
+    data_regression.check(str(exc_info.value))
