@@ -140,7 +140,9 @@ def test_interface_inheritance_without_schema(assert_schema_equals):
         """,
     )
 
-    result = graphql_sync(schema, '{ search { ... on User{ better_score(json: "test") } } }')
+    result = graphql_sync(
+        schema, '{ search { ... on User{ better_score(json: "test") } } }'
+    )
 
     assert not result.errors
     assert result.data == {"search": [{"better_score": "Hello test!"}, {}]}
