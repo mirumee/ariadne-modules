@@ -202,14 +202,18 @@ def test_schema_validation_passes_if_lazy_type_exists():
     make_executable_schema(QueryType, type_def)
 
 
-def test_make_executable_schema_raises_error_if_called_without_any_types(data_regression):
+def test_make_executable_schema_raises_error_if_called_without_any_types(
+    data_regression,
+):
     with pytest.raises(ValueError) as exc_info:
         make_executable_schema(QueryType)
 
     data_regression.check(str(exc_info.value))
 
 
-def test_make_executable_schema_raises_error_if_called_without_any_types(data_regression):
+def test_make_executable_schema_raises_error_if_called_without_any_types(
+    data_regression,
+):
     with pytest.raises(ValueError) as exc_info:
         make_executable_schema(QueryType)
 

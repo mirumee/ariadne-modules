@@ -68,7 +68,9 @@ def test_object_type_validation_fails_for_undefined_attr_resolver(data_regressio
     data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_undefined_field_resolver(data_regression):
+def test_schema_object_type_validation_fails_for_undefined_field_resolver(
+    data_regression,
+):
     with pytest.raises(ValueError) as exc_info:
 
         class QueryType(GraphQLObject):
@@ -200,7 +202,9 @@ def test_object_type_validation_fails_for_multiple_field_resolvers(data_regressi
     data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_multiple_field_resolvers(data_regression):
+def test_schema_object_type_validation_fails_for_multiple_field_resolvers(
+    data_regression,
+):
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
@@ -498,7 +502,9 @@ class InvalidType:
     pass
 
 
-def test_object_type_validation_fails_for_unsupported_resolver_arg_default(data_regression):
+def test_object_type_validation_fails_for_unsupported_resolver_arg_default(
+    data_regression,
+):
     with pytest.raises(TypeError) as exc_info:
 
         class QueryType(GraphQLObject):

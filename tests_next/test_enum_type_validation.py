@@ -145,7 +145,9 @@ def test_schema_enum_type_validation_fails_for_duplicated_members_descriptions(
     data_regression.check(str(exc_info.value))
 
 
-def test_schema_enum_type_validation_fails_for_invalid_members_descriptions(data_regression):
+def test_schema_enum_type_validation_fails_for_invalid_members_descriptions(
+    data_regression,
+):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
