@@ -1,7 +1,6 @@
 from enum import Enum
 from importlib import import_module
 from inspect import isclass
-from types import UnionType
 from typing import (
     Annotated,
     Any,
@@ -24,6 +23,8 @@ from graphql import (
 from .base import GraphQLMetadata, GraphQLType
 from .deferredtype import DeferredTypeData
 from .idtype import GraphQLID
+
+UnionType = type(int | str)
 
 
 def get_type_node(
