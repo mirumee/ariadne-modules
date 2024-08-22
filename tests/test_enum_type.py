@@ -1,304 +1,522 @@
 from enum import Enum
 
-import pytest
-from ariadne import SchemaDirectiveVisitor
-from graphql import GraphQLError, graphql_sync
+from graphql import graphql_sync
 
 from ariadne_graphql_modules import (
-    DirectiveType,
-    EnumType,
-    ObjectType,
+    GraphQLEnum,
+    GraphQLObject,
     make_executable_schema,
 )
 
 
-def test_enum_type_raises_attribute_error_when_defined_without_schema(data_regression):
-    with pytest.raises(AttributeError) as err:
-        # pylint: disable=unused-variable
-        class UserRoleEnum(EnumType):
-            pass
-
-    data_regression.check(str(err.value))
+class UserLevelEnum(Enum):
+    GUEST = 0
+    MEMBER = 1
+    ADMIN = 2
 
 
-def test_enum_type_raises_error_when_defined_with_invalid_schema_type(data_regression):
-    with pytest.raises(TypeError) as err:
-        # pylint: disable=unused-variable
-        class UserRoleEnum(EnumType):
-            __schema__ = True
+def test_enum_field_returning_enum_value(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __members__ = UserLevelEnum
 
-    data_regression.check(str(err.value))
+    class QueryType(GraphQLObject):
+        level: UserLevel
 
+        @GraphQLObject.resolver("level")
+        def resolve_level(*_) -> UserLevelEnum:
+            return UserLevelEnum.MEMBER
 
-def test_enum_type_raises_error_when_defined_with_invalid_schema_str(data_regression):
-    with pytest.raises(GraphQLError) as err:
-        # pylint: disable=unused-variable
-        class UserRoleEnum(EnumType):
-            __schema__ = "enom UserRole"
+    schema = make_executable_schema(QueryType)
 
-    data_regression.check(str(err.value))
-
-
-def test_enum_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserRoleEnum(EnumType):
-            __schema__ = "scalar UserRole"
-
-    data_regression.check(str(err.value))
-
-
-def test_enum_type_raises_error_when_defined_with_multiple_types_schema(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserRoleEnum(EnumType):
-            __schema__ = """
-            enum UserRole {
-                USER
-                MOD
-                ADMIN
-            }
-
-            enum Category {
-                CATEGORY
-                LINK
-            }
-            """
-
-    data_regression.check(str(err.value))
-
-
-def test_enum_type_extracts_graphql_name():
-    class UserRoleEnum(EnumType):
-        __schema__ = """
-            enum UserRole {
-                USER
-                MOD
-                ADMIN
-            }
+    assert_schema_equals(
+        schema,
         """
-
-    assert UserRoleEnum.graphql_name == "UserRole"
-
-
-def test_enum_type_can_be_extended_with_new_values():
-    # pylint: disable=unused-variable
-    class UserRoleEnum(EnumType):
-        __schema__ = """
-            enum UserRole {
-                USER
-                MOD
-                ADMIN
-            }
-        """
-
-    class ExtendUserRoleEnum(EnumType):
-        __schema__ = """
-        extend enum UserRole {
-            MVP
+        type Query {
+          level: UserLevel!
         }
-        """
-        __requires__ = [UserRoleEnum]
+
+        enum UserLevel {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ level }")
+
+    assert not result.errors
+    assert result.data == {"level": "MEMBER"}
 
 
-def test_enum_type_can_be_extended_with_directive():
-    # pylint: disable=unused-variable
-    class ExampleDirective(DirectiveType):
-        __schema__ = "directive @example on ENUM"
-        __visitor__ = SchemaDirectiveVisitor
-
-    class UserRoleEnum(EnumType):
-        __schema__ = """
-            enum UserRole {
-                USER
-                MOD
-                ADMIN
-            }
-        """
-
-    class ExtendUserRoleEnum(EnumType):
-        __schema__ = "extend enum UserRole @example"
-        __requires__ = [UserRoleEnum, ExampleDirective]
-
-
-class BaseQueryType(ObjectType):
-    __abstract__ = True
-    __schema__ = """
-    type Query {
-        enumToRepr(enum: UserRole = USER): String!
-        reprToEnum: UserRole!
-    }
-    """
-    __aliases__ = {
-        "enumToRepr": "enum_repr",
-    }
-
-    @staticmethod
-    def resolve_enum_repr(*_, enum) -> str:
-        return repr(enum)
-
-
-def make_test_schema(enum_type):
-    class QueryType(BaseQueryType):
-        __requires__ = [enum_type]
-
-    return make_executable_schema(QueryType)
-
-
-def test_enum_type_can_be_defined_with_dict_mapping():
-    class UserRoleEnum(EnumType):
-        __schema__ = """
-            enum UserRole {
-                USER
-                MOD
-                ADMIN
-            }
-        """
-        __enum__ = {
-            "USER": 0,
-            "MOD": 1,
+def test_enum_field_returning_dict_value(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __members__ = {
+            "GUEST": 0,
+            "MEMBER": 1,
             "ADMIN": 2,
         }
 
-    schema = make_test_schema(UserRoleEnum)
+    class QueryType(GraphQLObject):
+        level: UserLevel
 
-    # Specfied enum value is reversed
-    result = graphql_sync(schema, "{ enumToRepr(enum: MOD) }")
-    assert result.data["enumToRepr"] == "1"
+        @GraphQLObject.resolver("level")
+        def resolve_level(*_) -> dict:
+            return 0
 
-    # Default enum value is reversed
-    result = graphql_sync(schema, "{ enumToRepr }")
-    assert result.data["enumToRepr"] == "0"
+    schema = make_executable_schema(QueryType)
 
-    # Python value is converted to enum
-    result = graphql_sync(schema, "{ reprToEnum }", root_value={"reprToEnum": 2})
-    assert result.data["reprToEnum"] == "ADMIN"
-
-
-def test_enum_type_raises_error_when_dict_mapping_misses_items_from_definition(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserRoleEnum(EnumType):
-            __schema__ = """
-                enum UserRole {
-                    USER
-                    MOD
-                    ADMIN
-                }
-            """
-            __enum__ = {
-                "USER": 0,
-                "MODERATOR": 1,
-                "ADMIN": 2,
-            }
-
-    data_regression.check(str(err.value))
-
-
-def test_enum_type_raises_error_when_dict_mapping_has_extra_items_not_in_definition(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserRoleEnum(EnumType):
-            __schema__ = """
-                enum UserRole {
-                    USER
-                    MOD
-                    ADMIN
-                }
-            """
-            __enum__ = {
-                "USER": 0,
-                "REVIEW": 1,
-                "MOD": 2,
-                "ADMIN": 3,
-            }
-
-    data_regression.check(str(err.value))
-
-
-def test_enum_type_can_be_defined_with_str_enum_mapping():
-    class RoleEnum(str, Enum):
-        USER = "user"
-        MOD = "moderator"
-        ADMIN = "administrator"
-
-    class UserRoleEnum(EnumType):
-        __schema__ = """
-            enum UserRole {
-                USER
-                MOD
-                ADMIN
-            }
+    assert_schema_equals(
+        schema,
         """
-        __enum__ = RoleEnum
+        type Query {
+          level: UserLevel!
+        }
 
-    schema = make_test_schema(UserRoleEnum)
-
-    # Specfied enum value is reversed
-    result = graphql_sync(schema, "{ enumToRepr(enum: MOD) }")
-    assert result.data["enumToRepr"] == repr(RoleEnum.MOD)
-
-    # Default enum value is reversed
-    result = graphql_sync(schema, "{ enumToRepr }")
-    assert result.data["enumToRepr"] == repr(RoleEnum.USER)
-
-    # Python value is converted to enum
-    result = graphql_sync(
-        schema, "{ reprToEnum }", root_value={"reprToEnum": "administrator"}
+        enum UserLevel {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
     )
-    assert result.data["reprToEnum"] == "ADMIN"
+
+    result = graphql_sync(schema, "{ level }")
+
+    assert not result.errors
+    assert result.data == {"level": "GUEST"}
 
 
-def test_enum_type_raises_error_when_enum_mapping_misses_items_from_definition(
-    data_regression,
-):
-    class RoleEnum(str, Enum):
-        USER = "user"
-        MODERATOR = "moderator"
-        ADMIN = "administrator"
+def test_enum_field_returning_str_value(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __members__ = [
+            "GUEST",
+            "MEMBER",
+            "ADMIN",
+        ]
 
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserRoleEnum(EnumType):
-            __schema__ = """
-                enum UserRole {
-                    USER
-                    MOD
-                    ADMIN
-                }
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+        @GraphQLObject.resolver("level")
+        def resolve_level(*_) -> str:
+            return "ADMIN"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevel!
+        }
+
+        enum UserLevel {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ level }")
+
+    assert not result.errors
+    assert result.data == {"level": "ADMIN"}
+
+
+def test_enum_type_with_custom_name(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __graphql_name__ = "UserLevelEnum"
+        __members__ = UserLevelEnum
+
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevelEnum!
+        }
+
+        enum UserLevelEnum {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+
+def test_enum_type_with_description(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __description__ = "Hello world."
+        __members__ = UserLevelEnum
+
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevel!
+        }
+
+        \"\"\"Hello world.\"\"\"
+        enum UserLevel {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+
+def test_enum_type_with_member_description(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __members__ = UserLevelEnum
+        __members_descriptions__ = {"MEMBER": "Hello world."}
+
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevel!
+        }
+
+        enum UserLevel {
+          GUEST
+
+          \"\"\"Hello world.\"\"\"
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+
+def test_schema_enum_field_returning_enum_value(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __schema__ = """
+            enum UserLevel {
+              GUEST
+              MEMBER
+              ADMIN
+            }
             """
-            __enum__ = RoleEnum
+        __members__ = UserLevelEnum
 
-    data_regression.check(str(err.value))
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+        @GraphQLObject.resolver("level")
+        def resolve_level(*_) -> UserLevelEnum:
+            return UserLevelEnum.MEMBER
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevel!
+        }
+
+        enum UserLevel {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ level }")
+
+    assert not result.errors
+    assert result.data == {"level": "MEMBER"}
 
 
-def test_enum_type_raises_error_when_enum_mapping_has_extra_items_not_in_definition(
-    data_regression,
-):
-    class RoleEnum(str, Enum):
-        USER = "user"
-        REVIEW = "review"
-        MOD = "moderator"
-        ADMIN = "administrator"
-
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserRoleEnum(EnumType):
-            __schema__ = """
-                enum UserRole {
-                    USER
-                    MOD
-                    ADMIN
-                }
+def test_schema_enum_field_returning_dict_value(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __schema__ = """
+            enum UserLevel {
+              GUEST
+              MEMBER
+              ADMIN
+            }
             """
-            __enum__ = RoleEnum
+        __members__ = {
+            "GUEST": 0,
+            "MEMBER": 1,
+            "ADMIN": 2,
+        }
 
-    data_regression.check(str(err.value))
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+        @GraphQLObject.resolver("level")
+        def resolve_level(*_) -> int:
+            return 2
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevel!
+        }
+
+        enum UserLevel {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ level }")
+
+    assert not result.errors
+    assert result.data == {"level": "ADMIN"}
+
+
+def test_schema_enum_field_returning_str_value(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __schema__ = """
+            enum UserLevel {
+              GUEST
+              MEMBER
+              ADMIN
+            }
+            """
+
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+        @GraphQLObject.resolver("level")
+        def resolve_level(*_) -> str:
+            return "GUEST"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevel!
+        }
+
+        enum UserLevel {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ level }")
+
+    assert not result.errors
+    assert result.data == {"level": "GUEST"}
+
+
+def test_schema_enum_with_description_attr(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __schema__ = """
+            enum UserLevel {
+              GUEST
+              MEMBER
+              ADMIN
+            }
+            """
+        __members__ = {
+            "GUEST": 0,
+            "MEMBER": 1,
+            "ADMIN": 2,
+        }
+        __description__ = "Hello world."
+
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+        @GraphQLObject.resolver("level")
+        def resolve_level(*_) -> int:
+            return 2
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevel!
+        }
+
+        \"\"\"Hello world.\"\"\"
+        enum UserLevel {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ level }")
+
+    assert not result.errors
+    assert result.data == {"level": "ADMIN"}
+
+
+def test_schema_enum_with_schema_description(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __schema__ = """
+            \"\"\"Hello world.\"\"\"
+            enum UserLevel {
+              GUEST
+              MEMBER
+              ADMIN
+            }
+            """
+        __members__ = {
+            "GUEST": 0,
+            "MEMBER": 1,
+            "ADMIN": 2,
+        }
+
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+        @GraphQLObject.resolver("level")
+        def resolve_level(*_) -> int:
+            return 2
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevel!
+        }
+
+        \"\"\"Hello world.\"\"\"
+        enum UserLevel {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ level }")
+
+    assert not result.errors
+    assert result.data == {"level": "ADMIN"}
+
+
+def test_schema_enum_with_member_description(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __schema__ = """
+            enum UserLevel {
+              GUEST
+              MEMBER
+              ADMIN
+            }
+            """
+        __members__ = {
+            "GUEST": 0,
+            "MEMBER": 1,
+            "ADMIN": 2,
+        }
+        __members_descriptions__ = {"MEMBER": "Hello world."}
+
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+        @GraphQLObject.resolver("level")
+        def resolve_level(*_) -> int:
+            return 2
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevel!
+        }
+
+        enum UserLevel {
+          GUEST
+
+          \"\"\"Hello world.\"\"\"
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ level }")
+
+    assert not result.errors
+    assert result.data == {"level": "ADMIN"}
+
+
+def test_schema_enum_with_member_schema_description(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __schema__ = """
+            enum UserLevel {
+              GUEST
+              \"\"\"Hello world.\"\"\"
+              MEMBER
+              ADMIN
+            }
+            """
+        __members__ = {
+            "GUEST": 0,
+            "MEMBER": 1,
+            "ADMIN": 2,
+        }
+
+    class QueryType(GraphQLObject):
+        level: UserLevel
+
+        @GraphQLObject.resolver("level")
+        def resolve_level(*_) -> int:
+            return 2
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          level: UserLevel!
+        }
+
+        enum UserLevel {
+          GUEST
+
+          \"\"\"Hello world.\"\"\"
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ level }")
+
+    assert not result.errors
+    assert result.data == {"level": "ADMIN"}

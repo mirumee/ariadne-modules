@@ -1,325 +1,754 @@
-import pytest
-from ariadne import SchemaDirectiveVisitor
-from graphql import GraphQLError, build_schema
+from typing import List
 
+from ariadne import gql
+from graphql import subscribe, parse
+import pytest
 from ariadne_graphql_modules import (
-    DirectiveType,
-    InterfaceType,
-    ObjectType,
-    SubscriptionType,
+    GraphQLID,
+    GraphQLObject,
+    GraphQLSubscription,
+    GraphQLUnion,
+    make_executable_schema,
 )
 
 
-def test_subscription_type_raises_attribute_error_when_defined_without_schema(
-    data_regression,
-):
-    with pytest.raises(AttributeError) as err:
-        # pylint: disable=unused-variable
-        class UsersSubscription(SubscriptionType):
-            pass
-
-    data_regression.check(str(err.value))
+class Message(GraphQLObject):
+    id: GraphQLID
+    content: str
+    author: str
 
 
-def test_subscription_type_raises_error_when_defined_with_invalid_schema_type(
-    data_regression,
-):
-    with pytest.raises(TypeError) as err:
-        # pylint: disable=unused-variable
-        class UsersSubscription(SubscriptionType):
-            __schema__ = True
-
-    data_regression.check(str(err.value))
+class User(GraphQLObject):
+    id: GraphQLID
+    username: str
 
 
-def test_subscription_type_raises_error_when_defined_with_invalid_schema_str(
-    data_regression,
-):
-    with pytest.raises(GraphQLError) as err:
-        # pylint: disable=unused-variable
-        class UsersSubscription(SubscriptionType):
-            __schema__ = "typo Subscription"
-
-    data_regression.check(str(err.value))
+class Notification(GraphQLUnion):
+    __types__ = [Message, User]
 
 
-def test_subscription_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UsersSubscription(SubscriptionType):
-            __schema__ = "scalar Subscription"
+@pytest.mark.asyncio
+async def test_basic_subscription_without_schema(assert_schema_equals):
+    class SubscriptionType(GraphQLSubscription):
+        message_added: Message
 
-    data_regression.check(str(err.value))
+        @GraphQLSubscription.source("message_added")
+        async def message_added_generator(obj, info):
+            while True:
+                yield {"id": "some_id", "content": "message", "author": "Anon"}
 
+        @GraphQLSubscription.resolver("message_added", graphql_type=Message)
+        async def resolve_message_added(message, info):
+            return message
 
-def test_subscription_type_raises_error_when_defined_with_invalid_graphql_type_name(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UsersSubscription(SubscriptionType):
-            __schema__ = "type Other"
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=str)
+        def search_sth(*_) -> str:
+            return "search"
 
-    data_regression.check(str(err.value))
+    schema = make_executable_schema(QueryType, SubscriptionType)
 
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          searchSth: String!
+        }
 
-def test_subscription_type_raises_error_when_defined_without_fields(data_regression):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UsersSubscription(SubscriptionType):
-            __schema__ = "type Subscription"
-
-    data_regression.check(str(err.value))
-
-
-def test_subscription_type_extracts_graphql_name():
-    class UsersSubscription(SubscriptionType):
-        __schema__ = """
         type Subscription {
-            thread: ID!
+          messageAdded: Message!
         }
-        """
 
-    assert UsersSubscription.graphql_name == "Subscription"
-
-
-def test_subscription_type_raises_error_when_defined_without_return_type_dependency(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ChatSubscription(SubscriptionType):
-            __schema__ = """
-            type Subscription {
-                chat: Chat
-                Chats: [Chat!]
-            }
-            """
-
-    data_regression.check(str(err.value))
-
-
-def test_subscription_type_verifies_field_dependency():
-    # pylint: disable=unused-variable
-    class ChatType(ObjectType):
-        __schema__ = """
-        type Chat {
-            id: ID!
+        type Message {
+          id: ID!
+          content: String!
+          author: String!
         }
-        """
-
-    class ChatSubscription(SubscriptionType):
-        __schema__ = """
-        type Subscription {
-            chat: Chat
-            Chats: [Chat!]
-        }
-        """
-        __requires__ = [ChatType]
-
-
-def test_subscription_type_raises_error_when_defined_without_argument_type_dependency(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ChatSubscription(SubscriptionType):
-            __schema__ = """
-            type Subscription {
-                chat(input: ChannelInput): [String!]!
-            }
-            """
-
-    data_regression.check(str(err.value))
-
-
-def test_subscription_type_can_be_extended_with_new_fields():
-    # pylint: disable=unused-variable
-    class ChatSubscription(SubscriptionType):
-        __schema__ = """
-        type Subscription {
-            chat: ID!
-        }
-        """
-
-    class ExtendChatSubscription(SubscriptionType):
-        __schema__ = """
-        extend type Subscription {
-            thread: ID!
-        }
-        """
-        __requires__ = [ChatSubscription]
-
-
-def test_subscription_type_can_be_extended_with_directive():
-    # pylint: disable=unused-variable
-    class ExampleDirective(DirectiveType):
-        __schema__ = "directive @example on OBJECT"
-        __visitor__ = SchemaDirectiveVisitor
-
-    class ChatSubscription(SubscriptionType):
-        __schema__ = """
-        type Subscription {
-            chat: ID!
-        }
-        """
-
-    class ExtendChatSubscription(SubscriptionType):
-        __schema__ = "extend type Subscription @example"
-        __requires__ = [ChatSubscription, ExampleDirective]
-
-
-def test_subscription_type_can_be_extended_with_interface():
-    # pylint: disable=unused-variable
-    class ExampleInterface(InterfaceType):
-        __schema__ = """
-        interface Interface {
-            threads: ID!
-        }
-        """
-
-    class ChatSubscription(SubscriptionType):
-        __schema__ = """
-        type Subscription {
-            chat: ID!
-        }
-        """
-
-    class ExtendChatSubscription(SubscriptionType):
-        __schema__ = """
-        extend type Subscription implements Interface {
-            threads: ID!
-        }
-        """
-        __requires__ = [ChatSubscription, ExampleInterface]
-
-
-def test_subscription_type_raises_error_when_defined_without_extended_dependency(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExtendChatSubscription(SubscriptionType):
-            __schema__ = """
-            extend type Subscription {
-                thread: ID!
-            }
-            """
-
-    data_regression.check(str(err.value))
-
-
-def test_subscription_type_raises_error_when_extended_dependency_is_wrong_type(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = """
-            interface Subscription {
-                id: ID!
-            }
-            """
-
-        class ExtendChatSubscription(SubscriptionType):
-            __schema__ = """
-            extend type Subscription {
-                thread: ID!
-            }
-            """
-            __requires__ = [ExampleInterface]
-
-    data_regression.check(str(err.value))
-
-
-def test_subscription_type_raises_error_when_defined_with_alias_for_nonexisting_field(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ChatSubscription(SubscriptionType):
-            __schema__ = """
-            type Subscription {
-                chat: ID!
-            }
-            """
-            __aliases__ = {
-                "userAlerts": "user_alerts",
-            }
-
-    data_regression.check(str(err.value))
-
-
-def test_subscription_type_raises_error_when_defined_with_resolver_for_nonexisting_field(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ChatSubscription(SubscriptionType):
-            __schema__ = """
-            type Subscription {
-                chat: ID!
-            }
-            """
-
-            @staticmethod
-            def resolve_group(*_):
-                return None
-
-    data_regression.check(str(err.value))
-
-
-def test_subscription_type_raises_error_when_defined_with_sub_for_nonexisting_field(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ChatSubscription(SubscriptionType):
-            __schema__ = """
-            type Subscription {
-                chat: ID!
-            }
-            """
-
-            @staticmethod
-            def subscribe_group(*_):
-                return None
-
-    data_regression.check(str(err.value))
-
-
-def test_subscription_type_binds_resolver_and_subscriber_to_schema():
-    schema = build_schema(
-        """
-            type Query {
-                hello: String
-            }
-
-            type Subscription {
-                chat: ID!
-            }
-        """
+        """,
     )
 
-    class ChatSubscription(SubscriptionType):
-        __schema__ = """
-        type Subscription {
-            chat: ID!
-        }
+    query = parse("subscription { messageAdded {id content author} }")
+    sub = await subscribe(schema, query)
+
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
+
+    # Fetch the first result
+    result = await sub.__anext__()
+
+    # Validate the result
+    assert not result.errors
+    assert result.data == {
+        "messageAdded": {"id": "some_id", "content": "message", "author": "Anon"}
+    }
+
+
+@pytest.mark.asyncio
+async def test_subscription_with_arguments_without_schema(assert_schema_equals):
+    class SubscriptionType(GraphQLSubscription):
+        message_added: Message
+
+        @GraphQLSubscription.source(
+            "message_added",
+            args={"channel": GraphQLObject.argument(description="Lorem ipsum.")},
+        )
+        async def message_added_generator(obj, info, channel: GraphQLID):
+            while True:
+                yield {
+                    "id": "some_id",
+                    "content": f"message_{channel}",
+                    "author": "Anon",
+                }
+
+        @GraphQLSubscription.resolver(
+            "message_added",
+            graphql_type=Message,
+        )
+        async def resolve_message_added(message, *_, channel: GraphQLID):
+            return message
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=str)
+        def search_sth(*_) -> str:
+            return "search"
+
+    schema = make_executable_schema(QueryType, SubscriptionType)
+
+    assert_schema_equals(
+        schema,
         """
+        type Query {
+          searchSth: String!
+        }
 
-        @staticmethod
-        def resolve_chat(*_):
-            return None
+        type Subscription {
+          messageAdded(
+            \"\"\"Lorem ipsum.\"\"\"
+            channel: ID!
+          ): Message!
+        }
 
-        @staticmethod
-        def subscribe_chat(*_):
-            return None
+        type Message {
+          id: ID!
+          content: String!
+          author: String!
+        }
+        """,
+    )
 
-    ChatSubscription.__bind_to_schema__(schema)
+    query = parse('subscription { messageAdded(channel: "123") {id content author} }')
+    sub = await subscribe(schema, query)
 
-    field = schema.type_map.get("Subscription").fields["chat"]
-    assert field.resolve is ChatSubscription.resolve_chat
-    assert field.subscribe is ChatSubscription.subscribe_chat
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
+
+    # Fetch the first result
+    result = await sub.__anext__()
+
+    # Validate the result
+    assert not result.errors
+    assert result.data == {
+        "messageAdded": {"id": "some_id", "content": "message_123", "author": "Anon"}
+    }
+
+
+@pytest.mark.asyncio
+async def test_multiple_supscriptions_without_schema(assert_schema_equals):
+    class SubscriptionType(GraphQLSubscription):
+        message_added: Message
+        user_joined: User
+
+        @GraphQLSubscription.source(
+            "message_added",
+            args={"channel": GraphQLObject.argument(description="Lorem ipsum.")},
+        )
+        async def message_added_generator(obj, info, channel: GraphQLID):
+            while True:
+                yield {
+                    "id": "some_id",
+                    "content": f"message_{channel}",
+                    "author": "Anon",
+                }
+
+        @GraphQLSubscription.resolver(
+            "message_added",
+            graphql_type=Message,
+        )
+        async def resolve_message_added(message, *_, channel: GraphQLID):
+            return message
+
+        @GraphQLSubscription.source(
+            "user_joined",
+        )
+        async def user_joined_generator(obj, info):
+            while True:
+                yield {
+                    "id": "some_id",
+                    "username": "username",
+                }
+
+        @GraphQLSubscription.resolver(
+            "user_joined",
+            graphql_type=Message,
+        )
+        async def resolve_user_joined(user, *_):
+            return user
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=str)
+        def search_sth(*_) -> str:
+            return "search"
+
+    schema = make_executable_schema(QueryType, SubscriptionType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          searchSth: String!
+        }
+
+        type Subscription {
+          messageAdded(
+            \"\"\"Lorem ipsum.\"\"\"
+            channel: ID!
+          ): Message!
+          userJoined: User!
+        }
+
+        type Message {
+          id: ID!
+          content: String!
+          author: String!
+        }
+        
+        type User {
+          id: ID!
+          username: String!
+        }
+        """,
+    )
+
+    query = parse("subscription { userJoined {id username} }")
+    sub = await subscribe(schema, query)
+
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
+
+    # Fetch the first result
+    result = await sub.__anext__()
+
+    # Validate the result
+    assert not result.errors
+    assert result.data == {"userJoined": {"id": "some_id", "username": "username"}}
+
+
+@pytest.mark.asyncio
+async def test_subscription_with_complex_data_without_schema(assert_schema_equals):
+    class SubscriptionType(GraphQLSubscription):
+        messages_in_channel: List[Message]
+
+        @GraphQLSubscription.source(
+            "messages_in_channel",
+            args={"channel_id": GraphQLObject.argument(description="Lorem ipsum.")},
+        )
+        async def message_added_generator(obj, info, channel_id: GraphQLID):
+            while True:
+                yield [
+                    {
+                        "id": "some_id",
+                        "content": f"message_{channel_id}",
+                        "author": "Anon",
+                    }
+                ]
+
+        @GraphQLSubscription.resolver(
+            "messages_in_channel",
+            graphql_type=Message,
+        )
+        async def resolve_message_added(message, *_, channel_id: GraphQLID):
+            return message
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=str)
+        def search_sth(*_) -> str:
+            return "search"
+
+    schema = make_executable_schema(QueryType, SubscriptionType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          searchSth: String!
+        }
+
+        type Subscription {
+          messagesInChannel(
+            \"\"\"Lorem ipsum.\"\"\"
+            channelId: ID!
+          ): [Message!]!
+        }
+
+        type Message {
+          id: ID!
+          content: String!
+          author: String!
+        }
+        """,
+    )
+
+    query = parse(
+        'subscription { messagesInChannel(channelId: "123") {id content author} }'
+    )
+    sub = await subscribe(schema, query)
+
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
+
+    # Fetch the first result
+    result = await sub.__anext__()
+
+    # Validate the result
+    assert not result.errors
+    assert result.data == {
+        "messagesInChannel": [
+            {"id": "some_id", "content": "message_123", "author": "Anon"}
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_subscription_with_union_without_schema(assert_schema_equals):
+    class SubscriptionType(GraphQLSubscription):
+        notification_received: Notification
+
+        @GraphQLSubscription.source(
+            "notification_received",
+        )
+        async def message_added_generator(obj, info):
+            while True:
+                yield Message(id=1, content="content", author="anon")
+
+        @GraphQLSubscription.resolver(
+            "notification_received",
+        )
+        async def resolve_message_added(message, *_):
+            return message
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=str)
+        def search_sth(*_) -> str:
+            return "search"
+
+    schema = make_executable_schema(QueryType, SubscriptionType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          searchSth: String!
+        }
+
+        type Subscription {
+          notificationReceived: Notification!
+        }
+
+        union Notification = Message | User
+
+        type Message {
+          id: ID!
+          content: String!
+          author: String!
+        }
+
+        type User {
+          id: ID!
+          username: String!
+        }
+        """,
+    )
+
+    query = parse("subscription { notificationReceived { ... on Message { id } } }")
+    sub = await subscribe(schema, query)
+
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
+
+    # Fetch the first result
+    result = await sub.__anext__()
+
+    # Validate the result
+    assert not result.errors
+    assert result.data == {"notificationReceived": {"id": "1"}}
+
+
+@pytest.mark.asyncio
+async def test_basic_subscription_with_schema(assert_schema_equals):
+    class SubscriptionType(GraphQLSubscription):
+        __schema__ = gql(
+            """
+            type Subscription {
+                messageAdded: Message!
+            }
+            """
+        )
+
+        @GraphQLSubscription.source("messageAdded")
+        async def message_added_generator(obj, info):
+            while True:
+                yield {"id": "some_id", "content": "message", "author": "Anon"}
+
+        @GraphQLSubscription.resolver("messageAdded", graphql_type=Message)
+        async def resolve_message_added(message, info):
+            return message
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=str)
+        def search_sth(*_) -> str:
+            return "search"
+
+    schema = make_executable_schema(QueryType, SubscriptionType, Message)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          searchSth: String!
+        }
+
+        type Subscription {
+          messageAdded: Message!
+        }
+
+        type Message {
+          id: ID!
+          content: String!
+          author: String!
+        }
+        """,
+    )
+
+    query = parse("subscription { messageAdded {id content author} }")
+    sub = await subscribe(schema, query)
+
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
+
+    # Fetch the first result
+    result = await sub.__anext__()
+
+    # Validate the result
+    assert not result.errors
+    assert result.data == {
+        "messageAdded": {"id": "some_id", "content": "message", "author": "Anon"}
+    }
+
+
+@pytest.mark.asyncio
+async def test_subscription_with_arguments_with_schema(assert_schema_equals):
+    class SubscriptionType(GraphQLSubscription):
+        __schema__ = gql(
+            """
+            type Subscription {
+                messageAdded(channel: ID!): Message!
+            }
+            """
+        )
+
+        @GraphQLSubscription.source(
+            "messageAdded",
+        )
+        async def message_added_generator(obj, info, channel: GraphQLID):
+            while True:
+                yield {
+                    "id": "some_id",
+                    "content": f"message_{channel}",
+                    "author": "Anon",
+                }
+
+        @GraphQLSubscription.resolver(
+            "messageAdded",
+            graphql_type=Message,
+        )
+        async def resolve_message_added(message, *_, channel: GraphQLID):
+            return message
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=str)
+        def search_sth(*_) -> str:
+            return "search"
+
+    schema = make_executable_schema(QueryType, SubscriptionType, Message)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          searchSth: String!
+        }
+
+        type Subscription {
+          messageAdded(channel: ID!): Message!
+        }
+
+        type Message {
+          id: ID!
+          content: String!
+          author: String!
+        }
+        """,
+    )
+
+    query = parse('subscription { messageAdded(channel: "123") {id content author} }')
+    sub = await subscribe(schema, query)
+
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
+
+    # Fetch the first result
+    result = await sub.__anext__()
+
+    # Validate the result
+    assert not result.errors
+    assert result.data == {
+        "messageAdded": {"id": "some_id", "content": "message_123", "author": "Anon"}
+    }
+
+
+@pytest.mark.asyncio
+async def test_multiple_supscriptions_with_schema(assert_schema_equals):
+    class SubscriptionType(GraphQLSubscription):
+        __schema__ = gql(
+            """
+            type Subscription {
+              messageAdded: Message!
+              userJoined: User!
+            }
+            """
+        )
+
+        @GraphQLSubscription.source(
+            "messageAdded",
+        )
+        async def message_added_generator(obj, info):
+            while True:
+                yield {
+                    "id": "some_id",
+                    "content": "message",
+                    "author": "Anon",
+                }
+
+        @GraphQLSubscription.resolver(
+            "messageAdded",
+        )
+        async def resolve_message_added(message, *_):
+            return message
+
+        @GraphQLSubscription.source(
+            "userJoined",
+        )
+        async def user_joined_generator(obj, info):
+            while True:
+                yield {
+                    "id": "some_id",
+                    "username": "username",
+                }
+
+        @GraphQLSubscription.resolver(
+            "userJoined",
+        )
+        async def resolve_user_joined(user, *_):
+            return user
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=str)
+        def search_sth(*_) -> str:
+            return "search"
+
+    schema = make_executable_schema(QueryType, SubscriptionType, Message, User)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          searchSth: String!
+        }
+
+        type Subscription {
+          messageAdded: Message!
+          userJoined: User!
+        }
+
+        type Message {
+          id: ID!
+          content: String!
+          author: String!
+        }
+
+        type User {
+          id: ID!
+          username: String!
+        }
+        """,
+    )
+
+    query = parse("subscription { userJoined {id username} }")
+    sub = await subscribe(schema, query)
+
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
+
+    # Fetch the first result
+    result = await sub.__anext__()
+
+    # Validate the result
+    assert not result.errors
+    assert result.data == {"userJoined": {"id": "some_id", "username": "username"}}
+
+
+@pytest.mark.asyncio
+async def test_subscription_with_complex_data_with_schema(assert_schema_equals):
+    class SubscriptionType(GraphQLSubscription):
+        __schema__ = gql(
+            """
+            type Subscription {
+              messagesInChannel(channelId: ID!): [Message!]!
+            }
+            """
+        )
+
+        @GraphQLSubscription.source(
+            "messagesInChannel",
+        )
+        async def message_added_generator(obj, info, channelId: GraphQLID):
+            while True:
+                yield [
+                    {
+                        "id": "some_id",
+                        "content": f"message_{channelId}",
+                        "author": "Anon",
+                    }
+                ]
+
+        @GraphQLSubscription.resolver(
+            "messagesInChannel",
+        )
+        async def resolve_message_added(message, *_, channelId: GraphQLID):
+            return message
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=str)
+        def search_sth(*_) -> str:
+            return "search"
+
+    schema = make_executable_schema(QueryType, SubscriptionType, Message)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          searchSth: String!
+        }
+
+        type Subscription {
+          messagesInChannel(channelId: ID!): [Message!]!
+        }
+
+        type Message {
+          id: ID!
+          content: String!
+          author: String!
+        }
+        """,
+    )
+
+    query = parse(
+        'subscription { messagesInChannel(channelId: "123") {id content author} }'
+    )
+    sub = await subscribe(schema, query)
+
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
+
+    # Fetch the first result
+    result = await sub.__anext__()
+
+    # Validate the result
+    assert not result.errors
+    assert result.data == {
+        "messagesInChannel": [
+            {"id": "some_id", "content": "message_123", "author": "Anon"}
+        ]
+    }
+
+
+@pytest.mark.asyncio
+async def test_subscription_with_union_with_schema(assert_schema_equals):
+    class SubscriptionType(GraphQLSubscription):
+        __schema__ = gql(
+            """
+            type Subscription {
+              notificationReceived: Notification!
+            }
+            """
+        )
+
+        @GraphQLSubscription.source(
+            "notificationReceived",
+        )
+        async def message_added_generator(obj, info):
+            while True:
+                yield Message(id=1, content="content", author="anon")
+
+        @GraphQLSubscription.resolver(
+            "notificationReceived",
+        )
+        async def resolve_message_added(message, *_):
+            return message
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=str)
+        def search_sth(*_) -> str:
+            return "search"
+
+    schema = make_executable_schema(QueryType, SubscriptionType, Notification)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          searchSth: String!
+        }
+
+        type Subscription {
+          notificationReceived: Notification!
+        }
+
+        union Notification = Message | User
+
+        type Message {
+          id: ID!
+          content: String!
+          author: String!
+        }
+
+        type User {
+          id: ID!
+          username: String!
+        }
+        """,
+    )
+
+    query = parse("subscription { notificationReceived { ... on Message { id } } }")
+    sub = await subscribe(schema, query)
+
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
+
+    # Fetch the first result
+    result = await sub.__anext__()
+
+    # Validate the result
+    assert not result.errors
+    assert result.data == {"notificationReceived": {"id": "1"}}

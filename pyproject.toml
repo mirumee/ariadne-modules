@@ -47,7 +47,7 @@ include = [
   "ariadne_graphql_modules/**/*.py",
   "ariadne_graphql_modules/py.typed",
 ]
-exclude = ["tests"]
+exclude = ["tests", "tests_v1"]
 
 [tool.hatch.envs.default]
 features = ["test"]
@@ -74,5 +74,5 @@ exclude = '''
 '''
 
 [tool.pytest.ini_options]
-testpaths = ["tests_next"]
+testpaths = ["tests"]
 asyncio_mode = "strict"

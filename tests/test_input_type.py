@@ -1,293 +1,628 @@
-import pytest
-from ariadne import SchemaDirectiveVisitor
-from graphql import GraphQLError, graphql_sync
+from typing import Optional
 
+import pytest
+from graphql import graphql_sync
+
+from ariadne import gql
 from ariadne_graphql_modules import (
-    DeferredType,
-    DirectiveType,
-    EnumType,
-    InputType,
-    InterfaceType,
-    ObjectType,
-    ScalarType,
+    GraphQLInput,
+    GraphQLObject,
     make_executable_schema,
 )
 
 
-def test_input_type_raises_attribute_error_when_defined_without_schema(data_regression):
-    with pytest.raises(AttributeError) as err:
-        # pylint: disable=unused-variable
-        class UserInput(InputType):
-            pass
+def test_input_type_instance_with_all_attrs_values():
+    class SearchInput(GraphQLInput):
+        query: str
+        age: int
 
-    data_regression.check(str(err.value))
-
-
-def test_input_type_raises_error_when_defined_with_invalid_schema_type(data_regression):
-    with pytest.raises(TypeError) as err:
-        # pylint: disable=unused-variable
-        class UserInput(InputType):
-            __schema__ = True
-
-    data_regression.check(str(err.value))
+    obj = SearchInput(query="search", age=20)
+    assert obj.query == "search"
+    assert obj.age == 20
 
 
-def test_input_type_raises_error_when_defined_with_invalid_schema_str(data_regression):
-    with pytest.raises(GraphQLError) as err:
-        # pylint: disable=unused-variable
-        class UserInput(InputType):
-            __schema__ = "inpet UserInput"
+def test_input_type_instance_with_omitted_attrs_being_none():
+    class SearchInput(GraphQLInput):
+        query: str
+        age: int
 
-    data_regression.check(str(err.value))
+    obj = SearchInput(age=20)
+    assert obj.query is None
+    assert obj.age == 20
 
 
-def test_input_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserInput(InputType):
-            __schema__ = """
-            type User {
-                id: ID!
+def test_input_type_instance_with_default_attrs_values():
+    class SearchInput(GraphQLInput):
+        query: str = "default"
+        age: int = 42
+
+    obj = SearchInput(age=20)
+    assert obj.query == "default"
+    assert obj.age == 20
+
+
+def test_input_type_instance_with_all_fields_values():
+    class SearchInput(GraphQLInput):
+        query: str = GraphQLInput.field()
+        age: int = GraphQLInput.field()
+
+    obj = SearchInput(query="search", age=20)
+    assert obj.query == "search"
+    assert obj.age == 20
+
+
+def test_input_type_instance_with_all_fields_default_values():
+    class SearchInput(GraphQLInput):
+        query: str = GraphQLInput.field(default_value="default")
+        age: int = GraphQLInput.field(default_value=42)
+
+    obj = SearchInput(age=20)
+    assert obj.query == "default"
+    assert obj.age == 20
+
+
+def test_input_type_instance_with_invalid_attrs_raising_error(data_regression):
+    class SearchInput(GraphQLInput):
+        query: str
+        age: int
+
+    with pytest.raises(TypeError) as exc_info:
+        SearchInput(age=20, invalid="Ok")
+
+    data_regression.check(str(exc_info.value))
+
+
+def test_schema_input_type_instance_with_all_attrs_values():
+    class SearchInput(GraphQLInput):
+        __schema__ = gql(
+            """
+            input Search {
+                query: String
+                age: Int
             }
             """
+        )
 
-    data_regression.check(str(err.value))
+        query: str
+        age: int
+
+    obj = SearchInput(query="search", age=20)
+    assert obj.query == "search"
+    assert obj.age == 20
 
 
-def test_input_type_raises_error_when_defined_with_multiple_types_schema(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserInput(InputType):
-            __schema__ = """
-            input User
-
-            input Group
+def test_schema_input_type_instance_with_omitted_attrs_being_none():
+    class SearchInput(GraphQLInput):
+        __schema__ = gql(
             """
-
-    data_regression.check(str(err.value))
-
-
-def test_input_type_raises_error_when_defined_without_fields(data_regression):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserInput(InputType):
-            __schema__ = "input User"
-
-    data_regression.check(str(err.value))
-
-
-def test_input_type_extracts_graphql_name():
-    class UserInput(InputType):
-        __schema__ = """
-        input User {
-            id: ID!
-        }
-        """
-
-    assert UserInput.graphql_name == "User"
-
-
-def test_input_type_raises_error_when_defined_without_field_type_dependency(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserInput(InputType):
-            __schema__ = """
-            input User {
-                id: ID!
-                role: Role!
+            input Search {
+                query: String
+                age: Int
             }
             """
+        )
 
-    data_regression.check(str(err.value))
+        query: str
+        age: int
 
-
-def test_input_type_verifies_field_dependency():
-    # pylint: disable=unused-variable
-    class RoleEnum(EnumType):
-        __schema__ = """
-        enum Role {
-            USER
-            ADMIN
-        }
-        """
-
-    class UserInput(InputType):
-        __schema__ = """
-        input User {
-            id: ID!
-            role: Role!
-        }
-        """
-        __requires__ = [RoleEnum]
+    obj = SearchInput(age=20)
+    assert obj.query is None
+    assert obj.age == 20
 
 
-def test_input_type_verifies_circular_dependency():
-    # pylint: disable=unused-variable
-    class UserInput(InputType):
-        __schema__ = """
-        input User {
-            id: ID!
-            patron: User
-        }
-        """
-
-
-def test_input_type_verifies_circular_dependency_using_deferred_type():
-    # pylint: disable=unused-variable
-    class GroupInput(InputType):
-        __schema__ = """
-        input Group {
-            id: ID!
-            patron: User
-        }
-        """
-        __requires__ = [DeferredType("User")]
-
-    class UserInput(InputType):
-        __schema__ = """
-        input User {
-            id: ID!
-            group: Group
-        }
-        """
-        __requires__ = [GroupInput]
-
-
-def test_input_type_can_be_extended_with_new_fields():
-    # pylint: disable=unused-variable
-    class UserInput(InputType):
-        __schema__ = """
-        input User {
-            id: ID!
-        }
-        """
-
-    class ExtendUserInput(InputType):
-        __schema__ = """
-        extend input User {
-            name: String!
-        }
-        """
-        __requires__ = [UserInput]
-
-
-def test_input_type_can_be_extended_with_directive():
-    # pylint: disable=unused-variable
-    class ExampleDirective(DirectiveType):
-        __schema__ = "directive @example on INPUT_OBJECT"
-        __visitor__ = SchemaDirectiveVisitor
-
-    class UserInput(InputType):
-        __schema__ = """
-        input User {
-            id: ID!
-        }
-        """
-
-    class ExtendUserInput(InputType):
-        __schema__ = """
-        extend input User @example
-        """
-        __requires__ = [UserInput, ExampleDirective]
-
-
-def test_input_type_raises_error_when_defined_without_extended_dependency(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExtendUserInput(InputType):
-            __schema__ = """
-            extend input User {
-                name: String!
+def test_schema_input_type_instance_with_default_attrs_values():
+    class SearchInput(GraphQLInput):
+        __schema__ = gql(
+            """
+            input Search {
+                query: String = "default"
+                age: Int = 42
             }
             """
+        )
 
-    data_regression.check(str(err.value))
+        query: str
+        age: int
+
+    obj = SearchInput(age=20)
+    assert obj.query == "default"
+    assert obj.age == 20
 
 
-def test_input_type_raises_error_when_extended_dependency_is_wrong_type(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = """
-            interface User {
-                id: ID!
+def test_schema_input_type_instance_with_all_attrs_default_values():
+    class SearchInput(GraphQLInput):
+        __schema__ = gql(
+            """
+            input Search {
+                query: String = "default"
+                age: Int = 42
             }
             """
+        )
 
-        class ExtendUserInput(InputType):
-            __schema__ = """
-            extend input User {
-                name: String!
+        query: str
+        age: int
+
+    obj = SearchInput()
+    assert obj.query == "default"
+    assert obj.age == 42
+
+
+def test_schema_input_type_instance_with_default_attrs_python_values():
+    class SearchInput(GraphQLInput):
+        __schema__ = gql(
+            """
+            input Search {
+                query: String
+                age: Int
             }
             """
-            __requires__ = [ExampleInterface]
+        )
 
-    data_regression.check(str(err.value))
+        query: str = "default"
+        age: int = 42
+
+    obj = SearchInput(age=20)
+    assert obj.query == "default"
+    assert obj.age == 20
 
 
-def test_input_type_raises_error_when_defined_with_args_map_for_nonexisting_field(
-    data_regression,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class UserInput(InputType):
-            __schema__ = """
-            input User {
-                id: ID!
+def test_schema_input_type_instance_with_invalid_attrs_raising_error(data_regression):
+    class SearchInput(GraphQLInput):
+        __schema__ = gql(
+            """
+            input Search {
+                query: String
+                age: Int
             }
             """
-            __args__ = {
-                "fullName": "full_name",
-            }
+        )
 
-    data_regression.check(str(err.value))
+        query: str
+        age: int
 
+    with pytest.raises(TypeError) as exc_info:
+        SearchInput(age=20, invalid="Ok")
 
-class UserInput(InputType):
-    __schema__ = """
-    input UserInput {
-        id: ID!
-        fullName: String!
-    }
-    """
-    __args__ = {
-        "fullName": "full_name",
-    }
+    data_regression.check(str(exc_info.value))
 
 
-class GenericScalar(ScalarType):
-    __schema__ = "scalar Generic"
+def test_input_type_arg(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        query: Optional[str]
+        age: Optional[int]
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return f"{repr([input.query, input.age])}"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: String
+          age: Int
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, '{ search(input: { query: "Hello" }) }')
+
+    assert not result.errors
+    assert result.data == {"search": "['Hello', None]"}
 
 
-class QueryType(ObjectType):
-    __schema__ = """
-    type Query {
-        reprInput(input: UserInput): Generic!
-    }
-    """
-    __aliases__ = {"reprInput": "repr_input"}
-    __requires__ = [GenericScalar, UserInput]
+def test_schema_input_type_arg(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        __schema__ = """
+        input SearchInput {
+          query: String
+          age: Int
+        }
+        """
 
-    @staticmethod
-    def resolve_repr_input(*_, input):  # pylint: disable=redefined-builtin
-        return input
+        query: Optional[str]
+        age: Optional[int]
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return f"{repr([input.query, input.age])}"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: String
+          age: Int
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, '{ search(input: { query: "Hello" }) }')
+
+    assert not result.errors
+    assert result.data == {"search": "['Hello', None]"}
 
 
-schema = make_executable_schema(QueryType)
+def test_input_type_automatic_out_name_arg(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        query: Optional[str]
+        min_age: Optional[int]
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return f"{repr([input.query, input.min_age])}"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: String
+          minAge: Int
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ search(input: { minAge: 21 }) }")
+
+    assert not result.errors
+    assert result.data == {"search": "[None, 21]"}
 
 
-def test_input_type_maps_args_to_python_dict_keys():
-    result = graphql_sync(schema, '{ reprInput(input: {id: "1", fullName: "Alice"}) }')
-    assert result.data == {
-        "reprInput": {"id": "1", "full_name": "Alice"},
-    }
+def test_schema_input_type_automatic_out_name_arg(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        __schema__ = """
+        input SearchInput {
+          query: String
+          minAge: Int
+        }
+        """
+
+        query: Optional[str]
+        min_age: Optional[int]
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return f"{repr([input.query, input.min_age])}"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: String
+          minAge: Int
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ search(input: { minAge: 21 }) }")
+
+    assert not result.errors
+    assert result.data == {"search": "[None, 21]"}
+
+
+def test_schema_input_type_explicit_out_name_arg(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        __schema__ = """
+        input SearchInput {
+          query: String
+          minAge: Int
+        }
+        """
+        __out_names__ = {"minAge": "age"}
+
+        query: Optional[str]
+        age: Optional[int]
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return f"{repr([input.query, input.age])}"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: String
+          minAge: Int
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ search(input: { minAge: 21 }) }")
+
+    assert not result.errors
+    assert result.data == {"search": "[None, 21]"}
+
+
+def test_input_type_self_reference(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        query: Optional[str]
+        extra: Optional["SearchInput"]
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            if input.extra:
+                extra_repr = input.extra.query
+            else:
+                extra_repr = None
+
+            return f"{repr([input.query, extra_repr])}"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: String
+          extra: SearchInput
+        }
+        """,
+    )
+
+    result = graphql_sync(
+        schema,
+        """
+        {
+            search(
+                input: { query: "Hello", extra: { query: "Other" } }
+            )
+        }
+        """,
+    )
+
+    assert not result.errors
+    assert result.data == {"search": "['Hello', 'Other']"}
+
+
+def test_schema_input_type_with_default_value(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        __schema__ = """
+        input SearchInput {
+          query: String = "Search"
+          age: Int = 42
+        }
+        """
+
+        query: str
+        age: int
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return f"{repr([input.query, input.age])}"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: String = "Search"
+          age: Int = 42
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ search(input: {}) }")
+
+    assert not result.errors
+    assert result.data == {"search": "['Search', 42]"}
+
+
+def test_input_type_with_field_default_value(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        query: str = "default"
+        age: int = 42
+        flag: bool = False
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return f"{repr([input.query, input.age, input.flag])}"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: String! = "default"
+          age: Int! = 42
+          flag: Boolean! = false
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ search(input: {}) }")
+
+    assert not result.errors
+    assert result.data == {"search": "['default', 42, False]"}
+
+
+def test_input_type_with_field_instance_default_value(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        query: str = GraphQLInput.field(default_value="default")
+        age: int = GraphQLInput.field(default_value=42)
+        flag: bool = GraphQLInput.field(default_value=False)
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return f"{repr([input.query, input.age, input.flag])}"
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: String! = "default"
+          age: Int! = 42
+          flag: Boolean! = false
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ search(input: {}) }")
+
+    assert not result.errors
+    assert result.data == {"search": "['default', 42, False]"}
+
+
+def test_input_type_with_field_type(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        query: str = GraphQLInput.field(graphql_type=int)
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return str(input)
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          query: Int!
+        }
+        """,
+    )
+
+
+def test_schema_input_type_with_field_description(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        __schema__ = """
+        input SearchInput {
+          \"\"\"Hello world.\"\"\"
+          query: String!
+        }
+        """
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return str(input)
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          \"\"\"Hello world.\"\"\"
+          query: String!
+        }
+        """,
+    )
+
+
+def test_input_type_with_field_description(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        query: str = GraphQLInput.field(description="Hello world.")
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return str(input)
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          \"\"\"Hello world.\"\"\"
+          query: String!
+        }
+        """,
+    )
