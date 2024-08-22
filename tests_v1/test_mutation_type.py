@@ -1,7 +1,7 @@
 import pytest
 from graphql import GraphQLError, graphql_sync
 
-from ariadne_graphql_modules import (
+from ariadne_graphql_modules.v1 import (
     MutationType,
     ObjectType,
     make_executable_schema,

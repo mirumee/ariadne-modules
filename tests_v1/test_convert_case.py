@@ -1,4 +1,4 @@
-from ariadne_graphql_modules import InputType, MutationType, ObjectType, convert_case
+from ariadne_graphql_modules.v1 import InputType, MutationType, ObjectType, convert_case
 
 
 def test_cases_are_mapped_for_aliases():

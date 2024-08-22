@@ -2,7 +2,7 @@ import pytest
 from graphql import GraphQLError
 from graphql.language.ast import ObjectTypeDefinitionNode
 
-from ariadne_graphql_modules import parse_definition
+from ariadne_graphql_modules.v1 import parse_definition
 
 
 def test_definition_parser_returns_definition_type_from_valid_schema_string():

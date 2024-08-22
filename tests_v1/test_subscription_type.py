@@ -2,7 +2,7 @@ import pytest
 from ariadne import SchemaDirectiveVisitor
 from graphql import GraphQLError, build_schema
 
-from ariadne_graphql_modules import (
+from ariadne_graphql_modules.v1 import (
     DirectiveType,
     InterfaceType,
     ObjectType,

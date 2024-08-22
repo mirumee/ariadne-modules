@@ -2,7 +2,7 @@ import pytest
 from ariadne import SchemaDirectiveVisitor
 from graphql import GraphQLError, default_field_resolver, graphql_sync
 
-from ariadne_graphql_modules import DirectiveType, ObjectType, make_executable_schema
+from ariadne_graphql_modules.v1 import DirectiveType, ObjectType, make_executable_schema
 
 
 def test_directive_type_raises_attribute_error_when_defined_without_schema(

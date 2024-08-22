@@ -1,3 +1,0 @@
-ExtendUserType graphql type was defined without required GraphQL type definition for
-  'User' in __requires__
-...

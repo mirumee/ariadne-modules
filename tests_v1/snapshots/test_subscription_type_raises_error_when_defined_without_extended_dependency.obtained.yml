@@ -1,3 +1,0 @@
-ExtendChatSubscription graphql type was defined without required GraphQL type definition
-  for 'Subscription' in __requires__
-...

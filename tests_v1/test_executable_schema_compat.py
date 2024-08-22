@@ -1,5 +1,5 @@
 from ariadne import ObjectType as OldObjectType, QueryType, gql, graphql_sync
-from ariadne_graphql_modules import DeferredType, ObjectType, make_executable_schema
+from ariadne_graphql_modules.v1 import DeferredType, ObjectType, make_executable_schema
 
 
 def test_old_schema_definition_is_executable():

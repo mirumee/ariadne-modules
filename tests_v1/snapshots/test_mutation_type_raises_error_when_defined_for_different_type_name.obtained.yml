@@ -1,3 +1,0 @@
-UserCreateMutation class was defined with __schema__ containing GraphQL definition
-  for 'type User' while 'type Mutation' was expected
-...

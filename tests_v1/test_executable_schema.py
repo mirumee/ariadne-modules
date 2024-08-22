@@ -1,7 +1,7 @@
 import pytest
 from graphql import graphql_sync
 
-from ariadne_graphql_modules import ObjectType, make_executable_schema
+from ariadne_graphql_modules.v1 import ObjectType, make_executable_schema
 
 
 def test_executable_schema_is_created_from_object_types():

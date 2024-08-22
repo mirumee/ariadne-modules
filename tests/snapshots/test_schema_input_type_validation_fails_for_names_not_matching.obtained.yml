@@ -1,3 +1,0 @@
-Class 'CustomType' defines both '__graphql_name__' and '__schema__' attributes, but
-  names in those don't match. ('Lorem' != 'Custom')
-...
