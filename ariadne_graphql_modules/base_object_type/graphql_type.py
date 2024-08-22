@@ -134,16 +134,16 @@ class GraphQLBaseObject(GraphQLType):
 
                 field_args = get_field_args_from_resolver(cls_attr.resolver)
                 if field_args:
-                    args_descriptions[cls_attr.field], args_defaults[cls_attr.field] = (
-                        {},
-                        {},
-                    )
+                    args_descriptions[cls_attr.field] = {}
+                    args_defaults[cls_attr.field] = {}
 
                     final_args = update_field_args_options(field_args, cls_attr.args)
                     for arg_name, arg_options in final_args.items():
-                        description_node = get_description_node(cls_attr.description)
-                        if description_node:
-                            descriptions[cls_attr.field] = description_node
+                        arg_description = get_description_node(arg_options.description)
+                        if arg_description:
+                            args_descriptions[cls_attr.field][
+                                arg_name
+                            ] = arg_description
 
                         if arg_options.default_value is not None:
                             args_defaults[cls_attr.field][arg_name] = get_value_node(
