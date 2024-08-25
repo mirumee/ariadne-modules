@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 from ariadne.types import Resolver, Subscriber
+from graphql import FieldDefinitionNode, NamedTypeNode
 
 
 @dataclass(frozen=True)
@@ -15,7 +16,16 @@ class GraphQLObjectFieldArg:
 @dataclass(frozen=True)
 class GraphQLObjectData:
     fields: Dict[str, "GraphQLObjectField"]
-    interfaces: List[str]
+    interfaces: List[NamedTypeNode]
+
+
+@dataclass
+class GraphQLClassData:
+    type_aliases: Dict[str, str] = field(default_factory=dict)
+    fields_ast: Dict[str, FieldDefinitionNode] = field(default_factory=dict)
+    resolvers: Dict[str, "Resolver"] = field(default_factory=dict)
+    aliases: Dict[str, str] = field(default_factory=dict)
+    out_names: Dict[str, Dict[str, str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

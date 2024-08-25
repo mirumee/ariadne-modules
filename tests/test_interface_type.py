@@ -161,7 +161,7 @@ def test_interface_with_schema(assert_schema_equals):
         }
         """
 
-        __implements__ = [UserInterface]
+        __requires__ = [UserInterface]
 
     class ResultType(GraphQLUnion):
         __types__ = [UserType, CommentType]
@@ -206,7 +206,7 @@ def test_interface_with_schema(assert_schema_equals):
     )
 
 
-def test_interface_inheritance2(assert_schema_equals):
+def test_interface_inherit_interface(assert_schema_equals):
     class BaseEntityInterface(GraphQLInterface):
         id: GraphQLID
 
@@ -242,7 +242,7 @@ def test_interface_inheritance2(assert_schema_equals):
           users: [UserInterface!]!
         }
 
-        interface UserInterface {
+        interface UserInterface implements BaseEntityInterface {
           id: ID!
           username: String!
         }
@@ -367,3 +367,79 @@ def test_interface_resolvers_and_field_descriptions(assert_schema_equals):
 
     assert not result.errors
     assert result.data == {"users": [{"__typename": "My", "score": 200}]}
+
+
+def test_interface_with_schema_object_with_schema(assert_schema_equals):
+    class UserInterface(GraphQLInterface):
+        __schema__ = """
+        interface UserInterface {
+            summary: String!
+            score: Int!
+        }
+        """
+
+        @GraphQLInterface.resolver("summary")
+        def resolve_summary(*_):
+            return "base_line"
+
+    class UserType(GraphQLObject):
+        __schema__ = """
+        type User implements UserInterface {
+            summary: String!
+            score: Int!
+            name: String!
+        }
+        """
+        __requires__ = [UserInterface]
+
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=List[ResultType])
+        def search(*_) -> List[Union[UserType, CommentType]]:
+            return [
+                UserType(name="Bob"),
+                CommentType(id=2, content="Hello World!"),
+            ]
+
+    schema = make_executable_schema(QueryType, UserType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search: [Result!]!
+        }
+
+        union Result = User | Comment
+
+        type User implements UserInterface {
+          summary: String!
+          score: Int!
+          name: String!
+        }
+
+        interface UserInterface {
+          summary: String!
+          score: Int!
+        }
+
+        type Comment {
+          id: ID!
+          content: String!
+        }
+
+        """,
+    )
+    result = graphql_sync(schema, "{ search { ... on User{ summary } } }")
+
+    assert not result.errors
+    assert result.data == {
+        "search": [
+            {
+                "summary": "base_line",
+            },
+            {},
+        ]
+    }

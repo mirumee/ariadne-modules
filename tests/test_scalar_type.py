@@ -19,6 +19,10 @@ class DateScalar(GraphQLScalar[date]):
         return str(value)
 
 
+class SerializeTestScalar(GraphQLScalar[str]):
+    pass
+
+
 def test_scalar_field_returning_scalar_instance(assert_schema_equals):
     class QueryType(GraphQLObject):
         date: DateScalar
@@ -82,6 +86,33 @@ class SchemaDateScalar(GraphQLScalar[date]):
             return str(value.unwrap())
 
         return str(value)
+
+
+def test_unwrap_scalar_field_returning_scalar_instance(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        test: SerializeTestScalar
+
+        @GraphQLObject.resolver("test", graphql_type=str)
+        def resolve_date(*_) -> SerializeTestScalar:
+            return SerializeTestScalar(value="Hello!")
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        scalar SerializeTest
+
+        type Query {
+          test: SerializeTest!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ test }")
+
+    assert not result.errors
+    assert result.data == {"test": "Hello!"}
 
 
 def test_schema_scalar_field_returning_scalar_instance(assert_schema_equals):

@@ -4,12 +4,18 @@ from graphql import (
     FieldDefinitionNode,
     InputValueDefinitionNode,
     NameNode,
-    NamedTypeNode,
     ObjectTypeDefinitionNode,
     StringValueNode,
 )
 
 from ariadne.types import Resolver, Subscriber
+
+from ariadne_graphql_modules.base_object_type.graphql_field import (
+    GraphQLObjectField,
+    object_field,
+    object_resolver,
+)
+from ariadne_graphql_modules.convert_name import convert_python_name_to_graphql
 
 from ..base_object_type import (
     GraphQLFieldData,
@@ -30,7 +36,6 @@ from ..object_type import (
     GraphQLObjectResolver,
     GraphQLObjectSource,
     GraphQLObjectFieldArg,
-    get_field_args_from_resolver,
     get_field_args_from_subscriber,
     get_field_args_out_names,
     get_field_node_from_obj_field,
@@ -46,6 +51,7 @@ class GraphQLSubscription(GraphQLBaseObject):
     __graphql_type__ = GraphQLClassType.SUBSCRIPTION
     __abstract__: bool = True
     __description__: Optional[str] = None
+    __graphql_name__ = GraphQLClassType.SUBSCRIPTION.value
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
@@ -78,29 +84,6 @@ class GraphQLSubscription(GraphQLBaseObject):
             cls_attr = getattr(cls, attr_name)
             if isinstance(cls_attr, GraphQLObjectResolver):
                 resolvers[cls_attr.field] = cls_attr.resolver
-                description_node = get_description_node(cls_attr.description)
-                if description_node:
-                    descriptions[cls_attr.field] = description_node
-
-                field_args = get_field_args_from_resolver(cls_attr.resolver)
-                if field_args:
-                    args_descriptions[cls_attr.field] = {}
-                    args_defaults[cls_attr.field] = {}
-
-                    final_args = update_field_args_options(field_args, cls_attr.args)
-
-                    for arg_name, arg_options in final_args.items():
-                        arg_description = get_description_node(arg_options.description)
-                        if arg_description:
-                            args_descriptions[cls_attr.field][
-                                arg_name
-                            ] = arg_description
-
-                        arg_default = arg_options.default_value
-                        if arg_default is not None:
-                            args_defaults[cls_attr.field][arg_name] = get_value_node(
-                                arg_default
-                            )
             if isinstance(cls_attr, GraphQLObjectSource):
                 subscribers[cls_attr.field] = cls_attr.subscriber
                 description_node = get_description_node(cls_attr.description)
@@ -167,7 +150,6 @@ class GraphQLSubscription(GraphQLBaseObject):
             ast=ObjectTypeDefinitionNode(
                 name=NameNode(value=definition.name.value),
                 fields=tuple(fields),
-                interfaces=definition.interfaces,
             ),
             resolvers=resolvers,
             subscribers=subscribers,
@@ -204,10 +186,6 @@ class GraphQLSubscription(GraphQLBaseObject):
             if field.args and field.name:
                 out_names[field.name] = get_field_args_out_names(field.args)
 
-        interfaces_ast: List[NamedTypeNode] = []
-        for interface_name in type_data.interfaces:
-            interfaces_ast.append(NamedTypeNode(name=NameNode(value=interface_name)))
-
         return GraphQLSubscriptionModel(
             name=name,
             ast_type=ObjectTypeDefinitionNode,
@@ -217,7 +195,6 @@ class GraphQLSubscription(GraphQLBaseObject):
                     getattr(cls, "__description__", None),
                 ),
                 fields=tuple(fields_ast),
-                interfaces=tuple(interfaces_ast),
             ),
             resolvers=resolvers,
             aliases=aliases,
@@ -240,32 +217,79 @@ class GraphQLSubscription(GraphQLBaseObject):
             description=description,
         )
 
-    @classmethod
-    def _collect_inherited_objects(cls):
-        return [
-            inherited_obj
-            for inherited_obj in cls.__mro__[1:]
-            if getattr(inherited_obj, "__graphql_type__", None)
-            == GraphQLClassType.SUBSCRIPTION
-            and not getattr(inherited_obj, "__abstract__", True)
-        ]
+    @staticmethod
+    def resolver(field: str, *args, **_):
+        """Shortcut for object_resolver()"""
+        return object_resolver(
+            field=field,
+        )
+
+    @staticmethod
+    def field(
+        f: Optional[Resolver] = None,
+        *,
+        name: Optional[str] = None,
+        **_,
+    ) -> Any:
+        """Shortcut for object_field()"""
+        return object_field(
+            f,
+            name=name,
+        )
+
+    @staticmethod
+    def _process_class_attributes(target_cls, fields_data: GraphQLFieldData):
+        for attr_name in dir(target_cls):
+            if attr_name.startswith("__"):
+                continue
+            cls_attr = getattr(target_cls, attr_name)
+            if isinstance(cls_attr, GraphQLObjectField):
+                if attr_name not in fields_data.fields_order:
+                    fields_data.fields_order.append(attr_name)
+
+                fields_data.fields_names[attr_name] = (
+                    cls_attr.name or convert_python_name_to_graphql(attr_name)
+                )
+                if cls_attr.resolver:
+                    fields_data.fields_resolvers[attr_name] = cls_attr.resolver
+            elif isinstance(cls_attr, GraphQLObjectResolver):
+                fields_data.fields_resolvers[cls_attr.field] = cls_attr.resolver
+            elif isinstance(cls_attr, GraphQLObjectSource):
+                if (
+                    cls_attr.field_type
+                    and cls_attr.field not in fields_data.fields_types
+                ):
+                    fields_data.fields_types[cls_attr.field] = cls_attr.field_type
+                if (
+                    cls_attr.description
+                    and cls_attr.field not in fields_data.fields_descriptions
+                ):
+                    fields_data.fields_descriptions[cls_attr.field] = (
+                        cls_attr.description
+                    )
+                fields_data.fields_subscribers[cls_attr.field] = cls_attr.subscriber
+                field_args = get_field_args_from_subscriber(cls_attr.subscriber)
+                if field_args:
+                    fields_data.fields_args[cls_attr.field] = update_field_args_options(
+                        field_args, cls_attr.args
+                    )
+
+            elif attr_name not in fields_data.aliases_targets and not callable(
+                cls_attr
+            ):
+                fields_data.fields_defaults[attr_name] = cls_attr
 
     @classmethod
     def create_graphql_object_data_without_schema(cls) -> GraphQLObjectData:
         fields_data = GraphQLFieldData()
-        inherited_objects = list(reversed(cls._collect_inherited_objects()))
-
-        for inherited_obj in inherited_objects:
-            fields_data.type_hints.update(inherited_obj.__annotations__)
-            fields_data.aliases.update(getattr(inherited_obj, "__aliases__", {}))
-
         cls._process_type_hints_and_aliases(fields_data)
-
-        for inherited_obj in inherited_objects:
-            cls._process_class_attributes(inherited_obj, fields_data)
         cls._process_class_attributes(cls, fields_data)
 
         return GraphQLObjectData(
             fields=cls._build_fields(fields_data=fields_data),
             interfaces=[],
         )
+
+    @classmethod
+    def _collect_inherited_objects(cls):
+        return []

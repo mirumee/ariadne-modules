@@ -26,6 +26,7 @@ def test_union_field_returning_object_instance(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
+        @staticmethod
         def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
@@ -88,6 +89,7 @@ def test_union_field_returning_empty_list():
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
+        @staticmethod
         def search(*_) -> List[Union[UserType, CommentType]]:
             return []
 
@@ -114,12 +116,13 @@ def test_union_field_returning_empty_list():
     assert result.data == {"search": []}
 
 
-def test_union_field_with_invalid_type_access(assert_schema_equals):
+def test_union_field_with_invalid_type_access():
     class ResultType(GraphQLUnion):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
+        @staticmethod
         def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
@@ -149,7 +152,7 @@ def test_union_field_with_invalid_type_access(assert_schema_equals):
     assert "InvalidType" in str(result.errors)
 
 
-def test_serialization_error_handling(assert_schema_equals):
+def test_serialization_error_handling():
     class InvalidType:
         def __init__(self, value):
             self.value = value
@@ -159,6 +162,7 @@ def test_serialization_error_handling(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
+        @staticmethod
         def search(*_) -> List[Union[UserType, CommentType, InvalidType]]:
             return [InvalidType("This should cause an error")]
 
@@ -180,7 +184,7 @@ def test_serialization_error_handling(assert_schema_equals):
     assert result.errors
 
 
-def test_union_with_schema_definition(assert_schema_equals):
+def test_union_with_schema_definition():
     class SearchResultUnion(GraphQLUnion):
         __schema__ = """
         union SearchResult = User | Comment
@@ -189,6 +193,7 @@ def test_union_with_schema_definition(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[SearchResultUnion])
+        @staticmethod
         def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id="1", username="Alice"),

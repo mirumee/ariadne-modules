@@ -26,7 +26,7 @@ SchemaType = Union[str, Enum, SchemaBindable, Type[GraphQLType], Type[Enum]]
 
 
 def make_executable_schema(
-    *types: SchemaType,
+    *types: Union[SchemaType, List[SchemaType]],
     directives: Optional[Dict[str, Type[SchemaDirectiveVisitor]]] = None,
     convert_names_case: Union[bool, SchemaNameConverter] = False,
     merge_roots: bool = True,
@@ -96,7 +96,12 @@ def make_executable_schema(
     return schema
 
 
-def find_type_defs(types: Sequence[SchemaType]) -> List[str]:
+def find_type_defs(
+    types: Union[
+        tuple[SchemaType | List[SchemaType], ...],
+        List[SchemaType],
+    ]
+) -> List[str]:
     type_defs: List[str] = []
 
     for type_def in types:
@@ -109,7 +114,7 @@ def find_type_defs(types: Sequence[SchemaType]) -> List[str]:
 
 
 def flatten_types(
-    types: Sequence[SchemaType],
+    types: tuple[SchemaType | List[SchemaType], ...],
     metadata: GraphQLMetadata,
 ) -> List[SchemaType]:
     flat_schema_types_list: List[SchemaType] = flatten_schema_types(

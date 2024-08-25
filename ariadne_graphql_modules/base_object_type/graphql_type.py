@@ -1,5 +1,4 @@
 from copy import deepcopy
-from dataclasses import dataclass
 from enum import Enum
 from typing import (
     Any,
@@ -23,6 +22,7 @@ from graphql import (
 from ..types import GraphQLClassType
 
 from .graphql_field import (
+    GraphQLClassData,
     GraphQLFieldData,
     GraphQLObjectData,
     GraphQLObjectField,
@@ -54,7 +54,7 @@ from ..value import get_value_node
 class GraphQLBaseObject(GraphQLType):
     __kwargs__: Dict[str, Any]
     __abstract__: bool = True
-    __schema__: Optional[str]
+    __schema__: Optional[str] = None
     __description__: Optional[str]
     __aliases__: Optional[Dict[str, str]]
     __requires__: Optional[Iterable[Union[Type[GraphQLType], Type[Enum]]]]
@@ -188,33 +188,29 @@ class GraphQLBaseObject(GraphQLType):
 
     @classmethod
     def _process_graphql_fields(
-        cls, metadata: GraphQLMetadata, type_data, type_aliases
-    ) -> Tuple[
-        List[FieldDefinitionNode],
-        Dict[str, Resolver],
-        Dict[str, str],
-        Dict[str, Dict[str, str]],
-    ]:
-        fields_ast = []
-        resolvers = {}
-        aliases = {}
-        out_names = {}
-
+        cls,
+        metadata: GraphQLMetadata,
+        type_data,
+        type_aliases,
+        object_model_data: GraphQLClassData,
+    ):
         for attr_name, field in type_data.fields.items():
-            fields_ast.append(get_field_node_from_obj_field(cls, metadata, field))
+            object_model_data.fields_ast[attr_name] = get_field_node_from_obj_field(
+                cls, metadata, field
+            )
 
             if attr_name in type_aliases and field.name:
-                aliases[field.name] = type_aliases[attr_name]
+                object_model_data.aliases[field.name] = type_aliases[attr_name]
             elif field.name and attr_name != field.name and not field.resolver:
-                aliases[field.name] = attr_name
+                object_model_data.aliases[field.name] = attr_name
 
             if field.resolver and field.name:
-                resolvers[field.name] = field.resolver
+                object_model_data.resolvers[field.name] = field.resolver
 
             if field.args and field.name:
-                out_names[field.name] = get_field_args_out_names(field.args)
-
-        return fields_ast, resolvers, aliases, out_names
+                object_model_data.out_names[field.name] = get_field_args_out_names(
+                    field.args
+                )
 
     @classmethod
     def __get_graphql_types__(
@@ -232,7 +228,6 @@ class GraphQLBaseObject(GraphQLType):
     ) -> Iterable[Type["GraphQLType"]]:
         types: List[Type["GraphQLType"]] = [cls]
         types.extend(getattr(cls, "__requires__", []))
-        types.extend(getattr(cls, "__implements__", []))
         return types
 
     @classmethod

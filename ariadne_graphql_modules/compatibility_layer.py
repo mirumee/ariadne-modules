@@ -23,7 +23,7 @@ from .v1.scalar_type import ScalarType
 from .v1.subscription_type import SubscriptionType
 from .v1.union_type import UnionType
 from .v1.object_type import ObjectType
-from .v1.bases import BindableType
+from .v1.bases import BaseType, BindableType
 
 from .base import GraphQLModel, GraphQLType
 from . import (
@@ -38,7 +38,7 @@ from . import (
 
 
 def wrap_legacy_types(
-    *bindable_types: Type[BindableType],
+    *bindable_types: Type[BaseType],
 ) -> List[Type["LegacyGraphQLType"]]:
     all_types = get_all_types(bindable_types)
 

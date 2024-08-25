@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, Optional, Tuple, cast
 
 from ariadne.types import Resolver
 from graphql import (
@@ -7,6 +7,8 @@ from graphql import (
     NameNode,
     NamedTypeNode,
 )
+
+from ariadne_graphql_modules.base_object_type.graphql_field import GraphQLClassData
 
 from ..base_object_type import (
     GraphQLFieldData,
@@ -29,6 +31,7 @@ class GraphQLInterface(GraphQLBaseObject):
     __graphql_type__ = GraphQLClassType.INTERFACE
     __abstract__ = True
     __description__: Optional[str] = None
+    __graphql_name__: Optional[str] = None
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
@@ -78,18 +81,10 @@ class GraphQLInterface(GraphQLBaseObject):
         type_data = cls.get_graphql_object_data(metadata)
         type_aliases = getattr(cls, "__aliases__", None) or {}
 
-        fields_ast: List[FieldDefinitionNode] = []
-        resolvers: Dict[str, Resolver] = {}
-        aliases: Dict[str, str] = {}
-        out_names: Dict[str, Dict[str, str]] = {}
-
-        fields_ast, resolvers, aliases, out_names = cls._process_graphql_fields(
-            metadata, type_data, type_aliases
+        object_model_data = GraphQLClassData()
+        cls._process_graphql_fields(
+            metadata, type_data, type_aliases, object_model_data
         )
-
-        interfaces_ast: List[NamedTypeNode] = []
-        for interface_name in type_data.interfaces:
-            interfaces_ast.append(NamedTypeNode(name=NameNode(value=interface_name)))
 
         return GraphQLInterfaceModel(
             name=name,
@@ -99,13 +94,13 @@ class GraphQLInterface(GraphQLBaseObject):
                 description=get_description_node(
                     getattr(cls, "__description__", None),
                 ),
-                fields=tuple(fields_ast),
-                interfaces=tuple(interfaces_ast),
+                fields=tuple(object_model_data.fields_ast.values()),
+                interfaces=tuple(type_data.interfaces),
             ),
             resolve_type=cls.resolve_type,
-            resolvers=resolvers,
-            aliases=aliases,
-            out_names=out_names,
+            resolvers=object_model_data.resolvers,
+            aliases=object_model_data.aliases,
+            out_names=object_model_data.out_names,
         )
 
     @staticmethod
@@ -143,5 +138,10 @@ class GraphQLInterface(GraphQLBaseObject):
 
         return GraphQLObjectData(
             fields=cls._build_fields(fields_data=fields_data),
-            interfaces=[],
+            interfaces=[
+                NamedTypeNode(name=NameNode(value=interface.__name__))
+                for interface in inherited_objects
+                if getattr(interface, "__graphql_type__", None)
+                == GraphQLClassType.INTERFACE
+            ],
         )

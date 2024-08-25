@@ -1,6 +1,5 @@
 from typing import (
     Dict,
-    List,
     Optional,
     Tuple,
     cast,
@@ -14,14 +13,14 @@ from graphql import (
     ObjectTypeDefinitionNode,
 )
 
+from ariadne_graphql_modules.base_object_type.graphql_field import GraphQLClassData
+
 from ..types import GraphQLClassType
 
 from ..base_object_type import (
     GraphQLFieldData,
     GraphQLBaseObject,
     GraphQLObjectData,
-    validate_object_type_with_schema,
-    validate_object_type_without_schema,
 )
 from .models import GraphQLObjectModel
 
@@ -36,20 +35,8 @@ class GraphQLObject(GraphQLBaseObject):
     __graphql_type__ = GraphQLClassType.OBJECT
     __abstract__ = True
     __description__: Optional[str] = None
-
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-
-        if cls.__dict__.get("__abstract__"):
-            return
-
-        cls.__abstract__ = False
-
-        if cls.__dict__.get("__schema__"):
-            valid_type = getattr(cls, "__valid_type__", ObjectTypeDefinitionNode)
-            cls.__kwargs__ = validate_object_type_with_schema(cls, valid_type)
-        else:
-            cls.__kwargs__ = validate_object_type_without_schema(cls)
+    __schema__: Optional[str] = None
+    __graphql_name__: Optional[str] = None
 
     @classmethod
     def __get_graphql_model_with_schema__(cls) -> "GraphQLModel":
@@ -84,18 +71,10 @@ class GraphQLObject(GraphQLBaseObject):
         type_data = cls.get_graphql_object_data(metadata)
         type_aliases = getattr(cls, "__aliases__", {})
 
-        fields_ast: List[FieldDefinitionNode] = []
-        resolvers: Dict[str, Resolver] = {}
-        aliases: Dict[str, str] = {}
-        out_names: Dict[str, Dict[str, str]] = {}
-
-        fields_ast, resolvers, aliases, out_names = cls._process_graphql_fields(
-            metadata, type_data, type_aliases
+        object_model_data = GraphQLClassData()
+        cls._process_graphql_fields(
+            metadata, type_data, type_aliases, object_model_data
         )
-
-        interfaces_ast: List[NamedTypeNode] = []
-        for interface_name in type_data.interfaces:
-            interfaces_ast.append(NamedTypeNode(name=NameNode(value=interface_name)))
 
         return GraphQLObjectModel(
             name=name,
@@ -105,12 +84,12 @@ class GraphQLObject(GraphQLBaseObject):
                 description=get_description_node(
                     getattr(cls, "__description__", None),
                 ),
-                fields=tuple(fields_ast),
-                interfaces=tuple(interfaces_ast),
+                fields=tuple(object_model_data.fields_ast.values()),
+                interfaces=tuple(type_data.interfaces),
             ),
-            resolvers=resolvers,
-            aliases=aliases,
-            out_names=out_names,
+            resolvers=object_model_data.resolvers,
+            aliases=object_model_data.aliases,
+            out_names=object_model_data.out_names,
         )
 
     @classmethod
@@ -140,7 +119,7 @@ class GraphQLObject(GraphQLBaseObject):
         return GraphQLObjectData(
             fields=cls._build_fields(fields_data=fields_data),
             interfaces=[
-                interface.__name__
+                NamedTypeNode(name=NameNode(value=interface.__name__))
                 for interface in inherited_objects
                 if getattr(interface, "__graphql_type__", None)
                 == GraphQLClassType.INTERFACE

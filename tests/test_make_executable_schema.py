@@ -102,7 +102,7 @@ def test_executable_schema_with_merged_roots(assert_schema_equals):
 
         score: int
 
-    schema = make_executable_schema(FirstRoot, SecondRoot, ThirdRoot)
+    schema = make_executable_schema([FirstRoot, SecondRoot, ThirdRoot])
 
     assert_schema_equals(
         schema,

@@ -1,3 +1,5 @@
+import glob
+import os
 from pathlib import Path
 from textwrap import dedent
 
@@ -38,3 +40,10 @@ def datadir() -> Path:
 @pytest.fixture(scope="session")
 def original_datadir() -> Path:
     return Path(__file__).parent / "snapshots"
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # This will be called after all tests are done
+    obtained_files = glob.glob("**/*.obtained.yml", recursive=True)
+    for file in obtained_files:
+        os.remove(file)

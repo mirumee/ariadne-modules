@@ -13,7 +13,7 @@ RequirementsDict = Dict[str, Type[DefinitionNode]]
 
 
 class GraphQLClassType(Enum):
-    BASE = "base"
-    OBJECT = "object"
-    INTERFACE = "interface"
-    SUBSCRIPTION = "subscription"
+    BASE = "Base"
+    OBJECT = "Object"
+    INTERFACE = "Interface"
+    SUBSCRIPTION = "Subscription"

@@ -1,6 +1,6 @@
 from enum import Enum
 
-from graphql import graphql_sync
+from graphql import GraphQLResolveInfo, graphql_sync
 
 from ariadne_graphql_modules import (
     GraphQLEnum,
@@ -61,7 +61,7 @@ def test_enum_field_returning_dict_value(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
-        def resolve_level(*_) -> dict:
+        def resolve_level(*_) -> int:
             return 0
 
     schema = make_executable_schema(QueryType)
@@ -520,3 +520,41 @@ def test_schema_enum_with_member_schema_description(assert_schema_equals):
 
     assert not result.errors
     assert result.data == {"level": "ADMIN"}
+
+
+def test_enum_field_as_argument(assert_schema_equals):
+    class UserLevel(GraphQLEnum):
+        __members__ = UserLevelEnum
+
+    class QueryType(GraphQLObject):
+        set_level: UserLevel
+
+        @GraphQLObject.resolver(
+            "set_level", args={"level": GraphQLObject.argument(graphql_type=UserLevel)}
+        )
+        def resolve_level(
+            obj, info: GraphQLResolveInfo, *, level: UserLevelEnum
+        ) -> UserLevelEnum:
+            return level
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          setLevel(level: UserLevel!): UserLevel!
+        }
+
+        enum UserLevel {
+          GUEST
+          MEMBER
+          ADMIN
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ setLevel(level: GUEST) }")
+
+    assert not result.errors
+    assert result.data == {"setLevel": "GUEST"}

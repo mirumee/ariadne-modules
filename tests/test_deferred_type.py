@@ -3,14 +3,23 @@ from unittest.mock import Mock
 import pytest
 
 from ariadne_graphql_modules import deferred
+from ariadne_graphql_modules.deferredtype import (
+    DeferredTypeData,
+    _resolve_module_path_suffix,
+)
 
 
-def test_deferred_returns_deferred_type_with_abs_path():
+def test_deferred_type_data():
+    data = DeferredTypeData(path="some.module.path")
+    assert data.path == "some.module.path"
+
+
+def test_deferred_abs_path():
     deferred_type = deferred("tests.types")
     assert deferred_type.path == "tests.types"
 
 
-def test_deferred_returns_deferred_type_with_relative_path():
+def test_deferred_relative_path():
     class MockType:
         deferred_type = deferred(".types")
 
@@ -43,3 +52,13 @@ def test_deferred_raises_error_for_invalid_relative_path(monkeypatch, data_regre
             deferred_type = deferred("...types")
 
     data_regression.check(str(exc_info.value))
+
+
+def test_resolve_module_path_suffix():
+    result = _resolve_module_path_suffix(".types", "current.package")
+    assert result == "current.package.types"
+
+
+def test_resolve_module_path_suffix_outside_package():
+    with pytest.raises(ValueError):
+        _resolve_module_path_suffix("...module", "current.package")

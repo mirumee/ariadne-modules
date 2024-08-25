@@ -1,3 +1,4 @@
+from typing import List
 import pytest
 
 from ariadne_graphql_modules import (
@@ -19,5 +20,26 @@ def test_interface_no_interface_in_schema(data_regression):
             email: str
 
         make_executable_schema(UserType)
+
+    data_regression.check(str(exc_info.value))
+
+
+def test_interface_with_schema_object_with_no_schema(data_regression):
+    with pytest.raises(ValueError) as exc_info:
+
+        class UserInterface(GraphQLInterface):
+            __schema__ = """
+            interface UserInterface {
+                summary: String!
+                score: Int!
+            }
+            """
+
+            @GraphQLInterface.resolver("score")
+            def resolve_score(*_):
+                return 2211
+
+        class UserType(GraphQLObject, UserInterface):
+            name: str
 
     data_regression.check(str(exc_info.value))

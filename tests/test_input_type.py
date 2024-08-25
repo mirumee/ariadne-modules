@@ -626,3 +626,81 @@ def test_input_type_with_field_description(assert_schema_equals):
         }
         """,
     )
+
+
+def test_input_type_omit_magic_fields(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        query: str = GraphQLInput.field(description="Hello world.")
+        __i_am_magic_field__: str
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: SearchInput) -> str:
+            return str(input)
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: SearchInput!): String!
+        }
+
+        input SearchInput {
+          \"\"\"Hello world.\"\"\"
+          query: String!
+        }
+        """,
+    )
+
+
+def test_input_type_in_input_type_fields(assert_schema_equals):
+    class SearchInput(GraphQLInput):
+        query: str = GraphQLInput.field(description="Hello world.")
+
+    class UserInput(GraphQLInput):
+        username: str
+
+    class MainInput(GraphQLInput):
+        search = GraphQLInput.field(
+            description="Hello world.", graphql_type=SearchInput
+        )
+        search_user: UserInput
+        __i_am_magic_field__: str
+
+    class QueryType(GraphQLObject):
+        search: str
+
+        @GraphQLObject.resolver("search")
+        def resolve_search(*_, input: MainInput) -> str:
+            return str(input)
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search(input: MainInput!): String!
+        }
+
+        input MainInput {
+          searchUser: UserInput!
+
+          \"\"\"Hello world.\"\"\"
+          search: SearchInput!
+        }
+
+        input SearchInput {
+          \"\"\"Hello world.\"\"\"
+          query: String!
+        }
+
+        input UserInput {
+          username: String!
+        }
+        """,
+    )

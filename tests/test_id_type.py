@@ -56,6 +56,11 @@ def test_graphql_id_can_be_compared_to_int():
     assert GraphQLID(123) != 321
 
 
+def test_graphql_id_can_be_compared_to_others():
+    assert GraphQLID("123") != 123.0
+    assert GraphQLID(123) != 123.0
+
+
 def test_graphql_id_object_field_type_hint(assert_schema_equals):
     class QueryType(GraphQLObject):
         id: GraphQLID

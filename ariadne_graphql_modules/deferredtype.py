@@ -5,10 +5,18 @@ from typing import cast
 
 @dataclass(frozen=True)
 class DeferredTypeData:
+    """Data class representing deferred type information with a module path."""
+
     path: str
 
 
 def deferred(module_path: str) -> DeferredTypeData:
+    """
+    Create a DeferredTypeData object from a given module path.
+
+    If the module path is relative (starts with '.'),
+    resolve it based on the caller's package context.
+    """
     if not module_path.startswith("."):
         return DeferredTypeData(module_path)
 
