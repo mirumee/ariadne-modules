@@ -22,7 +22,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
-dependencies = ["ariadne==0.23.0"]
+dependencies = ["ariadne==0.23.0", "mkdocs-material"]
 
 [project.optional-dependencies]
 test = [
@@ -30,10 +30,12 @@ test = [
   "mypy",
   "pylint",
   "pytest",
+  "pytest-cov",
   "pytest-asyncio",
   "pytest-regressions",
   "pytest-datadir",
 ]
+docs = ["mkdocs-material"]
 
 [project.urls]
 "Homepage" = "https://ariadnegraphql.org/"

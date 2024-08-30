@@ -1,3 +1,4 @@
+
 [![Ariadne](https://ariadnegraphql.org/img/logo-horizontal-sm.png)](https://ariadnegraphql.org)
 
 [![Build Status](https://github.com/mirumee/ariadne-graphql-modules/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/mirumee/ariadne-graphql-modules/actions)
@@ -31,6 +32,18 @@ The introduction of version 1.0.0 brings a more robust and streamlined API, with
 # Ariadne GraphQL Modules
 
 **Ariadne GraphQL Modules** is an extension for the [Ariadne](https://ariadnegraphql.org/) framework, designed to help developers structure and manage GraphQL schemas in a modular way. This library provides an organized approach to building GraphQL APIs by dividing your schema into self-contained, reusable modules, each responsible for its own part of the schema.
+
+## How It Works
+
+Ariadne GraphQL Modules operates by allowing you to define your GraphQL schema in isolated modules, each with its own types, resolvers, and dependencies. These modules can then be combined into a single executable schema using the provided utility functions.
+
+## Key Functionalities
+
+- **Modular Schema Design**: Enables the breakdown of GraphQL schemas into smaller, independent modules. Each module can define its own types, queries, mutations, and subscriptions.
+- **Flexible Schema Definitions**: Supports both declarative (using schema strings) and programmatic (using Python code) approaches to defining schemas, allowing developers to choose the most appropriate method for their project.
+- **Automatic Merging of Roots**: Automatically merges `Query`, `Mutation`, and `Subscription` types from different modules into a single schema, ensuring that your API is consistent and well-organized.
+- **Case Conversion**: Includes tools for automatically converting field names and arguments between different naming conventions (e.g., `snake_case` to `camelCase`), making it easier to integrate with various client conventions.
+- **Deferred Dependencies**: Allows for the declaration of deferred dependencies that can be resolved at the time of schema creation, giving developers more control over module initialization.
 
 ## Installation
 

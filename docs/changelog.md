@@ -1,5 +1,15 @@
 # CHANGELOG
 
+
+## 1.0.0 (UNREALEASED)
+
+- Major API Redesign: The entire API has been restructured for better modularity and flexibility.
+- New Type System: Introduced a new type system, replacing the old v1 types.
+- Migration Support: Added wrap_legacy_types to help transition from v1 types to the new system without a complete rewrite.
+- Enhanced make_executable_schema: Now supports both legacy and new types with improved validation and root type merging.
+- Deprecation Notice: Direct use of v1 types is deprecated. Transition to the new system or use wrap_legacy_types for continued support.
+
+
 ## 0.8.0 (2024-02-21)
 
 - Added support for Ariadne 0.22.

@@ -1,10 +1,11 @@
-from typing import Union
+from typing import Tuple, Union
 
 import pytest
 from graphql import (
     GraphQLField,
     GraphQLInterfaceType,
     GraphQLObjectType,
+    GraphQLSchema,
     default_field_resolver,
     graphql_sync,
 )
@@ -290,3 +291,39 @@ def test_make_executable_schema_supports_vanilla_directives():
         root_value={"field": "first"},
     )
     assert result.data == {"field": "FIRST"}
+
+
+def test_make_executable_schema_custom_convert_name_case(assert_schema_equals):
+    def custom_name_converter(
+        name: str, schema: GraphQLSchema, path: Tuple[str, ...]
+    ) -> str:
+        return f"custom_{name}"
+
+    class QueryType(GraphQLObject):
+        other_field: str
+
+    type_def = """
+        type Query {
+            firstField: String!
+        }
+        """
+
+    schema = make_executable_schema(
+        QueryType, type_def, convert_names_case=custom_name_converter
+    )
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          firstField: String!
+          otherField: String!
+        }
+        """,
+    )
+    result = graphql_sync(
+        schema,
+        "{ firstField otherField }",
+        root_value={"custom_firstField": "first", "other_field": "other"},
+    )
+
+    assert result.data == {"firstField": "first", "otherField": "other"}

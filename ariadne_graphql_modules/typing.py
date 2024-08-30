@@ -142,6 +142,12 @@ def get_graphql_type(annotation: Any) -> Optional[Union[Type[GraphQLType], Type[
     if is_nullable(annotation) or is_list(annotation):
         return get_graphql_type(unwrap_type(annotation))
 
+    if get_origin(annotation) is Annotated:
+        forward_ref, type_meta = get_args(annotation)
+        if not type_meta or not isinstance(type_meta, DeferredTypeData):
+            return None
+        return get_deferred_type(annotation, forward_ref, type_meta)
+
     if not isclass(annotation):
         return None
 
