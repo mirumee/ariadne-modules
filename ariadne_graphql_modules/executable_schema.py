@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 from ariadne import (
     SchemaBindable,
@@ -98,7 +98,7 @@ def make_executable_schema(
 
 def find_type_defs(
     types: Union[
-        tuple[SchemaType | List[SchemaType], ...],
+        Tuple[Union[SchemaType, List[SchemaType]], ...],
         List[SchemaType],
     ]
 ) -> List[str]:
@@ -114,7 +114,7 @@ def find_type_defs(
 
 
 def flatten_types(
-    types: tuple[SchemaType | List[SchemaType], ...],
+    types: Tuple[Union[SchemaType, List[SchemaType]], ...],
     metadata: GraphQLMetadata,
 ) -> List[SchemaType]:
     flat_schema_types_list: List[SchemaType] = flatten_schema_types(
