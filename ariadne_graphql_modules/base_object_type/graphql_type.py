@@ -377,11 +377,10 @@ class GraphQLBaseObject(GraphQLType):
                 if cls_attr.description:
                     fields_data.fields_descriptions[attr_name] = cls_attr.description
                 if cls_attr.resolver:
-                    fields_data.fields_resolvers[attr_name] = (
-                        cls_attr.resolver.__func__
-                        if isinstance(cls_attr.resolver, staticmethod)
-                        else cls_attr.resolver
-                    )
+                    resolver = cls_attr.resolver
+                    if isinstance(resolver, staticmethod):
+                        resolver = cls_attr.resolver.__func__  # type: ignore[attr-defined]
+                    fields_data.fields_resolvers[attr_name] = resolver
                     field_args = get_field_args_from_resolver(cls_attr.resolver)
                     if field_args:
                         fields_data.fields_args[attr_name] = update_field_args_options(
