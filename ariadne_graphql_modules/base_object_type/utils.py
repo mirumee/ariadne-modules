@@ -32,6 +32,8 @@ def get_field_node_from_obj_field(
 def get_field_args_from_resolver(
     resolver: Resolver,
 ) -> Dict[str, GraphQLObjectFieldArg]:
+    if isinstance(resolver, staticmethod):
+        resolver = resolver.__func__
     resolver_signature = signature(resolver)
     type_hints = resolver.__annotations__
     type_hints.pop("return", None)

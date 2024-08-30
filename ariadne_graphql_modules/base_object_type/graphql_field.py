@@ -100,6 +100,8 @@ def object_field(
     graphql_type: Optional[Any] = None,
     default_value: Optional[Any] = None,
 ) -> GraphQLObjectField:
+    if isinstance(resolver, staticmethod):
+        resolver = resolver.__func__
     field_type: Any = graphql_type
     if not graphql_type and resolver:
         field_type = get_field_type_from_resolver(resolver)
@@ -128,6 +130,8 @@ def object_resolver(
     description: Optional[str] = None,
 ):
     def object_resolver_factory(f: Resolver) -> GraphQLObjectResolver:
+        if isinstance(f, staticmethod):
+            f = f.__func__
         return GraphQLObjectResolver(
             args=args,
             description=description,
@@ -146,6 +150,8 @@ def object_subscriber(
     description: Optional[str] = None,
 ):
     def object_subscriber_factory(f: Subscriber) -> GraphQLObjectSource:
+        if isinstance(f, staticmethod):
+            f = f.__func__
         return GraphQLObjectSource(
             args=args,
             description=description,
