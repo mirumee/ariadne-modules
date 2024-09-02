@@ -83,9 +83,15 @@ class GraphQLSubscription(GraphQLBaseObject):
         for attr_name in dir(cls):
             cls_attr = getattr(cls, attr_name)
             if isinstance(cls_attr, GraphQLObjectResolver):
+                resolver = cls_attr.resolver
+                if isinstance(resolver, staticmethod):
+                    resolver = resolver.__func__  # type: ignore[attr-defined]
                 resolvers[cls_attr.field] = cls_attr.resolver
             if isinstance(cls_attr, GraphQLObjectSource):
-                subscribers[cls_attr.field] = cls_attr.subscriber
+                subscriber = cls_attr.subscriber
+                if isinstance(subscriber, staticmethod):
+                    subscriber = subscriber.__func__  # type: ignore[attr-defined]
+                subscribers[cls_attr.field] = subscriber
                 description_node = get_description_node(cls_attr.description)
                 if description_node:
                     descriptions[cls_attr.field] = description_node
@@ -251,9 +257,15 @@ class GraphQLSubscription(GraphQLBaseObject):
                     cls_attr.name or convert_python_name_to_graphql(attr_name)
                 )
                 if cls_attr.resolver:
-                    fields_data.fields_resolvers[attr_name] = cls_attr.resolver
+                    resolver = cls_attr.resolver
+                    if isinstance(resolver, staticmethod):
+                        resolver = resolver.__func__  # type: ignore[attr-defined]
+                    fields_data.fields_resolvers[attr_name] = resolver
             elif isinstance(cls_attr, GraphQLObjectResolver):
-                fields_data.fields_resolvers[cls_attr.field] = cls_attr.resolver
+                resolver = cls_attr.resolver
+                if isinstance(resolver, staticmethod):
+                    resolver = resolver.__func__  # type: ignore[attr-defined]
+                fields_data.fields_resolvers[cls_attr.field] = resolver
             elif isinstance(cls_attr, GraphQLObjectSource):
                 if (
                     cls_attr.field_type
@@ -267,8 +279,11 @@ class GraphQLSubscription(GraphQLBaseObject):
                     fields_data.fields_descriptions[cls_attr.field] = (
                         cls_attr.description
                     )
-                fields_data.fields_subscribers[cls_attr.field] = cls_attr.subscriber
-                field_args = get_field_args_from_subscriber(cls_attr.subscriber)
+                subscriber = cls_attr.subscriber
+                if isinstance(subscriber, staticmethod):
+                    subscriber = subscriber.__func__  # type: ignore[attr-defined]
+                fields_data.fields_subscribers[cls_attr.field] = subscriber
+                field_args = get_field_args_from_subscriber(subscriber)
                 if field_args:
                     fields_data.fields_args[cls_attr.field] = update_field_args_options(
                         field_args, cls_attr.args

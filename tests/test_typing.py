@@ -1,3 +1,4 @@
+# pylint: disable=no-member, unsupported-binary-operation
 from enum import Enum
 import sys
 from typing import TYPE_CHECKING, Annotated, List, Optional, Union

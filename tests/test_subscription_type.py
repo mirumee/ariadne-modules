@@ -1,4 +1,4 @@
-from typing import AsyncIterator, List
+from typing import List
 
 from ariadne import gql
 from graphql import subscribe, parse
@@ -73,10 +73,11 @@ async def test_basic_subscription_without_schema(assert_schema_equals):
     query = parse("subscription { messageAdded {id content author} }")
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -146,10 +147,11 @@ async def test_basic_many_subscription_without_schema(assert_schema_equals):
     query = parse("subscription { messageAdded {id content author} }")
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -176,7 +178,7 @@ async def test_subscription_with_arguments_without_schema(assert_schema_equals):
                     "author": "Anon",
                 }
 
-        @GraphQLSubscription.field()
+        @GraphQLSubscription.field
         @staticmethod
         def message_added(
             message, *_, channel: GraphQLID
@@ -216,10 +218,11 @@ async def test_subscription_with_arguments_without_schema(assert_schema_equals):
     query = parse('subscription { messageAdded(channel: "123") {id content author} }')
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -315,10 +318,11 @@ async def test_multiple_supscriptions_without_schema(assert_schema_equals):
     query = parse("subscription { userJoined {id username} }")
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -390,10 +394,11 @@ async def test_subscription_with_complex_data_without_schema(assert_schema_equal
     )
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -464,10 +469,11 @@ async def test_subscription_with_union_without_schema(assert_schema_equals):
     query = parse("subscription { notificationReceived { ... on Message { id } } }")
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -526,10 +532,11 @@ async def test_basic_subscription_with_schema(assert_schema_equals):
     query = parse("subscription { messageAdded {id content author} }")
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -601,10 +608,11 @@ async def test_subscription_with_arguments_with_schema(assert_schema_equals):
     query = parse('subscription { messageAdded(channel: "123") {id content author} }')
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -698,10 +706,11 @@ async def test_multiple_supscriptions_with_schema(assert_schema_equals):
     query = parse("subscription { userJoined {id username} }")
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -776,10 +785,11 @@ async def test_subscription_with_complex_data_with_schema(assert_schema_equals):
     )
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -871,10 +881,11 @@ async def test_subscription_with_union_with_schema(assert_schema_equals):
     )
     sub = await subscribe(schema, query)
 
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    # Ensure the subscription is an async iterator
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors
@@ -942,10 +953,10 @@ async def test_subscription_descriptions_without_schema(assert_schema_equals):
     sub = await subscribe(schema, query)
 
     # Ensure the subscription is an async iterator
-    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
+    assert hasattr(sub, "__aiter__")
 
-    # Fetch the first result using anext
-    result = await anext(sub)
+    # Fetch the first result
+    result = await sub.__anext__()  # type: ignore
 
     # Validate the result
     assert not result.errors

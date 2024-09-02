@@ -359,9 +359,9 @@ class GraphQLBaseObject(GraphQLType):
                 if cls_attr.resolver:
                     resolver = cls_attr.resolver
                     if isinstance(resolver, staticmethod):
-                        resolver = cls_attr.resolver.__func__  # type: ignore[attr-defined]
+                        resolver = resolver.__func__  # type: ignore[attr-defined]
                     fields_data.fields_resolvers[attr_name] = resolver
-                    field_args = get_field_args_from_resolver(cls_attr.resolver)
+                    field_args = get_field_args_from_resolver(resolver)
                     if field_args:
                         fields_data.fields_args[attr_name] = update_field_args_options(
                             field_args, cls_attr.args
@@ -381,8 +381,11 @@ class GraphQLBaseObject(GraphQLType):
                     fields_data.fields_descriptions[cls_attr.field] = (
                         cls_attr.description
                     )
-                fields_data.fields_resolvers[cls_attr.field] = cls_attr.resolver
-                field_args = get_field_args_from_resolver(cls_attr.resolver)
+                resolver = cls_attr.resolver
+                if isinstance(resolver, staticmethod):
+                    resolver = resolver.__func__  # type: ignore[attr-defined]
+                fields_data.fields_resolvers[cls_attr.field] = resolver
+                field_args = get_field_args_from_resolver(resolver)
                 if field_args and not fields_data.fields_args.get(cls_attr.field):
                     fields_data.fields_args[cls_attr.field] = update_field_args_options(
                         field_args, cls_attr.args
@@ -400,8 +403,11 @@ class GraphQLBaseObject(GraphQLType):
                     fields_data.fields_descriptions[cls_attr.field] = (
                         cls_attr.description
                     )
-                fields_data.fields_subscribers[cls_attr.field] = cls_attr.subscriber
-                field_args = get_field_args_from_subscriber(cls_attr.subscriber)
+                subscriber = cls_attr.subscriber
+                if isinstance(subscriber, staticmethod):
+                    subscriber = subscriber.__func__  # type: ignore[attr-defined]
+                fields_data.fields_subscribers[cls_attr.field] = subscriber
+                field_args = get_field_args_from_subscriber(subscriber)
                 if field_args:
                     fields_data.fields_args[cls_attr.field] = update_field_args_options(
                         field_args, cls_attr.args

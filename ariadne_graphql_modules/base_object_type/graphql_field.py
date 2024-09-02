@@ -116,10 +116,14 @@ def object_field(
 
 
 def get_field_type_from_resolver(resolver: Resolver) -> Any:
+    if isinstance(resolver, staticmethod):
+        resolver = resolver.__func__
     return resolver.__annotations__.get("return")
 
 
 def get_field_type_from_subscriber(subscriber: Subscriber) -> Any:
+    if isinstance(subscriber, staticmethod):
+        subscriber = subscriber.__func__
     return subscriber.__annotations__.get("return")
 
 
