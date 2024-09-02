@@ -1,3 +1,4 @@
+# pylint: disable=unused-variable
 from unittest.mock import Mock
 
 import pytest

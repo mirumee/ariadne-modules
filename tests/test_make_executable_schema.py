@@ -1,11 +1,10 @@
-from typing import Tuple, Union
+from typing import Union
 
 import pytest
 from graphql import (
     GraphQLField,
     GraphQLInterfaceType,
     GraphQLObjectType,
-    GraphQLSchema,
     default_field_resolver,
     graphql_sync,
 )
@@ -178,8 +177,9 @@ def test_multiple_roots_fail_validation_if_merge_roots_is_disabled(data_regressi
 
 def test_schema_validation_fails_if_lazy_type_doesnt_exist(data_regression):
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=list["Missing"])
-        def other(obj, info):
+        @GraphQLObject.field(graphql_type=list["Missing"])  # type: ignore
+        @staticmethod
+        def other(*_):
             return None
 
     with pytest.raises(TypeError) as exc_info:
@@ -190,8 +190,9 @@ def test_schema_validation_fails_if_lazy_type_doesnt_exist(data_regression):
 
 def test_schema_validation_passes_if_lazy_type_exists():
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=list["Exists"])
-        def other(obj, info):
+        @GraphQLObject.field(graphql_type=list["Exists"])  # type: ignore
+        @staticmethod
+        def other(*_):
             return None
 
     type_def = """
@@ -201,15 +202,6 @@ def test_schema_validation_passes_if_lazy_type_exists():
         """
 
     make_executable_schema(QueryType, type_def)
-
-
-def test_make_executable_schema_raises_error_if_called_without_any_types(
-    data_regression,
-):
-    with pytest.raises(ValueError) as exc_info:
-        make_executable_schema(QueryType)
-
-    data_regression.check(str(exc_info.value))
 
 
 def test_make_executable_schema_raises_error_if_called_without_any_types(
@@ -283,8 +275,12 @@ def test_make_executable_schema_supports_vanilla_directives():
             field: String! @upper
         }
         """
-
-    schema = make_executable_schema(type_def, directives={"upper": UpperDirective})
+    schema = make_executable_schema(
+        type_def,
+        directives={
+            "upper": UpperDirective,  # type: ignore
+        },
+    )
     result = graphql_sync(
         schema,
         "{ field }",
@@ -294,9 +290,7 @@ def test_make_executable_schema_supports_vanilla_directives():
 
 
 def test_make_executable_schema_custom_convert_name_case(assert_schema_equals):
-    def custom_name_converter(
-        name: str, schema: GraphQLSchema, path: Tuple[str, ...]
-    ) -> str:
+    def custom_name_converter(name: str, *_) -> str:
         return f"custom_{name}"
 
     class QueryType(GraphQLObject):

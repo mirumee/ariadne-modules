@@ -20,35 +20,33 @@ from ..base_object_type import (
 from ..types import GraphQLClassType
 
 from ..utils import parse_definition
-from ..base import GraphQLMetadata
+from ..base import GraphQLMetadata, GraphQLModel
 from ..description import get_description_node
 from ..object_type import GraphQLObject
 from .models import GraphQLInterfaceModel
 
 
 class GraphQLInterface(GraphQLBaseObject):
-    __valid_type__ = InterfaceTypeDefinitionNode
     __graphql_type__ = GraphQLClassType.INTERFACE
     __abstract__ = True
-    __description__: Optional[str] = None
     __graphql_name__: Optional[str] = None
+    __description__: Optional[str] = None
 
     def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-
         if cls.__dict__.get("__abstract__"):
             return
 
         cls.__abstract__ = False
 
         if cls.__dict__.get("__schema__"):
-            valid_type = getattr(cls, "__valid_type__", InterfaceTypeDefinitionNode)
-            cls.__kwargs__ = validate_object_type_with_schema(cls, valid_type)
+            cls.__kwargs__ = validate_object_type_with_schema(
+                cls, InterfaceTypeDefinitionNode
+            )
         else:
             cls.__kwargs__ = validate_object_type_without_schema(cls)
 
     @classmethod
-    def __get_graphql_model_with_schema__(cls) -> "GraphQLInterfaceModel":
+    def __get_graphql_model_with_schema__(cls) -> "GraphQLModel":
         definition = cast(
             InterfaceTypeDefinitionNode,
             parse_definition(InterfaceTypeDefinitionNode, cls.__schema__),
@@ -77,7 +75,7 @@ class GraphQLInterface(GraphQLBaseObject):
     @classmethod
     def __get_graphql_model_without_schema__(
         cls, metadata: GraphQLMetadata, name: str
-    ) -> "GraphQLInterfaceModel":
+    ) -> "GraphQLModel":
         type_data = cls.get_graphql_object_data(metadata)
         type_aliases = getattr(cls, "__aliases__", None) or {}
 

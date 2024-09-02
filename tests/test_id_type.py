@@ -84,8 +84,9 @@ def test_graphql_id_object_field_type_hint(assert_schema_equals):
 
 def test_graphql_id_object_field_instance(assert_schema_equals):
     class QueryType(GraphQLObject):
-        @GraphQLObject.field()
-        def id(*_) -> GraphQLID:
+        @GraphQLObject.field(name="id")
+        @staticmethod
+        def id_type(*_) -> GraphQLID:
             return GraphQLID(115)
 
     schema = make_executable_schema(QueryType)
@@ -107,8 +108,9 @@ def test_graphql_id_object_field_instance(assert_schema_equals):
 
 def test_graphql_id_object_field_instance_arg(assert_schema_equals):
     class QueryType(GraphQLObject):
-        @GraphQLObject.field()
-        def id(*_, arg: GraphQLID) -> str:
+        @GraphQLObject.field(name="id")
+        @staticmethod
+        def id_type(*_, arg: GraphQLID) -> str:
             return str(arg)
 
     schema = make_executable_schema(QueryType)
@@ -133,8 +135,9 @@ def test_graphql_id_input_field(assert_schema_equals):
         id: GraphQLID
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field()
-        def id(*_, arg: ArgType) -> str:
+        @GraphQLObject.field(name="id")
+        @staticmethod
+        def id_type(*_, arg: ArgType) -> str:
             return str(arg.id)
 
     schema = make_executable_schema(QueryType)

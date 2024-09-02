@@ -28,6 +28,7 @@ def test_scalar_field_returning_scalar_instance(assert_schema_equals):
         date: DateScalar
 
         @GraphQLObject.resolver("date")
+        @staticmethod
         def resolve_date(*_) -> DateScalar:
             return DateScalar(date(1989, 10, 30))
 
@@ -55,6 +56,7 @@ def test_scalar_field_returning_scalar_wrapped_type(assert_schema_equals):
         scalar_date: DateScalar
 
         @GraphQLObject.resolver("scalar_date", graphql_type=DateScalar)
+        @staticmethod
         def resolve_date(*_) -> date:
             return date(1989, 10, 30)
 
@@ -93,6 +95,7 @@ def test_unwrap_scalar_field_returning_scalar_instance(assert_schema_equals):
         test: SerializeTestScalar
 
         @GraphQLObject.resolver("test", graphql_type=str)
+        @staticmethod
         def resolve_date(*_) -> SerializeTestScalar:
             return SerializeTestScalar(value="Hello!")
 
@@ -120,6 +123,7 @@ def test_schema_scalar_field_returning_scalar_instance(assert_schema_equals):
         date: SchemaDateScalar
 
         @GraphQLObject.resolver("date")
+        @staticmethod
         def resolve_date(*_) -> SchemaDateScalar:
             return SchemaDateScalar(date(1989, 10, 30))
 

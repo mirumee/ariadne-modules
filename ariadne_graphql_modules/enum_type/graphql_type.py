@@ -313,7 +313,7 @@ def create_graphql_enum_model(
 
 
 def graphql_enum(
-    cls: Optional[Type[Enum]] = None,
+    cls=None,
     *,
     name: Optional[str] = None,
     description: Optional[str] = None,
@@ -321,7 +321,7 @@ def graphql_enum(
     members_include: Optional[Iterable[str]] = None,
     members_exclude: Optional[Iterable[str]] = None,
 ):
-    def graphql_enum_decorator(cls: Type[Enum]):
+    def graphql_enum_decorator(cls):
         graphql_model = create_graphql_enum_model(
             cls,
             name=name,

@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 from typing import Optional
 
 import pytest
@@ -374,7 +375,8 @@ def test_object_type_with_field_instance_automatic_alias(assert_schema_equals):
 def test_object_type_with_field_resolver(assert_schema_equals):
     class QueryType(GraphQLObject):
         @GraphQLObject.field
-        def hello(obj, info) -> str:
+        @staticmethod
+        def hello(*_) -> str:
             return "Hello World!"
 
     schema = make_executable_schema(QueryType)
@@ -441,7 +443,8 @@ def test_object_type_with_typed_field_and_field_resolver(assert_schema_equals):
         name: str
 
         @GraphQLObject.field
-        def hello(obj, info) -> str:
+        @staticmethod
+        def hello(*_) -> str:
             return "Hello World!"
 
     schema = make_executable_schema(QueryType)
@@ -500,7 +503,8 @@ def test_object_type_with_nested_types(assert_schema_equals):
         user: UserType
 
         @GraphQLObject.field(graphql_type=PostType)
-        def post(obj, info):
+        @staticmethod
+        def post(*_):
             return {"message": "test"}
 
     schema = make_executable_schema(QueryType)
@@ -543,6 +547,7 @@ def test_resolver_decorator_sets_resolver_for_type_hint_field(assert_schema_equa
         hello: str
 
         @GraphQLObject.resolver("hello")
+        @staticmethod
         def resolve_hello(*_):
             return "Hello World!"
 
@@ -568,6 +573,7 @@ def test_resolver_decorator_sets_resolver_for_instance_field(assert_schema_equal
         hello: str = GraphQLObject.field(name="hello")
 
         @GraphQLObject.resolver("hello")
+        @staticmethod
         def resolve_hello(*_):
             return "Hello World!"
 
@@ -599,6 +605,7 @@ def test_resolver_decorator_sets_resolver_for_field_in_schema(assert_schema_equa
         )
 
         @GraphQLObject.resolver("hello")
+        @staticmethod
         def resolve_hello(*_):
             return "Hello World!"
 
@@ -646,7 +653,8 @@ def test_object_type_with_description(assert_schema_equals):
 def test_field_decorator_sets_description_for_field(assert_schema_equals):
     class QueryType(GraphQLObject):
         @GraphQLObject.field(description="Lorem ipsum.")
-        def hello(obj, info) -> str:
+        @staticmethod
+        def hello(*_) -> str:
             return "Hello World!"
 
     schema = make_executable_schema(QueryType)
@@ -672,7 +680,8 @@ def test_field_decorator_sets_description_for_field_arg(assert_schema_equals):
         @GraphQLObject.field(
             args={"name": GraphQLObject.argument(description="Lorem ipsum.")}
         )
-        def hello(obj, info, name: str) -> str:
+        @staticmethod
+        def hello(*_, name: str) -> str:
             return f"Hello {name}!"
 
     schema = make_executable_schema(QueryType)
@@ -700,6 +709,7 @@ def test_resolver_decorator_sets_description_for_type_hint_field(assert_schema_e
         hello: str
 
         @GraphQLObject.resolver("hello", description="Lorem ipsum.")
+        @staticmethod
         def resolve_hello(*_):
             return "Hello World!"
 
@@ -732,6 +742,7 @@ def test_resolver_decorator_sets_description_for_field_in_schema(assert_schema_e
         )
 
         @GraphQLObject.resolver("hello", description="Lorem ipsum.")
+        @staticmethod
         def resolve_hello(*_):
             return "Hello World!"
 
@@ -760,7 +771,8 @@ def test_resolver_decorator_sets_description_for_field_arg(assert_schema_equals)
         @GraphQLObject.resolver(
             "hello", args={"name": GraphQLObject.argument(description="Lorem ipsum.")}
         )
-        def resolve_hello(obj, info, name: str) -> str:
+        @staticmethod
+        def resolve_hello(*_, name: str) -> str:
             return f"Hello {name}!"
 
     schema = make_executable_schema(QueryType)
@@ -797,6 +809,7 @@ def test_schema_sets_description_for_field_arg(assert_schema_equals):
         )
 
         @GraphQLObject.resolver("hello")
+        @staticmethod
         def resolve_hello(*_, name: str):
             return f"Hello {name}!"
 
@@ -835,6 +848,7 @@ def test_resolver_decorator_sets_description_for_field_arg_in_schema(
         @GraphQLObject.resolver(
             "hello", args={"name": GraphQLObject.argument(description="Description")}
         )
+        @staticmethod
         def resolve_hello(*_, name: str):
             return f"Hello {name}!"
 
@@ -917,6 +931,7 @@ def test_object_type_return_instance(
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field()
+        @staticmethod
         def category(*_) -> CategoryType:
             return CategoryType(
                 name="Welcome",

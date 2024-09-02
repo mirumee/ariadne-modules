@@ -1,3 +1,4 @@
+# pylint: disable=unused-variable
 from enum import Enum
 
 import pytest
@@ -177,6 +178,6 @@ def test_enum_type_validation_fails_for_invalid_members(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class UserLevel(GraphQLEnum):
-            __members__ = "INVALID"
+            __members__ = "INVALID"  # type: ignore
 
     data_regression.check(str(exc_info.value))

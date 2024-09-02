@@ -1,6 +1,6 @@
 from enum import Enum
 
-from graphql import GraphQLResolveInfo, graphql_sync
+from graphql import graphql_sync
 
 from ariadne_graphql_modules import (
     GraphQLEnum,
@@ -23,6 +23,7 @@ def test_enum_field_returning_enum_value(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> UserLevelEnum:
             return UserLevelEnum.MEMBER
 
@@ -61,6 +62,7 @@ def test_enum_field_returning_dict_value(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> int:
             return 0
 
@@ -99,6 +101,7 @@ def test_enum_field_returning_str_value(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> str:
             return "ADMIN"
 
@@ -221,6 +224,7 @@ def test_schema_enum_field_returning_enum_value(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> UserLevelEnum:
             return UserLevelEnum.MEMBER
 
@@ -266,6 +270,7 @@ def test_schema_enum_field_returning_dict_value(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> int:
             return 2
 
@@ -306,6 +311,7 @@ def test_schema_enum_field_returning_str_value(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> str:
             return "GUEST"
 
@@ -352,6 +358,7 @@ def test_schema_enum_with_description_attr(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> int:
             return 2
 
@@ -399,6 +406,7 @@ def test_schema_enum_with_schema_description(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> int:
             return 2
 
@@ -446,6 +454,7 @@ def test_schema_enum_with_member_description(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> int:
             return 2
 
@@ -494,6 +503,7 @@ def test_schema_enum_with_member_schema_description(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> int:
             return 2
 
@@ -532,9 +542,8 @@ def test_enum_field_as_argument(assert_schema_equals):
         @GraphQLObject.resolver(
             "set_level", args={"level": GraphQLObject.argument(graphql_type=UserLevel)}
         )
-        def resolve_level(
-            obj, info: GraphQLResolveInfo, *, level: UserLevelEnum
-        ) -> UserLevelEnum:
+        @staticmethod
+        def resolve_level(*_, level: UserLevelEnum) -> UserLevelEnum:
             return level
 
     schema = make_executable_schema(QueryType)

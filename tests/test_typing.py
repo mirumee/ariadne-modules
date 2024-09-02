@@ -36,7 +36,7 @@ def assert_named_type(type_node, name: str):
     assert type_node.name.value == name
 
 
-def test_get_graphql_type_from_python_builtin_type_returns_none(metadata):
+def test_get_graphql_type_from_python_builtin_type_returns_none():
     assert get_graphql_type(Optional[str]) is None
     assert get_graphql_type(Union[int, None]) is None
     assert get_graphql_type(Optional[bool]) is None
@@ -46,11 +46,11 @@ def test_get_graphql_type_from_python_builtin_type_returns_none(metadata):
     sys.version_info >= (3, 9) and sys.version_info < (3, 10),
     reason="Skip test for Python 3.9",
 )
-def test_get_graphql_type_from_python_builtin_type_returns_none_pipe_union(metadata):
+def test_get_graphql_type_from_python_builtin_type_returns_none_pipe_union():
     assert get_graphql_type(float | None) is None
 
 
-def test_get_graphql_type_from_graphql_type_subclass_returns_type(metadata):
+def test_get_graphql_type_from_graphql_type_subclass_returns_type():
     class UserType(GraphQLObject): ...
 
     assert get_graphql_type(UserType) == UserType
@@ -59,7 +59,7 @@ def test_get_graphql_type_from_graphql_type_subclass_returns_type(metadata):
     assert get_graphql_type(Optional[List[Optional[UserType]]]) == UserType
 
 
-def test_get_graphql_type_from_enum_returns_type(metadata):
+def test_get_graphql_type_from_enum_returns_type():
     class UserLevel(Enum):
         GUEST = 0
         MEMBER = 1
@@ -124,37 +124,37 @@ def test_get_non_null_graphql_list_type_node_from_python_builtin_type(metadata):
 
 def test_get_graphql_type_node_from_annotated_type(metadata):
     class MockType(GraphQLObject):
-        field: Annotated["ForwardScalar", deferred("tests.types")]
+        custom_field: Annotated["ForwardScalar", deferred("tests.types")]
 
     assert_non_null_type(
-        get_type_node(metadata, MockType.__annotations__["field"]), "Forward"
+        get_type_node(metadata, MockType.__annotations__["custom_field"]), "Forward"
     )
 
 
 def test_get_graphql_type_node_from_annotated_type_with_relative_path(metadata):
     class MockType(GraphQLObject):
-        field: Annotated["ForwardScalar", deferred(".types")]
+        custom_field: Annotated["ForwardScalar", deferred(".types")]
 
     assert_non_null_type(
-        get_type_node(metadata, MockType.__annotations__["field"]), "Forward"
+        get_type_node(metadata, MockType.__annotations__["custom_field"]), "Forward"
     )
 
 
 def test_get_graphql_type_node_from_nullable_annotated_type(metadata):
     class MockType(GraphQLObject):
-        field: Optional[Annotated["ForwardScalar", deferred("tests.types")]]
+        custom_field: Optional[Annotated["ForwardScalar", deferred("tests.types")]]
 
     assert_named_type(
-        get_type_node(metadata, MockType.__annotations__["field"]), "Forward"
+        get_type_node(metadata, MockType.__annotations__["custom_field"]), "Forward"
     )
 
 
 def test_get_graphql_type_node_from_annotated_enum(metadata):
     class MockType(GraphQLObject):
-        field: Annotated["ForwardEnum", deferred("tests.types")]
+        custom_field: Annotated["ForwardEnum", deferred("tests.types")]
 
     assert_non_null_type(
-        get_type_node(metadata, MockType.__annotations__["field"]), "ForwardEnum"
+        get_type_node(metadata, MockType.__annotations__["custom_field"]), "ForwardEnum"
     )
 
 

@@ -15,7 +15,6 @@ from ariadne.types import Resolver
 from graphql import (
     FieldDefinitionNode,
     InputValueDefinitionNode,
-    ObjectTypeDefinitionNode,
     StringValueNode,
 )
 
@@ -44,10 +43,6 @@ from ..base import GraphQLMetadata, GraphQLModel, GraphQLType
 from ..convert_name import convert_python_name_to_graphql
 from ..description import get_description_node
 from ..typing import get_graphql_type
-from .validators import (
-    validate_object_type_with_schema,
-    validate_object_type_without_schema,
-)
 from ..value import get_value_node
 
 
@@ -55,7 +50,6 @@ class GraphQLBaseObject(GraphQLType):
     __kwargs__: Dict[str, Any]
     __abstract__: bool = True
     __schema__: Optional[str] = None
-    __description__: Optional[str]
     __aliases__: Optional[Dict[str, str]]
     __requires__: Optional[Iterable[Union[Type[GraphQLType], Type[Enum]]]]
     __graphql_type__ = GraphQLClassType.BASE
@@ -80,20 +74,6 @@ class GraphQLBaseObject(GraphQLType):
 
         for kwarg, default in default_values.items():
             setattr(self, kwarg, kwargs.get(kwarg, deepcopy(default)))
-
-    def __init_subclass__(cls) -> None:
-        super().__init_subclass__()
-
-        if cls.__dict__.get("__abstract__"):
-            return
-
-        cls.__abstract__ = False
-
-        if cls.__dict__.get("__schema__"):
-            valid_type = getattr(cls, "__valid_type__", ObjectTypeDefinitionNode)
-            cls.__kwargs__ = validate_object_type_with_schema(cls, valid_type)
-        else:
-            cls.__kwargs__ = validate_object_type_without_schema(cls)
 
     @classmethod
     def __get_graphql_model__(cls, metadata: GraphQLMetadata) -> "GraphQLModel":

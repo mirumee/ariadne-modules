@@ -1,3 +1,4 @@
+# pylint: disable=unused-variable
 import pytest
 
 from ariadne import gql
@@ -116,7 +117,7 @@ def test_input_type_validation_fails_for_unsupported_attr_default(data_regressio
     with pytest.raises(TypeError) as exc_info:
 
         class QueryType(GraphQLInput):
-            attr: str = InvalidType()
+            attr: str = InvalidType()  # type: ignore
 
     data_regression.check(str(exc_info.value))
 

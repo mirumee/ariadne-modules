@@ -1,3 +1,4 @@
+# pylint: disable=unused-argument
 from ariadne_graphql_modules.object_type import get_field_args_from_resolver
 
 
@@ -112,6 +113,7 @@ def test_field_has_multiple_args_after_obj_and_info_args():
 
 def test_field_has_arg_after_obj_and_info_args_on_class_function():
     class CustomObject:
+        @staticmethod
         def field_resolver(obj, info, name):
             pass
 

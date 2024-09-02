@@ -14,6 +14,10 @@ from graphql import (
 )
 
 from ariadne_graphql_modules.base_object_type.graphql_field import GraphQLClassData
+from ariadne_graphql_modules.base_object_type.validators import (
+    validate_object_type_with_schema,
+    validate_object_type_without_schema,
+)
 
 from ..types import GraphQLClassType
 
@@ -31,12 +35,26 @@ from ..description import get_description_node
 
 
 class GraphQLObject(GraphQLBaseObject):
-    __valid_type__ = ObjectTypeDefinitionNode
     __graphql_type__ = GraphQLClassType.OBJECT
     __abstract__ = True
     __description__: Optional[str] = None
     __schema__: Optional[str] = None
     __graphql_name__: Optional[str] = None
+
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+
+        if cls.__dict__.get("__abstract__"):
+            return
+
+        cls.__abstract__ = False
+
+        if cls.__dict__.get("__schema__"):
+            cls.__kwargs__ = validate_object_type_with_schema(
+                cls, ObjectTypeDefinitionNode
+            )
+        else:
+            cls.__kwargs__ = validate_object_type_without_schema(cls)
 
     @classmethod
     def __get_graphql_model_with_schema__(cls) -> "GraphQLModel":

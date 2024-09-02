@@ -1,4 +1,4 @@
-from graphql import GraphQLResolveInfo, graphql_sync
+from graphql import graphql_sync
 
 from ariadne_graphql_modules import GraphQLObject, make_executable_schema
 
@@ -6,7 +6,8 @@ from ariadne_graphql_modules import GraphQLObject, make_executable_schema
 def test_object_type_field_resolver_with_scalar_arg(assert_schema_equals):
     class QueryType(GraphQLObject):
         @GraphQLObject.field
-        def hello(obj, info: GraphQLResolveInfo, *, name: str) -> str:
+        @staticmethod
+        def hello(*_, name: str) -> str:
             return f"Hello {name}!"
 
     schema = make_executable_schema(QueryType)
@@ -53,7 +54,8 @@ def test_object_type_field_instance_with_scalar_arg(assert_schema_equals):
 def test_object_type_field_resolver_with_arg_default_value(assert_schema_equals):
     class QueryType(GraphQLObject):
         @GraphQLObject.field
-        def hello(obj, info: GraphQLResolveInfo, *, name: str = "Anon") -> str:
+        @staticmethod
+        def hello(*_, name: str = "Anon") -> str:
             return f"Hello {name}!"
 
     schema = make_executable_schema(QueryType)
@@ -104,7 +106,8 @@ def test_object_type_field_resolver_with_arg_option_default_value(
         @GraphQLObject.field(
             args={"name": GraphQLObject.argument(default_value="Anon")},
         )
-        def hello(obj, info: GraphQLResolveInfo, *, name: str) -> str:
+        @staticmethod
+        def hello(*_, name: str) -> str:
             return f"Hello {name}!"
 
     schema = make_executable_schema(QueryType)
@@ -164,7 +167,8 @@ def test_schema_object_type_field_with_arg_default_value(
             """
 
         @GraphQLObject.resolver("hello")
-        def resolve_hello(obj, info: GraphQLResolveInfo, *, name: str) -> str:
+        @staticmethod
+        def resolve_hello(*_, name: str) -> str:
             return f"Hello {name}!"
 
     schema = make_executable_schema(QueryType)
@@ -195,7 +199,8 @@ def test_schema_object_type_field_with_arg_default_value_from_resolver_arg(
             """
 
         @GraphQLObject.resolver("hello")
-        def resolve_hello(obj, info: GraphQLResolveInfo, *, name: str = "Anon") -> str:
+        @staticmethod
+        def resolve_hello(*_, name: str = "Anon") -> str:
             return f"Hello {name}!"
 
     schema = make_executable_schema(QueryType)
@@ -228,7 +233,8 @@ def test_schema_object_type_field_with_arg_default_value_from_resolver_arg_optio
         @GraphQLObject.resolver(
             "hello", args={"name": GraphQLObject.argument(default_value="Other")}
         )
-        def resolve_hello(obj, info: GraphQLResolveInfo, *, name: str = "Anon") -> str:
+        @staticmethod
+        def resolve_hello(*_, name: str = "Anon") -> str:
             return f"Hello {name}!"
 
     schema = make_executable_schema(QueryType)
@@ -289,6 +295,7 @@ def test_resolver_decorator_sets_resolver_with_arg_for_type_hint_field(
         hello: str
 
         @GraphQLObject.resolver("hello")
+        @staticmethod
         def resolve_hello(*_, name: str):
             return f"Hello {name}!"
 
@@ -348,6 +355,7 @@ def test_object_type_field_resolver_instance_arg_with_out_name(assert_schema_equ
         hello: str
 
         @GraphQLObject.resolver("hello")
+        @staticmethod
         def resolve_hello(*_, first_name: str) -> str:
             return f"Hello {first_name}!"
 
@@ -371,6 +379,7 @@ def test_object_type_field_resolver_instance_arg_with_out_name(assert_schema_equ
 def test_object_type_field_instance_arg_with_out_name(assert_schema_equals):
     class QueryType(GraphQLObject):
         @GraphQLObject.field
+        @staticmethod
         def hello(*_, first_name: str) -> str:
             return f"Hello {first_name}!"
 
@@ -398,6 +407,7 @@ def test_object_type_field_resolver_instance_arg_with_custom_name(assert_schema_
         @GraphQLObject.resolver(
             "hello", args={"first_name": GraphQLObject.argument(name="name")}
         )
+        @staticmethod
         def resolve_hello(*_, first_name: str) -> str:
             return f"Hello {first_name}!"
 
@@ -421,6 +431,7 @@ def test_object_type_field_resolver_instance_arg_with_custom_name(assert_schema_
 def test_object_type_field_instance_arg_with_custom_name(assert_schema_equals):
     class QueryType(GraphQLObject):
         @GraphQLObject.field(args={"first_name": GraphQLObject.argument(name="name")})
+        @staticmethod
         def hello(*_, first_name: str) -> str:
             return f"Hello {first_name}!"
 

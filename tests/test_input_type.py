@@ -196,8 +196,9 @@ def test_input_type_arg(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return f"{repr([input.query, input.age])}"
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return f"{repr([query_input.query, query_input.age])}"
 
     schema = make_executable_schema(QueryType)
 
@@ -205,7 +206,7 @@ def test_input_type_arg(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -215,7 +216,7 @@ def test_input_type_arg(assert_schema_equals):
         """,
     )
 
-    result = graphql_sync(schema, '{ search(input: { query: "Hello" }) }')
+    result = graphql_sync(schema, '{ search(queryInput: { query: "Hello" }) }')
 
     assert not result.errors
     assert result.data == {"search": "['Hello', None]"}
@@ -237,8 +238,9 @@ def test_schema_input_type_arg(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return f"{repr([input.query, input.age])}"
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return f"{repr([query_input.query, query_input.age])}"
 
     schema = make_executable_schema(QueryType)
 
@@ -246,7 +248,7 @@ def test_schema_input_type_arg(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -256,7 +258,7 @@ def test_schema_input_type_arg(assert_schema_equals):
         """,
     )
 
-    result = graphql_sync(schema, '{ search(input: { query: "Hello" }) }')
+    result = graphql_sync(schema, '{ search(queryInput: { query: "Hello" }) }')
 
     assert not result.errors
     assert result.data == {"search": "['Hello', None]"}
@@ -271,8 +273,9 @@ def test_input_type_automatic_out_name_arg(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return f"{repr([input.query, input.min_age])}"
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return f"{repr([query_input.query, query_input.min_age])}"
 
     schema = make_executable_schema(QueryType)
 
@@ -280,7 +283,7 @@ def test_input_type_automatic_out_name_arg(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -290,7 +293,7 @@ def test_input_type_automatic_out_name_arg(assert_schema_equals):
         """,
     )
 
-    result = graphql_sync(schema, "{ search(input: { minAge: 21 }) }")
+    result = graphql_sync(schema, "{ search(queryInput: { minAge: 21 }) }")
 
     assert not result.errors
     assert result.data == {"search": "[None, 21]"}
@@ -312,8 +315,9 @@ def test_schema_input_type_automatic_out_name_arg(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return f"{repr([input.query, input.min_age])}"
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return f"{repr([query_input.query, query_input.min_age])}"
 
     schema = make_executable_schema(QueryType)
 
@@ -321,7 +325,7 @@ def test_schema_input_type_automatic_out_name_arg(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -331,7 +335,7 @@ def test_schema_input_type_automatic_out_name_arg(assert_schema_equals):
         """,
     )
 
-    result = graphql_sync(schema, "{ search(input: { minAge: 21 }) }")
+    result = graphql_sync(schema, "{ search(queryInput: { minAge: 21 }) }")
 
     assert not result.errors
     assert result.data == {"search": "[None, 21]"}
@@ -354,8 +358,9 @@ def test_schema_input_type_explicit_out_name_arg(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return f"{repr([input.query, input.age])}"
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return f"{repr([query_input.query, query_input.age])}"
 
     schema = make_executable_schema(QueryType)
 
@@ -363,7 +368,7 @@ def test_schema_input_type_explicit_out_name_arg(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -373,7 +378,7 @@ def test_schema_input_type_explicit_out_name_arg(assert_schema_equals):
         """,
     )
 
-    result = graphql_sync(schema, "{ search(input: { minAge: 21 }) }")
+    result = graphql_sync(schema, "{ search(queryInput: { minAge: 21 }) }")
 
     assert not result.errors
     assert result.data == {"search": "[None, 21]"}
@@ -388,13 +393,14 @@ def test_input_type_self_reference(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            if input.extra:
-                extra_repr = input.extra.query
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            if query_input.extra:
+                extra_repr = query_input.extra.query
             else:
                 extra_repr = None
 
-            return f"{repr([input.query, extra_repr])}"
+            return f"{repr([query_input.query, extra_repr])}"
 
     schema = make_executable_schema(QueryType)
 
@@ -402,7 +408,7 @@ def test_input_type_self_reference(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -417,7 +423,7 @@ def test_input_type_self_reference(assert_schema_equals):
         """
         {
             search(
-                input: { query: "Hello", extra: { query: "Other" } }
+                queryInput: { query: "Hello", extra: { query: "Other" } }
             )
         }
         """,
@@ -443,8 +449,9 @@ def test_schema_input_type_with_default_value(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return f"{repr([input.query, input.age])}"
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return f"{repr([query_input.query, query_input.age])}"
 
     schema = make_executable_schema(QueryType)
 
@@ -452,7 +459,7 @@ def test_schema_input_type_with_default_value(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -462,7 +469,7 @@ def test_schema_input_type_with_default_value(assert_schema_equals):
         """,
     )
 
-    result = graphql_sync(schema, "{ search(input: {}) }")
+    result = graphql_sync(schema, "{ search(queryInput: {}) }")
 
     assert not result.errors
     assert result.data == {"search": "['Search', 42]"}
@@ -478,8 +485,9 @@ def test_input_type_with_field_default_value(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return f"{repr([input.query, input.age, input.flag])}"
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return f"{repr([query_input.query, query_input.age, query_input.flag])}"
 
     schema = make_executable_schema(QueryType)
 
@@ -487,7 +495,7 @@ def test_input_type_with_field_default_value(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -498,7 +506,7 @@ def test_input_type_with_field_default_value(assert_schema_equals):
         """,
     )
 
-    result = graphql_sync(schema, "{ search(input: {}) }")
+    result = graphql_sync(schema, "{ search(queryInput: {}) }")
 
     assert not result.errors
     assert result.data == {"search": "['default', 42, False]"}
@@ -514,8 +522,9 @@ def test_input_type_with_field_instance_default_value(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return f"{repr([input.query, input.age, input.flag])}"
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return f"{repr([query_input.query, query_input.age, query_input.flag])}"
 
     schema = make_executable_schema(QueryType)
 
@@ -523,7 +532,7 @@ def test_input_type_with_field_instance_default_value(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -534,7 +543,7 @@ def test_input_type_with_field_instance_default_value(assert_schema_equals):
         """,
     )
 
-    result = graphql_sync(schema, "{ search(input: {}) }")
+    result = graphql_sync(schema, "{ search(queryInput: {}) }")
 
     assert not result.errors
     assert result.data == {"search": "['default', 42, False]"}
@@ -548,8 +557,9 @@ def test_input_type_with_field_type(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return str(input)
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return str(query_input)
 
     schema = make_executable_schema(QueryType)
 
@@ -557,7 +567,7 @@ def test_input_type_with_field_type(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -580,8 +590,9 @@ def test_schema_input_type_with_field_description(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return str(input)
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return str(query_input)
 
     schema = make_executable_schema(QueryType)
 
@@ -589,7 +600,7 @@ def test_schema_input_type_with_field_description(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -608,8 +619,9 @@ def test_input_type_with_field_description(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return str(input)
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return str(query_input)
 
     schema = make_executable_schema(QueryType)
 
@@ -617,7 +629,7 @@ def test_input_type_with_field_description(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -637,8 +649,9 @@ def test_input_type_omit_magic_fields(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: SearchInput) -> str:
-            return str(input)
+        @staticmethod
+        def resolve_search(*_, query_input: SearchInput) -> str:
+            return str(query_input)
 
     schema = make_executable_schema(QueryType)
 
@@ -646,7 +659,7 @@ def test_input_type_omit_magic_fields(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: SearchInput!): String!
+          search(queryInput: SearchInput!): String!
         }
 
         input SearchInput {
@@ -675,8 +688,9 @@ def test_input_type_in_input_type_fields(assert_schema_equals):
         search: str
 
         @GraphQLObject.resolver("search")
-        def resolve_search(*_, input: MainInput) -> str:
-            return str(input)
+        @staticmethod
+        def resolve_search(*_, query_input: MainInput) -> str:
+            return str(query_input)
 
     schema = make_executable_schema(QueryType)
 
@@ -684,7 +698,7 @@ def test_input_type_in_input_type_fields(assert_schema_equals):
         schema,
         """
         type Query {
-          search(input: MainInput!): String!
+          search(queryInput: MainInput!): String!
         }
 
         input MainInput {

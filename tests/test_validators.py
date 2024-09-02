@@ -8,14 +8,14 @@ def test_description_validator_passes_type_without_description():
     class CustomType:
         pass
 
-    validate_description(CustomType, parse("scalar Custom").definitions[0])
+    validate_description(CustomType, parse("scalar Custom").definitions[0])  # type: ignore
 
 
 def test_description_validator_passes_type_with_description_attr():
     class CustomType:
         __description__ = "Example scalar"
 
-    validate_description(CustomType, parse("scalar Custom").definitions[0])
+    validate_description(CustomType, parse("scalar Custom").definitions[0])  # type: ignore
 
 
 def test_description_validator_raises_error_for_type_with_two_descriptions(
@@ -27,7 +27,7 @@ def test_description_validator_raises_error_for_type_with_two_descriptions(
             __description__ = "Example scalar"
 
         validate_description(
-            CustomType,
+            CustomType,  # type: ignore
             parse(
                 """
                 \"\"\"Lorem ipsum\"\"\"
@@ -43,14 +43,14 @@ def test_name_validator_passes_type_without_explicit_name():
     class CustomType:
         pass
 
-    validate_name(CustomType, parse("type Custom").definitions[0])
+    validate_name(CustomType, parse("type Custom").definitions[0])  # type: ignore
 
 
 def test_name_validator_passes_type_with_graphql_name_attr_matching_definition():
     class CustomType:
         __graphql_name__ = "Custom"
 
-    validate_name(CustomType, parse("type Custom").definitions[0])
+    validate_name(CustomType, parse("type Custom").definitions[0])  # type: ignore
 
 
 def test_name_validator_raises_error_for_name_and_definition_mismatch(data_regression):
@@ -60,7 +60,7 @@ def test_name_validator_raises_error_for_name_and_definition_mismatch(data_regre
             __graphql_name__ = "Example"
 
         validate_name(
-            CustomType,
+            CustomType,  # type: ignore
             parse("type Custom").definitions[0],
         )
 

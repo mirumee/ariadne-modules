@@ -47,7 +47,6 @@ from .models import GraphQLSubscriptionModel
 
 
 class GraphQLSubscription(GraphQLBaseObject):
-    __valid_type__ = ObjectTypeDefinitionNode
     __graphql_type__ = GraphQLClassType.SUBSCRIPTION
     __abstract__: bool = True
     __description__: Optional[str] = None
@@ -62,8 +61,9 @@ class GraphQLSubscription(GraphQLBaseObject):
         cls.__abstract__ = False
 
         if cls.__dict__.get("__schema__"):
-            valid_type = getattr(cls, "__valid_type__", ObjectTypeDefinitionNode)
-            cls.__kwargs__ = validate_object_type_with_schema(cls, valid_type)
+            cls.__kwargs__ = validate_object_type_with_schema(
+                cls, ObjectTypeDefinitionNode
+            )
         else:
             cls.__kwargs__ = validate_object_type_without_schema(cls)
 

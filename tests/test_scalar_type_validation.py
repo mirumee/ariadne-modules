@@ -1,3 +1,4 @@
+# pylint: disable=unused-variable
 import pytest
 
 from ariadne import gql

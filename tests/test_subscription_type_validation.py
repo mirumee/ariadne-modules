@@ -1,3 +1,4 @@
+# pylint: disable=unused-variable
 from ariadne import gql
 import pytest
 from ariadne_graphql_modules import (
@@ -31,7 +32,8 @@ async def test_undefined_name_without_schema(data_regression):
             message_added: Message
 
             @GraphQLSubscription.source("messageAdded")
-            async def message_added_generator(obj, info):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -45,8 +47,9 @@ async def test_field_name_not_str_without_schema(data_regression):
         class SubscriptionType(GraphQLSubscription):
             message_added: Message
 
-            @GraphQLSubscription.source(23)
-            async def message_added_generator(obj, info):
+            @GraphQLSubscription.source(23)  # type: ignore
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -61,12 +64,14 @@ async def test_multiple_sources_without_schema(data_regression):
             message_added: Message
 
             @GraphQLSubscription.source("message_added")
-            async def message_added_generator(obj, info):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
             @GraphQLSubscription.source("message_added")
-            async def message_added_generator_2(obj, info):
+            @staticmethod
+            async def message_added_generator_2(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -80,8 +85,9 @@ async def test_description_not_str_without_schema(data_regression):
         class SubscriptionType(GraphQLSubscription):
             message_added: Message
 
-            @GraphQLSubscription.source("message_added", description=12)
-            async def message_added_generator(obj, info):
+            @GraphQLSubscription.source("message_added", description=12)  # type: ignore
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -97,9 +103,10 @@ async def test_source_args_field_arg_not_dict_without_schema(data_regression):
 
             @GraphQLSubscription.source(
                 "message_added",
-                args={"channel": 123},
+                args={"channel": 123},  # type: ignore
             )
-            async def message_added_generator(obj, info):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -115,9 +122,10 @@ async def test_source_args_not_dict_without_schema(data_regression):
 
             @GraphQLSubscription.source(
                 "message_added",
-                args=123,
+                args=123,  # type: ignore
             )
-            async def message_added_generator(obj, info):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -138,7 +146,8 @@ async def test_source_for_undefined_field_with_schema(data_regression):
             )
 
             @GraphQLSubscription.source("message_added")
-            async def message_added_generator(obj, info):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -159,12 +168,14 @@ async def test_multiple_sourced_for_field_with_schema(data_regression):
             )
 
             @GraphQLSubscription.source("messageAdded")
-            async def message_added_generator(obj, info):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
             @GraphQLSubscription.source("messageAdded")
-            async def message_added_generator_2(obj, info):
+            @staticmethod
+            async def message_added_generator_2(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -186,7 +197,8 @@ async def test_multiple_descriptions_for_source_with_schema(data_regression):
             )
 
             @GraphQLSubscription.source("messageAdded", description="hello")
-            async def message_added_generator(obj, info):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -210,7 +222,8 @@ async def test_invalid_arg_name_in_source_with_schema(data_regression):
                 "messageAdded",
                 args={"channelID": GraphQLObject.argument(description="Lorem ipsum.")},
             )
-            async def message_added_generator(obj, info, channel):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -238,7 +251,8 @@ async def test_arg_with_name_in_source_with_schema(data_regression):
                     )
                 },
             )
-            async def message_added_generator(obj, info, channel):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -266,7 +280,8 @@ async def test_arg_with_type_in_source_with_schema(data_regression):
                     )
                 },
             )
-            async def message_added_generator(obj, info, channel):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 
@@ -297,7 +312,8 @@ async def test_arg_with_description_in_source_with_schema(data_regression):
                     )
                 },
             )
-            async def message_added_generator(obj, info, channel):
+            @staticmethod
+            async def message_added_generator(*_):
                 while True:
                     yield {"id": "some_id", "content": "message", "author": "Anon"}
 

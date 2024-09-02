@@ -1,3 +1,4 @@
+import pytest
 from ariadne_graphql_modules import (
     GraphQLID,
     GraphQLObject,
@@ -6,7 +7,6 @@ from ariadne_graphql_modules import (
 from ariadne_graphql_modules.union_type.validators import (
     validate_union_type_with_schema,
 )
-import pytest
 
 
 class UserType(GraphQLObject):

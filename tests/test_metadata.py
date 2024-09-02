@@ -37,7 +37,7 @@ def test_metadata_returns_model_for_type(assert_ast_equals, metadata):
     )
 
 
-def test_metadata_returns_graphql_name_for_type(assert_ast_equals, metadata):
+def test_metadata_returns_graphql_name_for_type(metadata):
     assert metadata.get_graphql_name(QueryType) == "Query"
 
 
@@ -67,7 +67,7 @@ def test_metadata_returns_model_for_standard_enum(assert_ast_equals, metadata):
     )
 
 
-def test_metadata_returns_graphql_name_for_standard_enum(assert_ast_equals, metadata):
+def test_metadata_returns_graphql_name_for_standard_enum(metadata):
     assert metadata.get_graphql_name(UserLevel) == "UserLevel"
 
 
@@ -96,5 +96,5 @@ def test_metadata_returns_model_for_annotated_enum(assert_ast_equals, metadata):
     )
 
 
-def test_metadata_returns_graphql_name_for_annotated_enum(assert_ast_equals, metadata):
+def test_metadata_returns_graphql_name_for_annotated_enum(metadata):
     assert metadata.get_graphql_name(SeverityLevel) == "SeverityEnum"

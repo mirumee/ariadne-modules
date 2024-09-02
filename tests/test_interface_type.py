@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional, Union
 
 from graphql import graphql_sync
 
@@ -29,6 +29,7 @@ def test_interface_without_schema(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
+        @staticmethod
         def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
@@ -94,6 +95,7 @@ def test_interface_inheritance_without_schema(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
+        @staticmethod
         def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(),
@@ -168,6 +170,7 @@ def test_interface_with_schema(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
+        @staticmethod
         def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
@@ -221,6 +224,7 @@ def test_interface_inherit_interface(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field
+        @staticmethod
         def users(*_) -> List[UserInterface]:
             return [
                 UserType(id="1", username="test_user"),
@@ -272,7 +276,7 @@ def test_interface_descriptions(assert_schema_equals):
         summary: str
         score: int
 
-        __description__ = "Lorem ipsum."
+        __description__: Optional[str] = "Lorem ipsum."
 
     class UserType(GraphQLObject, UserInterface):
         id: GraphQLID
@@ -280,6 +284,7 @@ def test_interface_descriptions(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field
+        @staticmethod
         def user(*_) -> UserType:
             return UserType(id="1", username="test_user")
 
@@ -314,6 +319,7 @@ def test_interface_resolvers_and_field_descriptions(assert_schema_equals):
         score: int
 
         @GraphQLInterface.resolver("score", description="Lorem ipsum.")
+        @staticmethod
         def resolve_score(*_):
             return 200
 
@@ -326,6 +332,7 @@ def test_interface_resolvers_and_field_descriptions(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[UserInterface])
+        @staticmethod
         def users(*_) -> List[UserInterface]:
             return [MyType(id="2", name="old", summary="ss", score=22)]
 
@@ -379,6 +386,7 @@ def test_interface_with_schema_object_with_schema(assert_schema_equals):
         """
 
         @GraphQLInterface.resolver("summary")
+        @staticmethod
         def resolve_summary(*_):
             return "base_line"
 
@@ -397,6 +405,7 @@ def test_interface_with_schema_object_with_schema(assert_schema_equals):
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=List[ResultType])
+        @staticmethod
         def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(name="Bob"),

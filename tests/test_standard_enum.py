@@ -62,7 +62,7 @@ def test_graphql_enum_model_is_created_with_method():
     assert graphql_model == "CustomModel"
 
 
-def test_graphql_enum_model_is_created_with_name_from_method(assert_ast_equals):
+def test_graphql_enum_model_is_created_with_name_from_method():
     class UserLevel(Enum):
         GUEST = 0
         MEMBER = 1
@@ -233,6 +233,7 @@ def test_enum_field_returning_enum_instance(assert_schema_equals):
         level: UserLevel
 
         @GraphQLObject.resolver("level")
+        @staticmethod
         def resolve_level(*_) -> UserLevel:
             return UserLevel.MODERATOR
 
@@ -260,6 +261,7 @@ def test_enum_field_returning_enum_instance(assert_schema_equals):
     assert result.data == {"level": "MODERATOR"}
 
 
+# pylint: disable=no-member
 def test_graphql_enum_decorator_without_options_sets_model_on_enum(assert_ast_equals):
     @graphql_enum
     class SeverityLevel(Enum):
@@ -267,7 +269,7 @@ def test_graphql_enum_decorator_without_options_sets_model_on_enum(assert_ast_eq
         MEDIUM = 1
         HIGH = 2
 
-    graphql_model = SeverityLevel.__get_graphql_model__()
+    graphql_model = SeverityLevel.__get_graphql_model__()  # type: ignore
 
     assert graphql_model.name == "SeverityLevel"
     assert graphql_model.members == {
@@ -288,6 +290,7 @@ def test_graphql_enum_decorator_without_options_sets_model_on_enum(assert_ast_eq
     )
 
 
+# pylint: disable=no-member
 def test_graphql_enum_decorator_with_options_sets_model_on_enum(assert_ast_equals):
     @graphql_enum(name="SeverityEnum", members_exclude=["HIGH"])
     class SeverityLevel(Enum):
@@ -295,7 +298,7 @@ def test_graphql_enum_decorator_with_options_sets_model_on_enum(assert_ast_equal
         MEDIUM = 1
         HIGH = 2
 
-    graphql_model = SeverityLevel.__get_graphql_model__()
+    graphql_model = SeverityLevel.__get_graphql_model__()  # type: ignore
 
     assert graphql_model.name == "SeverityEnum"
     assert graphql_model.members == {

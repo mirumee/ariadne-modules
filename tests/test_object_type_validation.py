@@ -1,3 +1,4 @@
+# pylint: disable=unused-variable
 import pytest
 
 from ariadne import gql
@@ -62,6 +63,7 @@ def test_object_type_validation_fails_for_undefined_attr_resolver(data_regressio
             hello: str
 
             @GraphQLObject.resolver("other")
+            @staticmethod
             def resolve_hello(*_):
                 return "Hello World!"
 
@@ -83,6 +85,7 @@ def test_schema_object_type_validation_fails_for_undefined_field_resolver(
             )
 
             @GraphQLObject.resolver("other")
+            @staticmethod
             def resolve_hello(*_):
                 return "Hello World!"
 
@@ -110,6 +113,7 @@ def test_object_type_validation_fails_for_attr_and_field_with_same_graphql_name(
             user_id: str
 
             @GraphQLObject.field(name="userId")
+            @staticmethod
             def lorem(*_) -> str:
                 return "Hello World!"
 
@@ -123,10 +127,12 @@ def test_object_type_validation_fails_for_multiple_fields_with_same_graphql_name
 
         class CustomType(GraphQLObject):
             @GraphQLObject.field(name="hello")
+            @staticmethod
             def lorem(*_) -> str:
                 return "Hello World!"
 
             @GraphQLObject.field(name="hello")
+            @staticmethod
             def ipsum(*_) -> str:
                 return "Hello World!"
 
@@ -138,6 +144,7 @@ def test_object_type_validation_fails_for_undefined_field_resolver_arg(data_regr
 
         class CustomType(GraphQLObject):
             @GraphQLObject.field(args={"invalid": GraphQLObject.argument(name="test")})
+            @staticmethod
             def hello(*_) -> str:
                 return "Hello World!"
 
@@ -153,6 +160,7 @@ def test_object_type_validation_fails_for_undefined_resolver_arg(data_regression
             @GraphQLObject.resolver(
                 "hello", args={"invalid": GraphQLObject.argument(name="test")}
             )
+            @staticmethod
             def resolve_hello(*_):
                 return "Hello World!"
 
@@ -164,8 +172,9 @@ def test_object_type_validation_fails_for_missing_field_resolver_arg(data_regres
 
         class CustomType(GraphQLObject):
             @GraphQLObject.field(args={"invalid": GraphQLObject.argument(name="test")})
+            @staticmethod
             def hello(*_, name: str) -> str:
-                return "Hello World!"
+                return f"Hello {name}!"
 
     data_regression.check(str(exc_info.value))
 
@@ -179,8 +188,9 @@ def test_object_type_validation_fails_for_missing_resolver_arg(data_regression):
             @GraphQLObject.resolver(
                 "hello", args={"invalid": GraphQLObject.argument(name="test")}
             )
+            @staticmethod
             def resolve_hello(*_, name: str):
-                return "Hello World!"
+                return f"Hello {name}!"
 
     data_regression.check(str(exc_info.value))
 
@@ -192,10 +202,12 @@ def test_object_type_validation_fails_for_multiple_field_resolvers(data_regressi
             hello: str
 
             @GraphQLObject.resolver("hello")
+            @staticmethod
             def resolve_hello(*_):
                 return "Hello World!"
 
             @GraphQLObject.resolver("hello")
+            @staticmethod
             def resolve_hello_other(*_):
                 return "Hello World!"
 
@@ -217,10 +229,12 @@ def test_schema_object_type_validation_fails_for_multiple_field_resolvers(
             )
 
             @GraphQLObject.resolver("hello")
+            @staticmethod
             def resolve_hello(*_):
                 return "Hello World!"
 
             @GraphQLObject.resolver("hello")
+            @staticmethod
             def resolve_hello_other(*_):
                 return "Hello World!"
 
@@ -236,6 +250,7 @@ def test_object_type_validation_fails_for_field_with_multiple_descriptions(
             hello: str = GraphQLObject.field(description="Description")
 
             @GraphQLObject.resolver("hello", description="Other")
+            @staticmethod
             def ipsum(*_) -> str:
                 return "Hello World!"
 
@@ -256,6 +271,7 @@ def test_schema_object_type_validation_fails_for_field_with_multiple_description
                 """
 
             @GraphQLObject.resolver("hello", description="Other")
+            @staticmethod
             def ipsum(*_) -> str:
                 return "Hello World!"
 
@@ -277,8 +293,9 @@ def test_schema_object_type_validation_fails_for_field_with_invalid_arg_name(
             @GraphQLObject.resolver(
                 "hello", args={"other": GraphQLObject.argument(description="Ok")}
             )
+            @staticmethod
             def ipsum(*_, name: str) -> str:
-                return "Hello World!"
+                return f"Hello {name}!"
 
     data_regression.check(str(exc_info.value))
 
@@ -298,8 +315,9 @@ def test_schema_object_type_validation_fails_for_arg_with_name_option(
             @GraphQLObject.resolver(
                 "hello", args={"name": GraphQLObject.argument(name="Other")}
             )
+            @staticmethod
             def ipsum(*_, name: str) -> str:
-                return "Hello World!"
+                return f"Hello {name}!"
 
     data_regression.check(str(exc_info.value))
 
@@ -319,8 +337,9 @@ def test_schema_object_type_validation_fails_for_arg_with_type_option(
             @GraphQLObject.resolver(
                 "hello", args={"name": GraphQLObject.argument(graphql_type=str)}
             )
+            @staticmethod
             def ipsum(*_, name: str) -> str:
-                return "Hello World!"
+                return f"Hello {name}!"
 
     data_regression.check(str(exc_info.value))
 
@@ -343,8 +362,9 @@ def test_schema_object_type_validation_fails_for_arg_with_double_description(
             @GraphQLObject.resolver(
                 "hello", args={"name": GraphQLObject.argument(description="Other")}
             )
+            @staticmethod
             def ipsum(*_, name: str) -> str:
-                return "Hello World!"
+                return f"Hello {name}!"
 
     data_regression.check(str(exc_info.value))
 
@@ -355,11 +375,13 @@ def test_object_type_validation_fails_for_field_with_multiple_args(
     with pytest.raises(ValueError) as exc_info:
 
         class CustomType(GraphQLObject):
-            @GraphQLObject.field(name="hello", args={""})
+            @GraphQLObject.field(name="hello", args={""})  # type: ignore
+            @staticmethod
             def lorem(*_, a: int) -> str:
-                return "Hello World!"
+                return f"Hello {a}!"
 
             @GraphQLObject.resolver("lorem", description="Other")
+            @staticmethod
             def ipsum(*_) -> str:
                 return "Hello World!"
 
@@ -409,6 +431,7 @@ def test_object_type_validation_fails_for_alias_resolver(data_regression):
             }
 
             @GraphQLObject.resolver("hello")
+            @staticmethod
             def resolve_hello(*_):
                 return "Hello World!"
 
@@ -427,6 +450,7 @@ def test_object_type_validation_fails_for_alias_target_resolver(data_regression)
             }
 
             @GraphQLObject.resolver("welcome")
+            @staticmethod
             def resolve_welcome(*_):
                 return "Hello World!"
 
@@ -450,6 +474,7 @@ def test_schema_object_type_validation_fails_for_alias_resolver(data_regression)
             }
 
             @GraphQLObject.resolver("hello")
+            @staticmethod
             def resolve_hello(*_):
                 return "Hello World!"
 
@@ -475,6 +500,7 @@ def test_schema_object_type_validation_fails_for_alias_target_resolver(data_regr
             ok: str
 
             @GraphQLObject.resolver("ok")
+            @staticmethod
             def resolve_hello(*_):
                 return "Hello World!"
 
@@ -509,8 +535,9 @@ def test_object_type_validation_fails_for_unsupported_resolver_arg_default(
 
         class QueryType(GraphQLObject):
             @GraphQLObject.field
-            def hello(*_, name: str = InvalidType):
-                return "Hello World!"
+            @staticmethod
+            def hello(*_, name: str = InvalidType):  # type: ignore
+                return f"Hello {name}!"
 
     data_regression.check(str(exc_info.value))
 
@@ -524,8 +551,9 @@ def test_object_type_validation_fails_for_unsupported_resolver_arg_default_optio
             @GraphQLObject.field(
                 args={"name": GraphQLObject.argument(default_value=InvalidType)}
             )
+            @staticmethod
             def hello(*_, name: str):
-                return "Hello World!"
+                return f"Hello {name}!"
 
     data_regression.check(str(exc_info.value))
 
@@ -545,8 +573,9 @@ def test_schema_object_type_validation_fails_for_unsupported_resolver_arg_defaul
             )
 
             @GraphQLObject.resolver("hello")
-            def resolve_hello(*_, name: str = InvalidType):
-                return "Hello World!"
+            @staticmethod
+            def resolve_hello(*_, name: str = InvalidType):  # type: ignore
+                return f"Hello {name}!"
 
     data_regression.check(str(exc_info.value))
 
@@ -569,7 +598,8 @@ def test_schema_object_type_validation_fails_for_unsupported_resolver_arg_option
                 "hello",
                 args={"name": GraphQLObject.argument(default_value=InvalidType)},
             )
+            @staticmethod
             def resolve_hello(*_, name: str):
-                return "Hello World!"
+                return f"Hello {name}!"
 
     data_regression.check(str(exc_info.value))

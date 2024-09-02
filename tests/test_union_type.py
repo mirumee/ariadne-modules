@@ -126,7 +126,7 @@ def test_union_field_with_invalid_type_access():
         def search(*_) -> List[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
-                "InvalidType",
+                "InvalidType",  # type: ignore
             ]
 
     schema = make_executable_schema(QueryType)

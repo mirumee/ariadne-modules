@@ -353,7 +353,7 @@ def test_subscription_type(assert_schema_equals):
         """
 
         @staticmethod
-        def resolve_type(instance, *_):
+        def resolve_type(*_):
             return "Threads"
 
     class ChatSubscription(SubscriptionType):

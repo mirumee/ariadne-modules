@@ -42,7 +42,7 @@ def original_datadir() -> Path:
     return Path(__file__).parent / "snapshots"
 
 
-def pytest_sessionfinish(session, exitstatus):
+def pytest_sessionfinish(*_):
     # This will be called after all tests are done
     obtained_files = glob.glob("**/*.obtained.yml", recursive=True)
     for file in obtained_files:

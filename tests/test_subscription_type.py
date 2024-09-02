@@ -1,4 +1,4 @@
-from typing import List
+from typing import AsyncIterator, List
 
 from ariadne import gql
 from graphql import subscribe, parse
@@ -33,16 +33,19 @@ async def test_basic_subscription_without_schema(assert_schema_equals):
         message_added: Message
 
         @GraphQLSubscription.source("message_added", graphql_type=Message)
-        async def message_added_generator(obj, info):
+        @staticmethod
+        async def message_added_generator(*_):
             while True:
                 yield {"id": "some_id", "content": "message", "author": "Anon"}
 
         @GraphQLSubscription.resolver("message_added")
-        async def resolve_message_added(message, info):
+        @staticmethod
+        async def resolve_message_added(message, *_):
             return message
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -70,11 +73,10 @@ async def test_basic_subscription_without_schema(assert_schema_equals):
     query = parse("subscription { messageAdded {id content author} }")
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -89,28 +91,33 @@ async def test_basic_many_subscription_without_schema(assert_schema_equals):
         message_added: Message
 
         @GraphQLSubscription.source("message_added", graphql_type=Message)
-        async def message_added_generator(obj, info):
+        @staticmethod
+        async def message_added_generator(*_):
             while True:
                 yield {"id": "some_id", "content": "message", "author": "Anon"}
 
         @GraphQLSubscription.resolver("message_added")
-        async def resolve_message_added(message, info):
+        @staticmethod
+        async def resolve_message_added(message, *_):
             return message
 
     class SubscriptionSecondType(GraphQLSubscription):
         message_added_second: Message
 
         @GraphQLSubscription.source("message_added_second", graphql_type=Message)
-        async def message_added_generator(obj, info):
+        @staticmethod
+        async def message_added_generator(*_):
             while True:
                 yield {"id": "some_id", "content": "message", "author": "Anon"}
 
         @GraphQLSubscription.resolver("message_added_second")
-        async def resolve_message_added(message, info):
+        @staticmethod
+        async def resolve_message_added(message, *_):
             return message
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -139,11 +146,10 @@ async def test_basic_many_subscription_without_schema(assert_schema_equals):
     query = parse("subscription { messageAdded {id content author} }")
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -161,7 +167,8 @@ async def test_subscription_with_arguments_without_schema(assert_schema_equals):
             args={"channel": GraphQLObject.argument(description="Lorem ipsum.")},
             graphql_type=Message,
         )
-        async def message_added_generator(obj, info, channel: GraphQLID):
+        @staticmethod
+        async def message_added_generator(*_, channel: GraphQLID):
             while True:
                 yield {
                     "id": "some_id",
@@ -170,11 +177,15 @@ async def test_subscription_with_arguments_without_schema(assert_schema_equals):
                 }
 
         @GraphQLSubscription.field()
-        def message_added(message, info, channel: GraphQLID):
+        @staticmethod
+        def message_added(
+            message, *_, channel: GraphQLID
+        ):  # pylint: disable=unused-argument
             return message
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -205,11 +216,10 @@ async def test_subscription_with_arguments_without_schema(assert_schema_equals):
     query = parse('subscription { messageAdded(channel: "123") {id content author} }')
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -229,7 +239,8 @@ async def test_multiple_supscriptions_without_schema(assert_schema_equals):
             args={"channel": GraphQLObject.argument(description="Lorem ipsum.")},
             graphql_type=Message,
         )
-        async def message_added_generator(obj, info, channel: GraphQLID):
+        @staticmethod
+        async def message_added_generator(*_, channel: GraphQLID):
             while True:
                 yield {
                     "id": "some_id",
@@ -240,14 +251,18 @@ async def test_multiple_supscriptions_without_schema(assert_schema_equals):
         @GraphQLSubscription.resolver(
             "message_added",
         )
-        async def resolve_message_added(message, *_, channel: GraphQLID):
+        @staticmethod
+        async def resolve_message_added(
+            message, *_, channel: GraphQLID  # pylint: disable=unused-argument
+        ):
             return message
 
         @GraphQLSubscription.source(
             "user_joined",
             graphql_type=Message,
         )
-        async def user_joined_generator(obj, info):
+        @staticmethod
+        async def user_joined_generator(*_):
             while True:
                 yield {
                     "id": "some_id",
@@ -257,11 +272,13 @@ async def test_multiple_supscriptions_without_schema(assert_schema_equals):
         @GraphQLSubscription.resolver(
             "user_joined",
         )
+        @staticmethod
         async def resolve_user_joined(user, *_):
             return user
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -287,7 +304,7 @@ async def test_multiple_supscriptions_without_schema(assert_schema_equals):
           content: String!
           author: String!
         }
-        
+
         type User {
           id: ID!
           username: String!
@@ -298,11 +315,10 @@ async def test_multiple_supscriptions_without_schema(assert_schema_equals):
     query = parse("subscription { userJoined {id username} }")
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -319,7 +335,8 @@ async def test_subscription_with_complex_data_without_schema(assert_schema_equal
             args={"channel_id": GraphQLObject.argument(description="Lorem ipsum.")},
             graphql_type=List[Message],
         )
-        async def message_added_generator(obj, info, channel_id: GraphQLID):
+        @staticmethod
+        async def message_added_generator(*_, channel_id: GraphQLID):
             while True:
                 yield [
                     {
@@ -332,11 +349,15 @@ async def test_subscription_with_complex_data_without_schema(assert_schema_equal
         @GraphQLSubscription.resolver(
             "messages_in_channel",
         )
-        async def resolve_message_added(message, *_, channel_id: GraphQLID):
+        @staticmethod
+        async def resolve_message_added(
+            message, *_, channel_id: GraphQLID
+        ):  # pylint: disable=unused-argument
             return message
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -369,11 +390,10 @@ async def test_subscription_with_complex_data_without_schema(assert_schema_equal
     )
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -393,7 +413,8 @@ async def test_subscription_with_union_without_schema(assert_schema_equals):
         @GraphQLSubscription.source(
             "notification_received", description="hello", graphql_type=Message
         )
-        async def message_added_generator(obj, info):
+        @staticmethod
+        async def message_added_generator(*_):
             while True:
                 yield Message(id=1, content="content", author="anon")
 
@@ -401,11 +422,12 @@ async def test_subscription_with_union_without_schema(assert_schema_equals):
             "notification_received",
         )
         @staticmethod
-        async def resolve_message_added(message: Message, info):
+        async def resolve_message_added(message: Message, *_):
             return message
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -442,11 +464,10 @@ async def test_subscription_with_union_without_schema(assert_schema_equals):
     query = parse("subscription { notificationReceived { ... on Message { id } } }")
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -465,16 +486,19 @@ async def test_basic_subscription_with_schema(assert_schema_equals):
         )
 
         @GraphQLSubscription.source("messageAdded", graphql_type=Message)
-        async def message_added_generator(obj, info):
+        @staticmethod
+        async def message_added_generator(*_):
             while True:
                 yield {"id": "some_id", "content": "message", "author": "Anon"}
 
         @GraphQLSubscription.resolver("messageAdded")
-        async def resolve_message_added(message, info):
+        @staticmethod
+        async def resolve_message_added(message, *_):
             return message
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -502,11 +526,10 @@ async def test_basic_subscription_with_schema(assert_schema_equals):
     query = parse("subscription { messageAdded {id content author} }")
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -530,7 +553,8 @@ async def test_subscription_with_arguments_with_schema(assert_schema_equals):
             "messageAdded",
             graphql_type=Message,
         )
-        async def message_added_generator(obj, info, channel: GraphQLID):
+        @staticmethod
+        async def message_added_generator(*_, channel: GraphQLID):
             while True:
                 yield {
                     "id": "some_id",
@@ -541,11 +565,15 @@ async def test_subscription_with_arguments_with_schema(assert_schema_equals):
         @GraphQLSubscription.resolver(
             "messageAdded",
         )
-        async def resolve_message_added(message, *_, channel: GraphQLID):
+        @staticmethod
+        async def resolve_message_added(
+            message, *_, channel: GraphQLID
+        ):  # pylint: disable=unused-argument
             return message
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -573,11 +601,10 @@ async def test_subscription_with_arguments_with_schema(assert_schema_equals):
     query = parse('subscription { messageAdded(channel: "123") {id content author} }')
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -601,7 +628,8 @@ async def test_multiple_supscriptions_with_schema(assert_schema_equals):
         @GraphQLSubscription.source(
             "messageAdded",
         )
-        async def message_added_generator(obj, info):
+        @staticmethod
+        async def message_added_generator(*_):
             while True:
                 yield {
                     "id": "some_id",
@@ -612,13 +640,15 @@ async def test_multiple_supscriptions_with_schema(assert_schema_equals):
         @GraphQLSubscription.resolver(
             "messageAdded",
         )
+        @staticmethod
         async def resolve_message_added(message, *_):
             return message
 
         @GraphQLSubscription.source(
             "userJoined",
         )
-        async def user_joined_generator(obj, info):
+        @staticmethod
+        async def user_joined_generator(*_):
             while True:
                 yield {
                     "id": "some_id",
@@ -628,11 +658,13 @@ async def test_multiple_supscriptions_with_schema(assert_schema_equals):
         @GraphQLSubscription.resolver(
             "userJoined",
         )
+        @staticmethod
         async def resolve_user_joined(user, *_):
             return user
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -666,11 +698,10 @@ async def test_multiple_supscriptions_with_schema(assert_schema_equals):
     query = parse("subscription { userJoined {id username} }")
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -691,7 +722,10 @@ async def test_subscription_with_complex_data_with_schema(assert_schema_equals):
         @GraphQLSubscription.source(
             "messagesInChannel",
         )
-        async def message_added_generator(obj, info, channelId: GraphQLID):
+        @staticmethod
+        async def message_added_generator(
+            obj, info, channelId: GraphQLID
+        ):  # pylint: disable=unused-argument
             while True:
                 yield [
                     {
@@ -704,11 +738,15 @@ async def test_subscription_with_complex_data_with_schema(assert_schema_equals):
         @GraphQLSubscription.resolver(
             "messagesInChannel",
         )
-        async def resolve_message_added(message, *_, channelId: GraphQLID):
+        @staticmethod
+        async def resolve_message_added(
+            message, *_, channelId: GraphQLID
+        ):  # pylint: disable=unused-argument
             return message
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -738,11 +776,10 @@ async def test_subscription_with_complex_data_with_schema(assert_schema_equals):
     )
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -767,7 +804,10 @@ async def test_subscription_with_union_with_schema(assert_schema_equals):
         __aliases__ = {"name": "title"}
 
         @GraphQLSubscription.resolver("notificationReceived")
-        async def resolve_message_added(message, info, channel: str):
+        @staticmethod
+        async def resolve_message_added(
+            message, *_, channel: str  # pylint: disable=unused-argument
+        ):
             return message
 
         @GraphQLSubscription.source(
@@ -779,12 +819,16 @@ async def test_subscription_with_union_with_schema(assert_schema_equals):
                 )
             },
         )
-        async def message_added_generator(obj, info, channel: str):
+        @staticmethod
+        async def message_added_generator(
+            *_, channel: str  # pylint: disable=unused-argument
+        ):
             while True:
                 yield Message(id=1, content="content", author="anon")
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -827,11 +871,10 @@ async def test_subscription_with_union_with_schema(assert_schema_equals):
     )
     sub = await subscribe(schema, query)
 
-    # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
@@ -847,7 +890,8 @@ async def test_subscription_descriptions_without_schema(assert_schema_equals):
         @GraphQLSubscription.source(
             "notification_received", description="hello", graphql_type=Message
         )
-        async def message_added_generator(obj, info):
+        @staticmethod
+        async def message_added_generator(*_):
             while True:
                 yield Message(id=1, content="content", author="anon")
 
@@ -855,11 +899,12 @@ async def test_subscription_descriptions_without_schema(assert_schema_equals):
             "notification_received",
         )
         @staticmethod
-        async def resolve_message_added(message: Message, info):
+        async def resolve_message_added(message: Message, *_):
             return message
 
     class QueryType(GraphQLObject):
         @GraphQLObject.field(graphql_type=str)
+        @staticmethod
         def search_sth(*_) -> str:
             return "search"
 
@@ -897,10 +942,10 @@ async def test_subscription_descriptions_without_schema(assert_schema_equals):
     sub = await subscribe(schema, query)
 
     # Ensure the subscription is an async iterator
-    assert hasattr(sub, "__aiter__")
+    assert isinstance(sub, AsyncIterator), "Subscription should be an async iterator"
 
-    # Fetch the first result
-    result = await sub.__anext__()
+    # Fetch the first result using anext
+    result = await anext(sub)
 
     # Validate the result
     assert not result.errors
