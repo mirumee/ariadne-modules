@@ -1,3 +1,4 @@
+# pylint: disable=unnecessary-dunder-call
 from typing import List
 
 from ariadne import gql
