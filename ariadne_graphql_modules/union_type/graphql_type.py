@@ -3,7 +3,8 @@ from typing import Any, Optional, cast
 
 from graphql import NamedTypeNode, NameNode, UnionTypeDefinitionNode
 
-from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLType
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 from ariadne_graphql_modules.description import get_description_node
 from ariadne_graphql_modules.object_type.graphql_type import GraphQLObject
 from ariadne_graphql_modules.union_type.models import GraphQLUnionModel

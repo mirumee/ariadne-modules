@@ -19,7 +19,8 @@ from graphql import (
     parse,
 )
 
-from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLType
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 from ariadne_graphql_modules.roots import ROOTS_NAMES, merge_root_nodes
 from ariadne_graphql_modules.sort import sort_schema_document
 

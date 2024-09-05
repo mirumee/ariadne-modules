@@ -9,7 +9,8 @@ from graphql import (
     StringValueNode,
 )
 
-from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel
+from ariadne_graphql_modules.base import GraphQLMetadata
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 from ariadne_graphql_modules.base_object_type import (
     GraphQLBaseObject,
     GraphQLFieldData,
@@ -100,9 +101,9 @@ class GraphQLSubscription(GraphQLBaseObject):
                     for arg_name, arg_options in final_args.items():
                         arg_description = get_description_node(arg_options.description)
                         if arg_description:
-                            args_descriptions[cls_attr.field][arg_name] = (
-                                arg_description
-                            )
+                            args_descriptions[cls_attr.field][
+                                arg_name
+                            ] = arg_description
 
                         arg_default = arg_options.default_value
                         if arg_default is not None:

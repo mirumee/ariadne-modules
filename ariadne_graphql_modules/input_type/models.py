@@ -4,7 +4,7 @@ from typing import Any
 from ariadne import InputType as InputTypeBindable
 from graphql import GraphQLSchema
 
-from ariadne_graphql_modules.base import GraphQLModel
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 
 
 @dataclass(frozen=True)

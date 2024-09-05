@@ -5,7 +5,8 @@ from typing import Any, Optional, Union, cast
 
 from graphql import InputObjectTypeDefinitionNode, InputValueDefinitionNode, NameNode
 
-from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLType
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 from ariadne_graphql_modules.convert_name import (
     convert_graphql_name_to_python,
     convert_python_name_to_graphql,

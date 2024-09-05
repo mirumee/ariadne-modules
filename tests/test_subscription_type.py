@@ -180,7 +180,9 @@ async def test_subscription_with_arguments_without_schema(assert_schema_equals):
 
         @GraphQLSubscription.field
         @staticmethod
-        def message_added(message, *_, channel: GraphQLID):  # pylint: disable=unused-argument
+        def message_added(
+            message, *_, channel: GraphQLID
+        ):  # pylint: disable=unused-argument
             return message
 
     class QueryType(GraphQLObject):
@@ -354,7 +356,9 @@ async def test_subscription_with_complex_data_without_schema(assert_schema_equal
             "messages_in_channel",
         )
         @staticmethod
-        async def resolve_message_added(message, *_, channel_id: GraphQLID):  # pylint: disable=unused-argument
+        async def resolve_message_added(
+            message, *_, channel_id: GraphQLID
+        ):  # pylint: disable=unused-argument
             return message
 
     class QueryType(GraphQLObject):
@@ -571,7 +575,9 @@ async def test_subscription_with_arguments_with_schema(assert_schema_equals):
             "messageAdded",
         )
         @staticmethod
-        async def resolve_message_added(message, *_, channel: GraphQLID):  # pylint: disable=unused-argument
+        async def resolve_message_added(
+            message, *_, channel: GraphQLID
+        ):  # pylint: disable=unused-argument
             return message
 
     class QueryType(GraphQLObject):
@@ -742,7 +748,9 @@ async def test_subscription_with_complex_data_with_schema(assert_schema_equals):
             "messagesInChannel",
         )
         @staticmethod
-        async def resolve_message_added(message, *_, channel_id: GraphQLID):  # pylint: disable=unused-argument
+        async def resolve_message_added(
+            message, *_, channel_id: GraphQLID
+        ):  # pylint: disable=unused-argument
             return message
 
     class QueryType(GraphQLObject):

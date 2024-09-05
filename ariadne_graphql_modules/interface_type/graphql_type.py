@@ -8,7 +8,8 @@ from graphql import (
     NameNode,
 )
 
-from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel
+from ariadne_graphql_modules.base import GraphQLMetadata
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 from ariadne_graphql_modules.base_object_type import (
     GraphQLBaseObject,
     GraphQLFieldData,

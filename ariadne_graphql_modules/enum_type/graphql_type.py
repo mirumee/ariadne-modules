@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from enum import Enum
 from inspect import isclass
 from typing import Any, Optional, Union, cast
@@ -141,8 +140,7 @@ class GraphQLEnum(GraphQLType):
         validate_description(cls, definition)
 
         members_names = {
-            value.name.value
-            for value in definition.values  # pylint: disable=no-member
+            value.name.value for value in definition.values  # pylint: disable=no-member
         }
         if not members_names:
             raise ValueError(
@@ -251,99 +249,3 @@ class GraphQLEnum(GraphQLType):
             f"Expected members to be of type Dict[str, Any], List[str], or Enum."
             f"Got {type(members).__name__} instead."
         )
-
-
-def create_graphql_enum_model(  # noqa: C901
-    enum: type[Enum],
-    *,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    members_descriptions: Optional[dict[str, str]] = None,
-    members_include: Optional[Iterable[str]] = None,
-    members_exclude: Optional[Iterable[str]] = None,
-) -> "GraphQLEnumModel":
-    if members_include and members_exclude:
-        raise ValueError(
-            "'members_include' and 'members_exclude' options are mutually exclusive."
-        )
-
-    if hasattr(enum, "__get_graphql_model__"):
-        return cast(GraphQLEnumModel, enum.__get_graphql_model__())
-
-    if not name:
-        if hasattr(enum, "__get_graphql_name__"):
-            name = cast("str", enum.__get_graphql_name__())
-        else:
-            name = enum.__name__
-
-    members: dict[str, Any] = {i.name: i for i in enum}
-    final_members: dict[str, Any] = {}
-
-    if members_include:
-        for key, value in members.items():
-            if key in members_include:
-                final_members[key] = value
-    elif members_exclude:
-        for key, value in members.items():
-            if key not in members_exclude:
-                final_members[key] = value
-    else:
-        final_members = members
-
-    members_descriptions = members_descriptions or {}
-    for member in members_descriptions:
-        if member not in final_members:
-            raise ValueError(
-                f"Member description was specified for a member '{member}' "
-                "not present in final GraphQL enum."
-            )
-
-    return GraphQLEnumModel(
-        name=name,
-        members=final_members,
-        ast_type=EnumTypeDefinitionNode,
-        ast=EnumTypeDefinitionNode(
-            name=NameNode(value=name),
-            description=get_description_node(description),
-            values=tuple(
-                EnumValueDefinitionNode(
-                    name=NameNode(value=value_name),
-                    description=get_description_node(
-                        members_descriptions.get(value_name)
-                    ),
-                )
-                for value_name in final_members
-            ),
-        ),
-    )
-
-
-def graphql_enum(
-    cls=None,
-    *,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    members_descriptions: Optional[dict[str, str]] = None,
-    members_include: Optional[Iterable[str]] = None,
-    members_exclude: Optional[Iterable[str]] = None,
-):
-    def graphql_enum_decorator(cls):
-        graphql_model = create_graphql_enum_model(
-            cls,
-            name=name,
-            description=description,
-            members_descriptions=members_descriptions,
-            members_include=members_include,
-            members_exclude=members_exclude,
-        )
-
-        def __get_graphql_model__(*_) -> GraphQLEnumModel:  # noqa: N807
-            return graphql_model
-
-        setattr(cls, "__get_graphql_model__", classmethod(__get_graphql_model__))
-        return cls
-
-    if cls:
-        return graphql_enum_decorator(cls)
-
-    return graphql_enum_decorator

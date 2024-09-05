@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Optional, Union
 
-from graphql import GraphQLSchema, TypeDefinitionNode
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 
 
 class GraphQLType:
@@ -35,7 +35,7 @@ class GraphQLType:
         return name
 
     @classmethod
-    def __get_graphql_model__(cls, metadata: "GraphQLMetadata") -> "GraphQLModel":
+    def __get_graphql_model__(cls, metadata: "GraphQLMetadata") -> GraphQLModel:
         raise NotImplementedError(
             "Subclasses of 'GraphQLType' must define '__get_graphql_model__'"
         )
@@ -46,16 +46,6 @@ class GraphQLType:
     ) -> Iterable[Union[type["GraphQLType"], type[Enum]]]:
         """Returns iterable with GraphQL types associated with this type"""
         return [cls]
-
-
-@dataclass(frozen=True)
-class GraphQLModel:
-    name: str
-    ast: TypeDefinitionNode
-    ast_type: type[TypeDefinitionNode]
-
-    def bind_to_schema(self, schema: GraphQLSchema):
-        pass
 
 
 @dataclass(frozen=True)
@@ -85,7 +75,10 @@ class GraphQLMetadata:
             if hasattr(graphql_type, "__get_graphql_model__"):
                 self.models[graphql_type] = graphql_type.__get_graphql_model__(self)
             elif issubclass(graphql_type, Enum):
-                from ariadne_graphql_modules.enum_type import create_graphql_enum_model
+                # pylint: disable=import-outside-toplevel
+                from ariadne_graphql_modules.enum_type.enum_model_utils import (
+                    create_graphql_enum_model,
+                )
 
                 self.models[graphql_type] = create_graphql_enum_model(graphql_type)
             else:

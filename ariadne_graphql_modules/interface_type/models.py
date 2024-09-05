@@ -5,7 +5,7 @@ from ariadne import InterfaceType
 from ariadne.types import Resolver
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLTypeResolver
 
-from ariadne_graphql_modules.base import GraphQLModel
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 
 
 @dataclass(frozen=True)

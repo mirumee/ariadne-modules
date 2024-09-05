@@ -14,7 +14,8 @@ from graphql import (
     StringValueNode,
 )
 
-from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLType
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 from ariadne_graphql_modules.base_object_type.graphql_field import (
     GraphQLClassData,
     GraphQLFieldData,
@@ -115,9 +116,9 @@ class GraphQLBaseObject(GraphQLType):
                     for arg_name, arg_options in final_args.items():
                         arg_description = get_description_node(arg_options.description)
                         if arg_description:
-                            args_descriptions[cls_attr.field][arg_name] = (
-                                arg_description
-                            )
+                            args_descriptions[cls_attr.field][
+                                arg_name
+                            ] = arg_description
 
                         if arg_options.default_value is not None:
                             args_defaults[cls_attr.field][arg_name] = get_value_node(

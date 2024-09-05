@@ -21,7 +21,8 @@ from ariadne_graphql_modules import (
     GraphQLSubscriptionModel,
     GraphQLUnionModel,
 )
-from ariadne_graphql_modules.base import GraphQLModel, GraphQLType
+from ariadne_graphql_modules.base import GraphQLType
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 from ariadne_graphql_modules.v1.bases import BaseType, BindableType
 from ariadne_graphql_modules.v1.directive_type import DirectiveType
 from ariadne_graphql_modules.v1.enum_type import EnumType

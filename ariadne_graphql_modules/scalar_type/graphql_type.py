@@ -7,7 +7,8 @@ from graphql import (
     value_from_ast_untyped,
 )
 
-from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLType
+from ariadne_graphql_modules.base_graphql_model import GraphQLModel
 from ariadne_graphql_modules.description import get_description_node
 from ariadne_graphql_modules.scalar_type.models import GraphQLScalarModel
 from ariadne_graphql_modules.scalar_type.validators import (
