@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union, cast
+from typing import Any, Union, cast
 
 from graphql import (
     DefinitionNode,
@@ -15,12 +15,12 @@ from graphql import (
     TypeNode,
 )
 
-from .roots import ROOTS_NAMES
+from ariadne_graphql_modules.roots import ROOTS_NAMES
 
 
 def sort_schema_document(document: DocumentNode) -> DocumentNode:
-    unsorted_nodes: Dict[str, TypeDefinitionNode] = {}
-    sorted_nodes: List[Union[TypeDefinitionNode, DefinitionNode]] = []
+    unsorted_nodes: dict[str, TypeDefinitionNode] = {}
+    sorted_nodes: list[Union[TypeDefinitionNode, DefinitionNode]] = []
 
     for node in document.definitions:
         cast_node = cast(TypeDefinitionNode, node)
@@ -41,9 +41,9 @@ def sort_schema_document(document: DocumentNode) -> DocumentNode:
 
 
 def get_sorted_directives(
-    unsorted_nodes: Dict[str, Any]
-) -> List[DirectiveDefinitionNode]:
-    directives: List[DirectiveDefinitionNode] = []
+    unsorted_nodes: dict[str, Any],
+) -> list[DirectiveDefinitionNode]:
+    directives: list[DirectiveDefinitionNode] = []
     for name, model in tuple(unsorted_nodes.items()):
         if isinstance(model, DirectiveDefinitionNode):
             directives.append(unsorted_nodes.pop(name))
@@ -51,9 +51,9 @@ def get_sorted_directives(
 
 
 def get_sorted_scalars(
-    unsorted_nodes: Dict[str, Any]
-) -> List[ScalarTypeDefinitionNode]:
-    scalars: List[ScalarTypeDefinitionNode] = []
+    unsorted_nodes: dict[str, Any],
+) -> list[ScalarTypeDefinitionNode]:
+    scalars: list[ScalarTypeDefinitionNode] = []
     for name, model in tuple(unsorted_nodes.items()):
         if isinstance(model, ScalarTypeDefinitionNode):
             scalars.append(unsorted_nodes.pop(name))
@@ -63,9 +63,9 @@ def get_sorted_scalars(
 
 def get_sorted_type(
     root: str,
-    unsorted_nodes: Dict[str, TypeDefinitionNode],
-) -> List[TypeDefinitionNode]:
-    sorted_nodes: List[TypeDefinitionNode] = []
+    unsorted_nodes: dict[str, TypeDefinitionNode],
+) -> list[TypeDefinitionNode]:
+    sorted_nodes: list[TypeDefinitionNode] = []
     if root not in unsorted_nodes:
         return sorted_nodes
 
@@ -82,9 +82,9 @@ def get_sorted_type(
 
 def get_sorted_object_dependencies(
     root_node: Union[ObjectTypeDefinitionNode, InterfaceTypeDefinitionNode],
-    unsorted_nodes: Dict[str, TypeDefinitionNode],
-) -> List[TypeDefinitionNode]:
-    sorted_nodes: List[TypeDefinitionNode] = []
+    unsorted_nodes: dict[str, TypeDefinitionNode],
+) -> list[TypeDefinitionNode]:
+    sorted_nodes: list[TypeDefinitionNode] = []
 
     if root_node.interfaces:
         for interface in root_node.interfaces:
@@ -111,9 +111,9 @@ def get_sorted_object_dependencies(
 
 def get_sorted_input_dependencies(
     root_node: InputObjectTypeDefinitionNode,
-    unsorted_nodes: Dict[str, TypeDefinitionNode],
-) -> List[TypeDefinitionNode]:
-    sorted_nodes: List[TypeDefinitionNode] = []
+    unsorted_nodes: dict[str, TypeDefinitionNode],
+) -> list[TypeDefinitionNode]:
+    sorted_nodes: list[TypeDefinitionNode] = []
 
     for field in root_node.fields:
         field_type = unwrap_type_name(field.type)

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, cast
+from typing import Optional, cast
 
 from graphql import (
     ConstDirectiveNode,
@@ -11,13 +11,13 @@ from graphql import (
     TypeDefinitionNode,
 )
 
-DefinitionsList = List[DefinitionNode]
+DefinitionsList = list[DefinitionNode]
 
 ROOTS_NAMES = ("Query", "Mutation", "Subscription")
 
 
 def merge_root_nodes(document_node: DocumentNode) -> DocumentNode:
-    roots_definitions: Dict[str, List[TypeDefinitionNode]] = {
+    roots_definitions: dict[str, list[TypeDefinitionNode]] = {
         root: [] for root in ROOTS_NAMES
     }
     final_definitions: DefinitionsList = []
@@ -40,13 +40,13 @@ def merge_root_nodes(document_node: DocumentNode) -> DocumentNode:
     return DocumentNode(definitions=tuple(final_definitions))
 
 
-def merge_nodes(nodes: List[TypeDefinitionNode]) -> ObjectTypeDefinitionNode:
+def merge_nodes(nodes: list[TypeDefinitionNode]) -> ObjectTypeDefinitionNode:
     root_name = nodes[0].name.value
 
     description: Optional[StringValueNode] = None
-    interfaces: List[NamedTypeNode] = []
-    directives: List[ConstDirectiveNode] = []
-    fields: Dict[str, FieldDefinitionNode] = {}
+    interfaces: list[NamedTypeNode] = []
+    directives: list[ConstDirectiveNode] = []
+    fields: dict[str, FieldDefinitionNode] = {}
 
     for node in nodes:
         node = cast(ObjectTypeDefinitionNode, node)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generic, Optional, TypeVar, cast
+from typing import Any, Generic, Optional, TypeVar, cast
 
 from graphql import (
     NameNode,
@@ -7,15 +7,13 @@ from graphql import (
     value_from_ast_untyped,
 )
 
-from ..description import get_description_node
-from .models import GraphQLScalarModel
-
-from ..utils import parse_definition
-
-from .validators import validate_scalar_type_with_schema
-
-from ..base import GraphQLMetadata, GraphQLModel, GraphQLType
-
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.description import get_description_node
+from ariadne_graphql_modules.scalar_type.models import GraphQLScalarModel
+from ariadne_graphql_modules.scalar_type.validators import (
+    validate_scalar_type_with_schema,
+)
+from ariadne_graphql_modules.utils import parse_definition
 
 T = TypeVar("T")
 
@@ -94,7 +92,7 @@ class GraphQLScalar(GraphQLType, Generic[T]):
 
     @classmethod
     def parse_literal(
-        cls, node: ValueNode, variables: Optional[Dict[str, Any]] = None
+        cls, node: ValueNode, variables: Optional[dict[str, Any]] = None
     ) -> Any:
         return cls.parse_value(value_from_ast_untyped(node, variables))
 

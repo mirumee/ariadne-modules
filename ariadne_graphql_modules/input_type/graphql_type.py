@@ -1,30 +1,31 @@
+from collections.abc import Iterable
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Dict, Iterable, List, Optional, Type, Union, cast
+from typing import Any, Optional, Union, cast
 
 from graphql import InputObjectTypeDefinitionNode, InputValueDefinitionNode, NameNode
 
-from .graphql_field import GraphQLInputField
-from ..base import GraphQLMetadata, GraphQLModel, GraphQLType
-from ..convert_name import (
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.convert_name import (
     convert_graphql_name_to_python,
     convert_python_name_to_graphql,
 )
-from ..description import get_description_node
-from .models import GraphQLInputModel
-from .validators import (
+from ariadne_graphql_modules.description import get_description_node
+from ariadne_graphql_modules.input_type.graphql_field import GraphQLInputField
+from ariadne_graphql_modules.input_type.models import GraphQLInputModel
+from ariadne_graphql_modules.input_type.validators import (
     validate_input_type,
     validate_input_type_with_schema,
 )
-from ..typing import get_graphql_type, get_type_node
-from ..value import get_value_node
-from ..utils import parse_definition
+from ariadne_graphql_modules.typing import get_graphql_type, get_type_node
+from ariadne_graphql_modules.utils import parse_definition
+from ariadne_graphql_modules.value import get_value_node
 
 
 class GraphQLInput(GraphQLType):
-    __kwargs__: Dict[str, Any]
+    __kwargs__: dict[str, Any]
     __schema__: Optional[str]
-    __out_names__: Optional[Dict[str, str]] = None
+    __out_names__: Optional[dict[str, str]] = None
 
     def __init__(self, **kwargs: Any):
         for kwarg in kwargs:
@@ -53,7 +54,7 @@ class GraphQLInput(GraphQLType):
             cls.__kwargs__ = validate_input_type(cls)
 
     @classmethod
-    def create_from_data(cls, data: Dict[str, Any]) -> "GraphQLInput":
+    def create_from_data(cls, data: dict[str, Any]) -> "GraphQLInput":
         return cls(**data)
 
     @classmethod
@@ -73,9 +74,9 @@ class GraphQLInput(GraphQLType):
             parse_definition(InputObjectTypeDefinitionNode, cls.__schema__),
         )
 
-        out_names: Dict[str, str] = getattr(cls, "__out_names__") or {}
+        out_names: dict[str, str] = getattr(cls, "__out_names__") or {}
 
-        fields: List[InputValueDefinitionNode] = []
+        fields: list[InputValueDefinitionNode] = []
         for field in definition.fields:
             fields.append(
                 InputValueDefinitionNode(
@@ -107,14 +108,14 @@ class GraphQLInput(GraphQLType):
         cls, metadata: GraphQLMetadata, name: str
     ) -> "GraphQLInputModel":
         type_hints = cls.__annotations__  # pylint: disable=no-member
-        fields_instances: Dict[str, GraphQLInputField] = {
+        fields_instances: dict[str, GraphQLInputField] = {
             attr_name: getattr(cls, attr_name)
             for attr_name in dir(cls)
             if isinstance(getattr(cls, attr_name), GraphQLInputField)
         }
 
-        fields_ast: List[InputValueDefinitionNode] = []
-        out_names: Dict[str, str] = {}
+        fields_ast: list[InputValueDefinitionNode] = []
+        out_names: dict[str, str] = {}
 
         for hint_name, hint_type in type_hints.items():
             if hint_name.startswith("__"):
@@ -180,9 +181,9 @@ class GraphQLInput(GraphQLType):
     @classmethod
     def __get_graphql_types__(
         cls, _: "GraphQLMetadata"
-    ) -> Iterable[Union[Type["GraphQLType"], Type[Enum]]]:
+    ) -> Iterable[Union[type["GraphQLType"], type[Enum]]]:
         """Returns iterable with GraphQL types associated with this type"""
-        types: List[Union[Type["GraphQLType"], Type[Enum]]] = [cls]
+        types: list[Union[type[GraphQLType], type[Enum]]] = [cls]
 
         for attr_name in dir(cls):
             cls_attr = getattr(cls, attr_name)
@@ -221,7 +222,7 @@ class GraphQLInput(GraphQLType):
 
 
 def get_field_node_from_type_hint(
-    parent_type: Type[GraphQLInput],
+    parent_type: type[GraphQLInput],
     metadata: GraphQLMetadata,
     field_name: str,
     field_type: Any,

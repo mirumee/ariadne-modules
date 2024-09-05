@@ -1,8 +1,8 @@
 from datetime import date
 
+from ariadne import gql
 from graphql import graphql_sync
 
-from ariadne import gql
 from ariadne_graphql_modules import (
     GraphQLObject,
     GraphQLScalar,

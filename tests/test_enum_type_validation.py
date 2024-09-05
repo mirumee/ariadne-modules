@@ -2,8 +2,8 @@
 from enum import Enum
 
 import pytest
-
 from ariadne import gql
+
 from ariadne_graphql_modules import GraphQLEnum
 
 

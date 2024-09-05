@@ -1,7 +1,7 @@
 # pylint: disable=unused-variable
 import pytest
-
 from ariadne import gql
+
 from ariadne_graphql_modules import GraphQLObject
 
 
@@ -580,7 +580,7 @@ def test_schema_object_type_validation_fails_for_unsupported_resolver_arg_defaul
     data_regression.check(str(exc_info.value))
 
 
-def test_schema_object_type_validation_fails_for_unsupported_resolver_arg_option_default(
+def test_invalid_resolver_arg_option_default(
     data_regression,
 ):
     with pytest.raises(TypeError) as exc_info:

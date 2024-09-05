@@ -1,7 +1,7 @@
 # pylint: disable=unused-variable
 import pytest
-
 from ariadne import gql
+
 from ariadne_graphql_modules import GraphQLInput
 
 

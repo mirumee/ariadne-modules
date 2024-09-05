@@ -1,34 +1,34 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from graphql import FieldDefinitionNode, ObjectTypeDefinitionNode, TypeDefinitionNode
 
-from ..convert_name import convert_python_name_to_graphql
-from .graphql_field import (
+from ariadne_graphql_modules.base_object_type.graphql_field import (
     GraphQLObjectField,
     GraphQLObjectFieldArg,
     GraphQLObjectResolver,
     GraphQLObjectSource,
 )
-from .utils import (
+from ariadne_graphql_modules.base_object_type.utils import (
     get_field_args_from_resolver,
     get_field_args_from_subscriber,
 )
-from ..validators import validate_description, validate_name
-from ..value import get_value_node
-from ..utils import parse_definition
+from ariadne_graphql_modules.convert_name import convert_python_name_to_graphql
+from ariadne_graphql_modules.utils import parse_definition
+from ariadne_graphql_modules.validators import validate_description, validate_name
+from ariadne_graphql_modules.value import get_value_node
 
 if TYPE_CHECKING:
-    from .graphql_type import GraphQLBaseObject
+    from ariadne_graphql_modules.base_object_type.graphql_type import GraphQLBaseObject
 
 
 @dataclass
 class GraphQLObjectValidationData:
-    aliases: Dict[str, str]
-    fields_attrs: List[str]
-    fields_instances: Dict[str, GraphQLObjectField]
-    resolvers_instances: Dict[str, GraphQLObjectResolver]
-    sources_instances: Dict[str, GraphQLObjectSource]
+    aliases: dict[str, str]
+    fields_attrs: list[str]
+    fields_instances: dict[str, GraphQLObjectField]
+    resolvers_instances: dict[str, GraphQLObjectResolver]
+    sources_instances: dict[str, GraphQLObjectSource]
 
 
 def get_all_annotations(cls):
@@ -38,10 +38,10 @@ def get_all_annotations(cls):
     return annotations
 
 
-def validate_object_type_with_schema(
-    cls: Type["GraphQLBaseObject"],
-    valid_type: Type[TypeDefinitionNode] = ObjectTypeDefinitionNode,
-) -> Dict[str, Any]:
+def validate_object_type_with_schema(  # noqa: C901
+    cls: type["GraphQLBaseObject"],
+    valid_type: type[TypeDefinitionNode] = ObjectTypeDefinitionNode,
+) -> dict[str, Any]:
     definition = cast(
         ObjectTypeDefinitionNode, parse_definition(valid_type, cls.__schema__)
     )
@@ -63,13 +63,13 @@ def validate_object_type_with_schema(
             "with declaration for an object type without any fields. "
         )
 
-    field_names: List[str] = [f.name.value for f in definition.fields]
-    field_definitions: Dict[str, FieldDefinitionNode] = {
+    field_names: list[str] = [f.name.value for f in definition.fields]
+    field_definitions: dict[str, FieldDefinitionNode] = {
         f.name.value: f for f in definition.fields
     }
 
-    fields_resolvers: List[str] = []
-    source_fields: List[str] = []
+    fields_resolvers: list[str] = []
+    source_fields: list[str] = []
     valid_fields: str = ""
 
     for attr_name in dir(cls):
@@ -213,15 +213,15 @@ def validate_object_type_with_schema(
                     cls, cls_attr.field, arg_name, arg_obj.default_value
                 )
 
-    aliases: Dict[str, str] = getattr(cls, "__aliases__", None) or {}
+    aliases: dict[str, str] = getattr(cls, "__aliases__", None) or {}
     validate_object_aliases(cls, aliases, field_names, fields_resolvers)
 
     return get_object_type_with_schema_kwargs(cls, aliases, field_names)
 
 
 def validate_object_type_without_schema(
-    cls: Type["GraphQLBaseObject"],
-) -> Dict[str, Any]:
+    cls: type["GraphQLBaseObject"],
+) -> dict[str, Any]:
     data = get_object_type_validation_data(cls)
 
     # Alias target is not present in schema as a field if its not an
@@ -242,7 +242,7 @@ def validate_object_type_without_schema(
     validate_object_fields_args(cls)
 
     # Gather names of field attrs with defined resolver
-    fields_resolvers: List[str] = []
+    fields_resolvers: list[str] = []
     for attr_name, field_instance in data.fields_instances.items():
         if field_instance.resolver:
             fields_resolvers.append(attr_name)
@@ -255,11 +255,11 @@ def validate_object_type_without_schema(
 
 
 def validate_object_unique_graphql_names(
-    cls: Type["GraphQLBaseObject"],
-    fields_attrs: List[str],
-    fields_instances: Dict[str, GraphQLObjectField],
+    cls: type["GraphQLBaseObject"],
+    fields_attrs: list[str],
+    fields_instances: dict[str, GraphQLObjectField],
 ):
-    graphql_names: List[str] = []
+    graphql_names: list[str] = []
     for attr_name in fields_attrs:
         if attr_name in fields_instances and fields_instances[attr_name].name:
             attr_graphql_name = fields_instances[attr_name].name
@@ -281,12 +281,12 @@ def validate_object_unique_graphql_names(
 
 
 def validate_object_resolvers(
-    cls: Type["GraphQLBaseObject"],
-    fields_names: List[str],
-    fields_instances: Dict[str, GraphQLObjectField],
-    resolvers_instances: Dict[str, GraphQLObjectResolver],
+    cls: type["GraphQLBaseObject"],
+    fields_names: list[str],
+    fields_instances: dict[str, GraphQLObjectField],
+    resolvers_instances: dict[str, GraphQLObjectResolver],
 ):
-    resolvers_fields: List[str] = []
+    resolvers_fields: list[str] = []
 
     for field_attr, field in fields_instances.items():
         if field.resolver:
@@ -326,11 +326,11 @@ def validate_object_resolvers(
 
 
 def validate_object_subscribers(
-    cls: Type["GraphQLBaseObject"],
-    fields_names: List[str],
-    sources_instances: Dict[str, GraphQLObjectSource],
+    cls: type["GraphQLBaseObject"],
+    fields_names: list[str],
+    sources_instances: dict[str, GraphQLObjectSource],
 ):
-    source_fields: List[str] = []
+    source_fields: list[str] = []
 
     for key, source in sources_instances.items():
         if not isinstance(source.field, str):
@@ -365,7 +365,7 @@ def validate_object_subscribers(
                     )
 
 
-def validate_object_fields_args(cls: Type["GraphQLBaseObject"]):
+def validate_object_fields_args(cls: type["GraphQLBaseObject"]):
     for field_name in dir(cls):
         field_instance = getattr(cls, field_name)
         if (
@@ -376,7 +376,7 @@ def validate_object_fields_args(cls: Type["GraphQLBaseObject"]):
 
 
 def validate_object_field_args(
-    cls: Type["GraphQLBaseObject"],
+    cls: type["GraphQLBaseObject"],
     field_name: str,
     field_instance: Union["GraphQLObjectField", "GraphQLObjectResolver"],
 ):
@@ -393,7 +393,7 @@ def validate_object_field_args(
 
     resolver_args_names = list(resolver_args.keys())
     if resolver_args_names:
-        error_help = "expected one of: '%s'" % ("', '".join(resolver_args_names))
+        error_help = "expected one of: '{}'".format("', '".join(resolver_args_names))
     else:
         error_help = "function accepts no extra arguments"
 
@@ -420,10 +420,10 @@ def validate_object_field_args(
 
 
 def validate_object_aliases(
-    cls: Type["GraphQLBaseObject"],
-    aliases: Dict[str, str],
-    fields_names: List[str],
-    fields_resolvers: List[str],
+    cls: type["GraphQLBaseObject"],
+    aliases: dict[str, str],
+    fields_names: list[str],
+    fields_resolvers: list[str],
 ):
     for alias in aliases:
         if alias not in fields_names:
@@ -441,7 +441,7 @@ def validate_object_aliases(
 
 
 def validate_field_arg_default_value(
-    cls: Type["GraphQLBaseObject"], field_name: str, arg_name: str, default_value: Any
+    cls: type["GraphQLBaseObject"], field_name: str, arg_name: str, default_value: Any
 ):
     if default_value is None:
         return
@@ -457,18 +457,18 @@ def validate_field_arg_default_value(
         ) from e
 
 
-def get_object_type_validation_data(
-    cls: Type["GraphQLBaseObject"],
+def get_object_type_validation_data(  # noqa: C901
+    cls: type["GraphQLBaseObject"],
 ) -> GraphQLObjectValidationData:
-    fields_attrs: List[str] = [
+    fields_attrs: list[str] = [
         attr_name
         for attr_name in get_all_annotations(cls)
         if not attr_name.startswith("__")
     ]
 
-    fields_instances: Dict[str, GraphQLObjectField] = {}
-    resolvers_instances: Dict[str, GraphQLObjectResolver] = {}
-    sources_instances: Dict[str, GraphQLObjectSource] = {}
+    fields_instances: dict[str, GraphQLObjectField] = {}
+    resolvers_instances: dict[str, GraphQLObjectResolver] = {}
+    sources_instances: dict[str, GraphQLObjectSource] = {}
 
     for attr_name in dir(cls):
         if attr_name.startswith("__"):
@@ -505,10 +505,10 @@ def get_object_type_validation_data(
 
 
 def get_object_type_kwargs(
-    cls: Type["GraphQLBaseObject"],
-    aliases: Dict[str, str],
-) -> Dict[str, Any]:
-    kwargs: Dict[str, Any] = {}
+    cls: type["GraphQLBaseObject"],
+    aliases: dict[str, str],
+) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {}
 
     for attr_name in get_all_annotations(cls):
         if attr_name.startswith("__"):
@@ -538,11 +538,11 @@ def get_object_type_kwargs(
 
 
 def get_object_type_with_schema_kwargs(
-    cls: Type["GraphQLBaseObject"],
-    aliases: Dict[str, str],
-    field_names: List[str],
-) -> Dict[str, Any]:
-    kwargs: Dict[str, Any] = {}
+    cls: type["GraphQLBaseObject"],
+    aliases: dict[str, str],
+    field_names: list[str],
+) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {}
 
     for field_name in field_names:
         final_name = aliases.get(field_name, field_name)

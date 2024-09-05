@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
 from ariadne.types import Resolver, Subscriber
 from graphql import FieldDefinitionNode, NamedTypeNode
 
@@ -15,17 +16,17 @@ class GraphQLObjectFieldArg:
 
 @dataclass(frozen=True)
 class GraphQLObjectData:
-    fields: Dict[str, "GraphQLObjectField"]
-    interfaces: List[NamedTypeNode]
+    fields: dict[str, "GraphQLObjectField"]
+    interfaces: list[NamedTypeNode]
 
 
 @dataclass
 class GraphQLClassData:
-    type_aliases: Dict[str, str] = field(default_factory=dict)
-    fields_ast: Dict[str, FieldDefinitionNode] = field(default_factory=dict)
-    resolvers: Dict[str, "Resolver"] = field(default_factory=dict)
-    aliases: Dict[str, str] = field(default_factory=dict)
-    out_names: Dict[str, Dict[str, str]] = field(default_factory=dict)
+    type_aliases: dict[str, str] = field(default_factory=dict)
+    fields_ast: dict[str, FieldDefinitionNode] = field(default_factory=dict)
+    resolvers: dict[str, "Resolver"] = field(default_factory=dict)
+    aliases: dict[str, str] = field(default_factory=dict)
+    out_names: dict[str, dict[str, str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -33,7 +34,7 @@ class GraphQLObjectResolver:
     resolver: Resolver
     field: str
     description: Optional[str] = None
-    args: Optional[Dict[str, GraphQLObjectFieldArg]] = None
+    args: Optional[dict[str, GraphQLObjectFieldArg]] = None
     field_type: Optional[Any] = None
 
 
@@ -42,25 +43,25 @@ class GraphQLObjectSource:
     subscriber: Subscriber
     field: str
     description: Optional[str] = None
-    args: Optional[Dict[str, GraphQLObjectFieldArg]] = None
+    args: Optional[dict[str, GraphQLObjectFieldArg]] = None
     field_type: Optional[Any] = None
 
 
 @dataclass
 class GraphQLFieldData:
-    fields_types: Dict[str, str] = field(default_factory=dict)
-    fields_names: Dict[str, str] = field(default_factory=dict)
-    fields_descriptions: Dict[str, str] = field(default_factory=dict)
-    fields_args: Dict[str, Dict[str, GraphQLObjectFieldArg]] = field(
+    fields_types: dict[str, str] = field(default_factory=dict)
+    fields_names: dict[str, str] = field(default_factory=dict)
+    fields_descriptions: dict[str, str] = field(default_factory=dict)
+    fields_args: dict[str, dict[str, GraphQLObjectFieldArg]] = field(
         default_factory=dict
     )
-    fields_resolvers: Dict[str, Resolver] = field(default_factory=dict)
-    fields_subscribers: Dict[str, Subscriber] = field(default_factory=dict)
-    fields_defaults: Dict[str, Any] = field(default_factory=dict)
-    fields_order: List[str] = field(default_factory=list)
-    type_hints: Dict[str, Any] = field(default_factory=dict)
-    aliases: Dict[str, str] = field(default_factory=dict)
-    aliases_targets: List[str] = field(default_factory=list)
+    fields_resolvers: dict[str, Resolver] = field(default_factory=dict)
+    fields_subscribers: dict[str, Subscriber] = field(default_factory=dict)
+    fields_defaults: dict[str, Any] = field(default_factory=dict)
+    fields_order: list[str] = field(default_factory=list)
+    type_hints: dict[str, Any] = field(default_factory=dict)
+    aliases: dict[str, str] = field(default_factory=dict)
+    aliases_targets: list[str] = field(default_factory=list)
 
 
 class GraphQLObjectField:
@@ -70,7 +71,7 @@ class GraphQLObjectField:
         name: Optional[str] = None,
         description: Optional[str] = None,
         field_type: Optional[Any] = None,
-        args: Optional[Dict[str, GraphQLObjectFieldArg]] = None,
+        args: Optional[dict[str, GraphQLObjectFieldArg]] = None,
         resolver: Optional[Resolver] = None,
         subscriber: Optional[Subscriber] = None,
         default_value: Optional[Any] = None,
@@ -94,7 +95,7 @@ class GraphQLObjectField:
 def object_field(
     resolver: Optional[Resolver] = None,
     *,
-    args: Optional[Dict[str, GraphQLObjectFieldArg]] = None,
+    args: Optional[dict[str, GraphQLObjectFieldArg]] = None,
     name: Optional[str] = None,
     description: Optional[str] = None,
     graphql_type: Optional[Any] = None,
@@ -130,7 +131,7 @@ def get_field_type_from_subscriber(subscriber: Subscriber) -> Any:
 def object_resolver(
     field: str,
     graphql_type: Optional[Any] = None,
-    args: Optional[Dict[str, GraphQLObjectFieldArg]] = None,
+    args: Optional[dict[str, GraphQLObjectFieldArg]] = None,
     description: Optional[str] = None,
 ):
     def object_resolver_factory(f: Resolver) -> GraphQLObjectResolver:
@@ -150,7 +151,7 @@ def object_resolver(
 def object_subscriber(
     field: str,
     graphql_type: Optional[Any] = None,
-    args: Optional[Dict[str, GraphQLObjectFieldArg]] = None,
+    args: Optional[dict[str, GraphQLObjectFieldArg]] = None,
     description: Optional[str] = None,
 ):
     def object_subscriber_factory(f: Subscriber) -> GraphQLObjectSource:

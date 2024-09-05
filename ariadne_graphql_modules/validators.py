@@ -1,9 +1,9 @@
-from typing import Any, Type
+from typing import Any
 
-from .base import GraphQLType
+from ariadne_graphql_modules.base import GraphQLType
 
 
-def validate_name(cls: Type[GraphQLType], definition: Any):
+def validate_name(cls: type[GraphQLType], definition: Any):
     graphql_name = getattr(cls, "__graphql_name__", None)
 
     if graphql_name and definition.name.value != graphql_name:
@@ -16,7 +16,7 @@ def validate_name(cls: Type[GraphQLType], definition: Any):
     setattr(cls, "__graphql_name__", definition.name.value)
 
 
-def validate_description(cls: Type[GraphQLType], definition: Any):
+def validate_description(cls: type[GraphQLType], definition: Any):
     if getattr(cls, "__description__", None) and definition.description:
         raise ValueError(
             f"Class '{cls.__name__}' defines description in both "

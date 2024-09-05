@@ -1,19 +1,19 @@
 from dataclasses import dataclass
-from typing import Dict, cast
+from typing import cast
 
 from ariadne import InterfaceType
 from ariadne.types import Resolver
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLTypeResolver
 
-from ..base import GraphQLModel
+from ariadne_graphql_modules.base import GraphQLModel
 
 
 @dataclass(frozen=True)
 class GraphQLInterfaceModel(GraphQLModel):
-    resolvers: Dict[str, Resolver]
+    resolvers: dict[str, Resolver]
     resolve_type: GraphQLTypeResolver
-    out_names: Dict[str, Dict[str, str]]
-    aliases: Dict[str, str]
+    out_names: dict[str, dict[str, str]]
+    aliases: dict[str, str]
 
     def bind_to_schema(self, schema: GraphQLSchema):
         bindable = InterfaceType(self.name, self.resolve_type)

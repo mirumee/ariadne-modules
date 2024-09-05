@@ -1,19 +1,21 @@
-from typing import Any, Iterable, Optional, Sequence, Type, cast
+from collections.abc import Iterable, Sequence
+from typing import Any, Optional, cast
 
-from graphql import NameNode, NamedTypeNode, UnionTypeDefinitionNode
-from ..base import GraphQLMetadata, GraphQLModel, GraphQLType
-from ..description import get_description_node
-from ..object_type.graphql_type import GraphQLObject
-from .models import GraphQLUnionModel
-from .validators import (
+from graphql import NamedTypeNode, NameNode, UnionTypeDefinitionNode
+
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.description import get_description_node
+from ariadne_graphql_modules.object_type.graphql_type import GraphQLObject
+from ariadne_graphql_modules.union_type.models import GraphQLUnionModel
+from ariadne_graphql_modules.union_type.validators import (
     validate_union_type,
     validate_union_type_with_schema,
 )
-from ..utils import parse_definition
+from ariadne_graphql_modules.utils import parse_definition
 
 
 class GraphQLUnion(GraphQLType):
-    __types__: Sequence[Type[GraphQLType]]
+    __types__: Sequence[type[GraphQLType]]
     __schema__: Optional[str]
 
     def __init_subclass__(cls) -> None:
@@ -74,7 +76,7 @@ class GraphQLUnion(GraphQLType):
     @classmethod
     def __get_graphql_types__(
         cls, _: "GraphQLMetadata"
-    ) -> Iterable[Type["GraphQLType"]]:
+    ) -> Iterable[type["GraphQLType"]]:
         """Returns iterable with GraphQL types associated with this type"""
         return [cls, *cls.__types__]
 
@@ -84,5 +86,6 @@ class GraphQLUnion(GraphQLType):
             return obj.__get_graphql_name__()
 
         raise ValueError(
-            f"Cannot resolve GraphQL type {obj} for object of type '{type(obj).__name__}'."
+            f"Cannot resolve GraphQL type {obj} "
+            "for object of type '{type(obj).__name__}'."
         )

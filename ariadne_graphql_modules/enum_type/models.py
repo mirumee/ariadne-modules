@@ -1,14 +1,15 @@
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
+
 from ariadne import EnumType
 from graphql import GraphQLSchema
 
-from ..base import GraphQLModel
+from ariadne_graphql_modules.base import GraphQLModel
 
 
 @dataclass(frozen=True)
 class GraphQLEnumModel(GraphQLModel):
-    members: Dict[str, Any]
+    members: dict[str, Any]
 
     def bind_to_schema(self, schema: GraphQLSchema):
         bindable = EnumType(self.name, values=self.members)

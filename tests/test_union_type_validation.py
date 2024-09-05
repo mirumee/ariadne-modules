@@ -1,4 +1,5 @@
 import pytest
+
 from ariadne_graphql_modules import (
     GraphQLID,
     GraphQLObject,

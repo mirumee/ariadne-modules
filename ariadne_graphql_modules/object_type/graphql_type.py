@@ -1,37 +1,31 @@
 from typing import (
-    Dict,
     Optional,
-    Tuple,
     cast,
 )
 
 from ariadne.types import Resolver
 from graphql import (
     FieldDefinitionNode,
-    NameNode,
     NamedTypeNode,
+    NameNode,
     ObjectTypeDefinitionNode,
 )
 
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel
+from ariadne_graphql_modules.base_object_type import (
+    GraphQLBaseObject,
+    GraphQLFieldData,
+    GraphQLObjectData,
+)
 from ariadne_graphql_modules.base_object_type.graphql_field import GraphQLClassData
 from ariadne_graphql_modules.base_object_type.validators import (
     validate_object_type_with_schema,
     validate_object_type_without_schema,
 )
-
-from ..types import GraphQLClassType
-
-from ..base_object_type import (
-    GraphQLFieldData,
-    GraphQLBaseObject,
-    GraphQLObjectData,
-)
-from .models import GraphQLObjectModel
-
-
-from ..utils import parse_definition
-from ..base import GraphQLMetadata, GraphQLModel
-from ..description import get_description_node
+from ariadne_graphql_modules.description import get_description_node
+from ariadne_graphql_modules.object_type.models import GraphQLObjectModel
+from ariadne_graphql_modules.types import GraphQLClassType
+from ariadne_graphql_modules.utils import parse_definition
 
 
 class GraphQLObject(GraphQLBaseObject):
@@ -63,8 +57,8 @@ class GraphQLObject(GraphQLBaseObject):
             parse_definition(ObjectTypeDefinitionNode, cls.__schema__),
         )
 
-        resolvers: Dict[str, Resolver] = {}
-        fields: Tuple[FieldDefinitionNode, ...] = tuple()
+        resolvers: dict[str, Resolver] = {}
+        fields: tuple[FieldDefinitionNode, ...] = tuple()
         fields, resolvers = cls._create_fields_and_resolvers_with_schema(
             definition.fields
         )

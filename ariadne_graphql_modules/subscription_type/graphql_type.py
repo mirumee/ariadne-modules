@@ -1,5 +1,6 @@
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
+from ariadne.types import Resolver, Subscriber
 from graphql import (
     FieldDefinitionNode,
     InputValueDefinitionNode,
@@ -8,42 +9,35 @@ from graphql import (
     StringValueNode,
 )
 
-from ariadne.types import Resolver, Subscriber
-
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel
+from ariadne_graphql_modules.base_object_type import (
+    GraphQLBaseObject,
+    GraphQLFieldData,
+    GraphQLObjectData,
+    validate_object_type_with_schema,
+    validate_object_type_without_schema,
+)
 from ariadne_graphql_modules.base_object_type.graphql_field import (
     GraphQLObjectField,
     object_field,
     object_resolver,
 )
 from ariadne_graphql_modules.convert_name import convert_python_name_to_graphql
-
-from ..base_object_type import (
-    GraphQLFieldData,
-    GraphQLObjectData,
-    validate_object_type_with_schema,
-    validate_object_type_without_schema,
-)
-
-from ..types import GraphQLClassType
-
-from ..base_object_type import GraphQLBaseObject
-
-
-from ..utils import parse_definition
-from ..base import GraphQLMetadata, GraphQLModel
-from ..description import get_description_node
-from ..object_type import (
+from ariadne_graphql_modules.description import get_description_node
+from ariadne_graphql_modules.object_type import (
+    GraphQLObjectFieldArg,
     GraphQLObjectResolver,
     GraphQLObjectSource,
-    GraphQLObjectFieldArg,
     get_field_args_from_subscriber,
     get_field_args_out_names,
     get_field_node_from_obj_field,
     object_subscriber,
     update_field_args_options,
 )
-from ..value import get_value_node
-from .models import GraphQLSubscriptionModel
+from ariadne_graphql_modules.subscription_type.models import GraphQLSubscriptionModel
+from ariadne_graphql_modules.types import GraphQLClassType
+from ariadne_graphql_modules.utils import parse_definition
+from ariadne_graphql_modules.value import get_value_node
 
 
 class GraphQLSubscription(GraphQLBaseObject):
@@ -68,17 +62,17 @@ class GraphQLSubscription(GraphQLBaseObject):
             cls.__kwargs__ = validate_object_type_without_schema(cls)
 
     @classmethod
-    def __get_graphql_model_with_schema__(cls) -> "GraphQLModel":
+    def __get_graphql_model_with_schema__(cls) -> "GraphQLModel":  # noqa: C901
         definition = cast(
             ObjectTypeDefinitionNode,
             parse_definition(ObjectTypeDefinitionNode, cls.__schema__),
         )
 
-        descriptions: Dict[str, StringValueNode] = {}
-        args_descriptions: Dict[str, Dict[str, StringValueNode]] = {}
-        args_defaults: Dict[str, Dict[str, Any]] = {}
-        resolvers: Dict[str, Resolver] = {}
-        subscribers: Dict[str, Subscriber] = {}
+        descriptions: dict[str, StringValueNode] = {}
+        args_descriptions: dict[str, dict[str, StringValueNode]] = {}
+        args_defaults: dict[str, dict[str, Any]] = {}
+        resolvers: dict[str, Resolver] = {}
+        subscribers: dict[str, Subscriber] = {}
 
         for attr_name in dir(cls):
             cls_attr = getattr(cls, attr_name)
@@ -106,9 +100,9 @@ class GraphQLSubscription(GraphQLBaseObject):
                     for arg_name, arg_options in final_args.items():
                         arg_description = get_description_node(arg_options.description)
                         if arg_description:
-                            args_descriptions[cls_attr.field][
-                                arg_name
-                            ] = arg_description
+                            args_descriptions[cls_attr.field][arg_name] = (
+                                arg_description
+                            )
 
                         arg_default = arg_options.default_value
                         if arg_default is not None:
@@ -116,12 +110,12 @@ class GraphQLSubscription(GraphQLBaseObject):
                                 arg_default
                             )
 
-        fields: List[FieldDefinitionNode] = []
+        fields: list[FieldDefinitionNode] = []
         for field in definition.fields:
             field_args_descriptions = args_descriptions.get(field.name.value, {})
             field_args_defaults = args_defaults.get(field.name.value, {})
 
-            args: List[InputValueDefinitionNode] = []
+            args: list[InputValueDefinitionNode] = []
             for arg in field.arguments:
                 arg_name = arg.name.value
                 args.append(
@@ -170,11 +164,11 @@ class GraphQLSubscription(GraphQLBaseObject):
         type_data = cls.get_graphql_object_data(metadata)
         type_aliases = getattr(cls, "__aliases__", None) or {}
 
-        fields_ast: List[FieldDefinitionNode] = []
-        resolvers: Dict[str, Resolver] = {}
-        subscribers: Dict[str, Subscriber] = {}
-        aliases: Dict[str, str] = {}
-        out_names: Dict[str, Dict[str, str]] = {}
+        fields_ast: list[FieldDefinitionNode] = []
+        resolvers: dict[str, Resolver] = {}
+        subscribers: dict[str, Subscriber] = {}
+        aliases: dict[str, str] = {}
+        out_names: dict[str, dict[str, str]] = {}
 
         for attr_name, field in type_data.fields.items():
             fields_ast.append(get_field_node_from_obj_field(cls, metadata, field))
@@ -212,7 +206,7 @@ class GraphQLSubscription(GraphQLBaseObject):
     def source(
         field: str,
         graphql_type: Optional[Any] = None,
-        args: Optional[Dict[str, GraphQLObjectFieldArg]] = None,
+        args: Optional[dict[str, GraphQLObjectFieldArg]] = None,
         description: Optional[str] = None,
     ):
         """Shortcut for object_resolver()"""
@@ -244,7 +238,9 @@ class GraphQLSubscription(GraphQLBaseObject):
         )
 
     @staticmethod
-    def _process_class_attributes(target_cls, fields_data: GraphQLFieldData):
+    def _process_class_attributes(  # noqa: C901
+        target_cls, fields_data: GraphQLFieldData
+    ):
         for attr_name in dir(target_cls):
             if attr_name.startswith("__"):
                 continue

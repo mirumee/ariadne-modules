@@ -1,13 +1,12 @@
+import sys
 from enum import Enum
 from importlib import import_module
 from inspect import isclass
-import sys
 from typing import (
     Annotated,
     Any,
     ForwardRef,
     Optional,
-    Type,
     Union,
     get_args,
     get_origin,
@@ -15,14 +14,15 @@ from typing import (
 
 from graphql import (
     ListTypeNode,
-    NameNode,
     NamedTypeNode,
+    NameNode,
     NonNullTypeNode,
     TypeNode,
 )
-from .base import GraphQLMetadata, GraphQLType
-from .deferredtype import DeferredTypeData
-from .idtype import GraphQLID
+
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLType
+from ariadne_graphql_modules.deferredtype import DeferredTypeData
+from ariadne_graphql_modules.idtype import GraphQLID
 
 if sys.version_info >= (3, 10):
     from types import UnionType
@@ -30,10 +30,10 @@ else:
     UnionType = Union
 
 
-def get_type_node(
+def get_type_node(  # noqa: C901
     metadata: GraphQLMetadata,
     type_hint: Any,
-    parent_type: Optional[Type[GraphQLType]] = None,
+    parent_type: Optional[type[GraphQLType]] = None,
 ) -> TypeNode:
     if is_nullable(type_hint):
         nullable = True
@@ -126,7 +126,7 @@ def unwrap_type(type_hint: Any) -> Any:
 
 def get_deferred_type(
     type_hint: Any, forward_ref: ForwardRef, deferred_type: DeferredTypeData
-) -> Union[Type[GraphQLType], Type[Enum]]:
+) -> Union[type[GraphQLType], type[Enum]]:
     type_name = forward_ref.__forward_arg__
     module = import_module(deferred_type.path)
     graphql_type = getattr(module, type_name)
@@ -137,7 +137,7 @@ def get_deferred_type(
     return graphql_type
 
 
-def get_graphql_type(annotation: Any) -> Optional[Union[Type[GraphQLType], Type[Enum]]]:
+def get_graphql_type(annotation: Any) -> Optional[Union[type[GraphQLType], type[Enum]]]:
     """Utility that extracts GraphQL type from type annotation"""
     if is_nullable(annotation) or is_list(annotation):
         return get_graphql_type(unwrap_type(annotation))

@@ -1,17 +1,18 @@
-from typing import Any, Dict, List, Type, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from graphql import InputObjectTypeDefinitionNode
-from ..convert_name import convert_graphql_name_to_python
-from ..validators import validate_description, validate_name
-from ..value import get_value_from_node, get_value_node
-from ..utils import parse_definition
-from .graphql_field import GraphQLInputField
+
+from ariadne_graphql_modules.convert_name import convert_graphql_name_to_python
+from ariadne_graphql_modules.input_type.graphql_field import GraphQLInputField
+from ariadne_graphql_modules.utils import parse_definition
+from ariadne_graphql_modules.validators import validate_description, validate_name
+from ariadne_graphql_modules.value import get_value_from_node, get_value_node
 
 if TYPE_CHECKING:
-    from .graphql_type import GraphQLInput
+    from ariadne_graphql_modules.input_type.graphql_type import GraphQLInput
 
 
-def validate_input_type_with_schema(cls: Type["GraphQLInput"]) -> Dict[str, Any]:
+def validate_input_type_with_schema(cls: type["GraphQLInput"]) -> dict[str, Any]:
     definition = cast(
         InputObjectTypeDefinitionNode,
         parse_definition(InputObjectTypeDefinitionNode, cls.__schema__),
@@ -34,10 +35,10 @@ def validate_input_type_with_schema(cls: Type["GraphQLInput"]) -> Dict[str, Any]
             "with declaration for an input type without any fields. "
         )
 
-    fields_names: List[str] = [field.name.value for field in definition.fields]
-    used_out_names: List[str] = []
+    fields_names: list[str] = [field.name.value for field in definition.fields]
+    used_out_names: list[str] = []
 
-    out_names: Dict[str, str] = getattr(cls, "__out_names__", {}) or {}
+    out_names: dict[str, str] = getattr(cls, "__out_names__", {}) or {}
     for field_name, out_name in out_names.items():
         if field_name not in fields_names:
             raise ValueError(
@@ -58,11 +59,11 @@ def validate_input_type_with_schema(cls: Type["GraphQLInput"]) -> Dict[str, Any]
 
 
 def get_input_type_with_schema_kwargs(
-    cls: Type["GraphQLInput"],
+    cls: type["GraphQLInput"],
     definition: InputObjectTypeDefinitionNode,
-    out_names: Dict[str, str],
-) -> Dict[str, Any]:
-    kwargs: Dict[str, Any] = {}
+    out_names: dict[str, str],
+) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {}
     for field in definition.fields:
         try:
             python_name = out_names[field.name.value]
@@ -82,7 +83,7 @@ def get_input_type_with_schema_kwargs(
     return kwargs
 
 
-def validate_input_type(cls: Type["GraphQLInput"]) -> Dict[str, Any]:
+def validate_input_type(cls: type["GraphQLInput"]) -> dict[str, Any]:
     if cls.__out_names__:
         raise ValueError(
             f"Class '{cls.__name__}' defines '__out_names__' attribute. "
@@ -92,8 +93,8 @@ def validate_input_type(cls: Type["GraphQLInput"]) -> Dict[str, Any]:
     return get_input_type_kwargs(cls)
 
 
-def get_input_type_kwargs(cls: Type["GraphQLInput"]) -> Dict[str, Any]:
-    kwargs: Dict[str, Any] = {}
+def get_input_type_kwargs(cls: type["GraphQLInput"]) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {}
 
     for attr_name in cls.__annotations__:
         if attr_name.startswith("__"):
@@ -111,7 +112,7 @@ def get_input_type_kwargs(cls: Type["GraphQLInput"]) -> Dict[str, Any]:
 
 
 def validate_field_default_value(
-    cls: Type["GraphQLInput"], field_name: str, default_value: Any
+    cls: type["GraphQLInput"], field_name: str, default_value: Any
 ):
     if default_value is None:
         return

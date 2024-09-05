@@ -1,19 +1,19 @@
 from dataclasses import dataclass
-from typing import Dict, cast
+from typing import cast
 
 from ariadne import SubscriptionType
 from ariadne.types import Resolver, Subscriber
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema
 
-from ..base import GraphQLModel
+from ariadne_graphql_modules.base import GraphQLModel
 
 
 @dataclass(frozen=True)
 class GraphQLSubscriptionModel(GraphQLModel):
-    resolvers: Dict[str, Resolver]
-    out_names: Dict[str, Dict[str, str]]
-    aliases: Dict[str, str]
-    subscribers: Dict[str, Subscriber]
+    resolvers: dict[str, Resolver]
+    out_names: dict[str, dict[str, str]]
+    aliases: dict[str, str]
+    subscribers: dict[str, Subscriber]
 
     def bind_to_schema(self, schema: GraphQLSchema):
         bindable = SubscriptionType()

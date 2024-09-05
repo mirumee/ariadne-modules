@@ -1,21 +1,23 @@
+from collections.abc import Iterable
 from enum import Enum
 from inspect import isclass
-from typing import Any, Dict, Iterable, List, Optional, Set, Type, Union, cast
+from typing import Any, Optional, Union, cast
 
 from graphql import EnumTypeDefinitionNode, EnumValueDefinitionNode, NameNode
-from ..base import GraphQLMetadata, GraphQLModel, GraphQLType
-from ..description import get_description_node
-from .models import GraphQLEnumModel
-from ..validators import validate_description, validate_name
-from ..utils import parse_definition
+
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.description import get_description_node
+from ariadne_graphql_modules.enum_type.models import GraphQLEnumModel
+from ariadne_graphql_modules.utils import parse_definition
+from ariadne_graphql_modules.validators import validate_description, validate_name
 
 
 class GraphQLEnum(GraphQLType):
     __abstract__: bool = True
     __schema__: Optional[str]
     __description__: Optional[str]
-    __members__: Optional[Union[Type[Enum], Dict[str, Any], List[str]]]
-    __members_descriptions__: Optional[Dict[str, str]]
+    __members__: Optional[Union[type[Enum], dict[str, Any], list[str]]]
+    __members_descriptions__: Optional[dict[str, str]]
 
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
@@ -43,7 +45,7 @@ class GraphQLEnum(GraphQLType):
         )
 
         members = getattr(cls, "__members__", [])
-        members_values: Dict[str, Any] = {}
+        members_values: dict[str, Any] = {}
 
         if isinstance(members, dict):
             members_values = dict(members.items())
@@ -131,14 +133,16 @@ class GraphQLEnum(GraphQLType):
             raise ValueError(
                 f"Class '{cls.__name__}' defines '__schema__' attribute "
                 f"with declaration for an invalid GraphQL type. "
-                f"('{definition.__class__.__name__}' != '{EnumTypeDefinitionNode.__name__}')"
+                f"('{definition.__class__.__name__}' != "
+                f"'{EnumTypeDefinitionNode.__name__}')"
             )
 
         validate_name(cls, definition)
         validate_description(cls, definition)
 
         members_names = {
-            value.name.value for value in definition.values  # pylint: disable=no-member
+            value.name.value
+            for value in definition.values  # pylint: disable=no-member
         }
         if not members_names:
             raise ValueError(
@@ -164,7 +168,8 @@ class GraphQLEnum(GraphQLType):
         if duplicate_descriptions:
             raise ValueError(
                 f"Class '{cls.__name__}' '__members_descriptions__' attribute defines "
-                f"descriptions for enum members that also have description in '__schema__' "
+                "descriptions for enum members that also "
+                "have description in '__schema__' "
                 f"attribute. (members: '{', '.join(duplicate_descriptions)}')"
             )
 
@@ -206,7 +211,8 @@ class GraphQLEnum(GraphQLType):
             ]
         ):
             raise ValueError(
-                f"Class '{cls.__name__}' '__members__' attribute is of unsupported type. "
+                f"Class '{cls.__name__}' '__members__' "
+                "attribute is of unsupported type. "
                 f"Expected 'Dict[str, Any]', 'Type[Enum]' or List[str]. "
                 f"(found: '{type(members_values)}')"
             )
@@ -217,7 +223,7 @@ class GraphQLEnum(GraphQLType):
 
     @classmethod
     def validate_enum_members_descriptions(
-        cls, members: Set[str], members_descriptions: dict
+        cls, members: set[str], members_descriptions: dict
     ):
         invalid_descriptions = set(members_descriptions) - members
         if invalid_descriptions:
@@ -230,8 +236,8 @@ class GraphQLEnum(GraphQLType):
 
     @staticmethod
     def get_members_set(
-        members: Optional[Union[Type[Enum], Dict[str, Any], List[str]]]
-    ) -> Set[str]:
+        members: Optional[Union[type[Enum], dict[str, Any], list[str]]],
+    ) -> set[str]:
         if isinstance(members, dict):
             return set(members.keys())
 
@@ -247,12 +253,12 @@ class GraphQLEnum(GraphQLType):
         )
 
 
-def create_graphql_enum_model(
-    enum: Type[Enum],
+def create_graphql_enum_model(  # noqa: C901
+    enum: type[Enum],
     *,
     name: Optional[str] = None,
     description: Optional[str] = None,
-    members_descriptions: Optional[Dict[str, str]] = None,
+    members_descriptions: Optional[dict[str, str]] = None,
     members_include: Optional[Iterable[str]] = None,
     members_exclude: Optional[Iterable[str]] = None,
 ) -> "GraphQLEnumModel":
@@ -270,8 +276,8 @@ def create_graphql_enum_model(
         else:
             name = enum.__name__
 
-    members: Dict[str, Any] = {i.name: i for i in enum}
-    final_members: Dict[str, Any] = {}
+    members: dict[str, Any] = {i.name: i for i in enum}
+    final_members: dict[str, Any] = {}
 
     if members_include:
         for key, value in members.items():
@@ -317,7 +323,7 @@ def graphql_enum(
     *,
     name: Optional[str] = None,
     description: Optional[str] = None,
-    members_descriptions: Optional[Dict[str, str]] = None,
+    members_descriptions: Optional[dict[str, str]] = None,
     members_include: Optional[Iterable[str]] = None,
     members_exclude: Optional[Iterable[str]] = None,
 ):
@@ -331,7 +337,7 @@ def graphql_enum(
             members_exclude=members_exclude,
         )
 
-        def __get_graphql_model__(*_) -> GraphQLEnumModel:
+        def __get_graphql_model__(*_) -> GraphQLEnumModel:  # noqa: N807
             return graphql_model
 
         setattr(cls, "__get_graphql_model__", classmethod(__get_graphql_model__))

@@ -2,17 +2,20 @@ from dataclasses import dataclass
 from datetime import date, datetime
 
 from graphql import StringValueNode
+
+from ariadne_graphql_modules.compatibility_layer import wrap_legacy_types
+from ariadne_graphql_modules.executable_schema import make_executable_schema
 from ariadne_graphql_modules.v1.bases import DeferredType
 from ariadne_graphql_modules.v1.collection_type import CollectionType
 from ariadne_graphql_modules.v1.enum_type import EnumType
 from ariadne_graphql_modules.v1.input_type import InputType
 from ariadne_graphql_modules.v1.interface_type import InterfaceType
-from ariadne_graphql_modules.compatibility_layer import wrap_legacy_types
-from ariadne_graphql_modules.executable_schema import make_executable_schema
 from ariadne_graphql_modules.v1.object_type import ObjectType
 from ariadne_graphql_modules.v1.scalar_type import ScalarType
 from ariadne_graphql_modules.v1.subscription_type import SubscriptionType
 from ariadne_graphql_modules.v1.union_type import UnionType
+
+TEST_DATE = date(2006, 9, 13)
 
 
 def test_object_type(
@@ -53,7 +56,7 @@ def test_object_type(
 
         @staticmethod
         def resolve_second_field(obj, *_):
-            return "Obj: %s" % obj["secondField"]
+            return "Obj: {}".format(obj["secondField"])
 
         @staticmethod
         def resolve_field_with_arg(*_, some_arg):
@@ -258,8 +261,6 @@ def test_interface_type(assert_schema_equals):
 
 
 def test_scalar_type(assert_schema_equals):
-    TEST_DATE = date(2006, 9, 13)
-
     class DateReadOnlyScalar(ScalarType):
         __schema__ = "scalar DateReadOnly"
 

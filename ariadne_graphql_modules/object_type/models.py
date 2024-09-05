@@ -1,18 +1,18 @@
 from dataclasses import dataclass
-from typing import Dict, cast
+from typing import cast
 
 from ariadne import ObjectType as ObjectTypeBindable
 from ariadne.types import Resolver
 from graphql import GraphQLField, GraphQLObjectType, GraphQLSchema
 
-from ..base import GraphQLModel
+from ariadne_graphql_modules.base import GraphQLModel
 
 
 @dataclass(frozen=True)
 class GraphQLObjectModel(GraphQLModel):
-    resolvers: Dict[str, Resolver]
-    aliases: Dict[str, str]
-    out_names: Dict[str, Dict[str, str]]
+    resolvers: dict[str, Resolver]
+    aliases: dict[str, str]
+    out_names: dict[str, dict[str, str]]
 
     def bind_to_schema(self, schema: GraphQLSchema):
         bindable = ObjectTypeBindable(self.name)

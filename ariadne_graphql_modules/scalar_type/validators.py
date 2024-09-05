@@ -1,16 +1,15 @@
-from typing import TYPE_CHECKING, Type
+from typing import TYPE_CHECKING
 
 from graphql import ScalarTypeDefinitionNode
 
-from ..validators import validate_description, validate_name
-
-from ..utils import parse_definition
+from ariadne_graphql_modules.utils import parse_definition
+from ariadne_graphql_modules.validators import validate_description, validate_name
 
 if TYPE_CHECKING:
-    from .graphql_type import GraphQLScalar
+    from ariadne_graphql_modules.scalar_type.graphql_type import GraphQLScalar
 
 
-def validate_scalar_type_with_schema(cls: Type["GraphQLScalar"]):
+def validate_scalar_type_with_schema(cls: type["GraphQLScalar"]):
     definition = parse_definition(cls.__name__, cls.__schema__)
 
     if not isinstance(definition, ScalarTypeDefinitionNode):

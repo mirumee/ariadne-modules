@@ -1,4 +1,5 @@
 from graphql import StringValueNode
+
 from ariadne_graphql_modules import get_description_node
 
 

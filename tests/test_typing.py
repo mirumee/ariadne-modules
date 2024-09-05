@@ -1,10 +1,10 @@
 # pylint: disable=no-member, unsupported-binary-operation
-from enum import Enum
 import sys
-from typing import TYPE_CHECKING, Annotated, List, Optional, Union
+from enum import Enum
+from typing import TYPE_CHECKING, Annotated, Optional, Union
 
-from graphql import ListTypeNode, NameNode, NamedTypeNode, NonNullTypeNode
 import pytest
+from graphql import ListTypeNode, NamedTypeNode, NameNode, NonNullTypeNode
 
 from ariadne_graphql_modules import GraphQLObject, deferred, graphql_enum
 from ariadne_graphql_modules.typing import get_graphql_type, get_type_node
@@ -56,8 +56,8 @@ def test_get_graphql_type_from_graphql_type_subclass_returns_type():
 
     assert get_graphql_type(UserType) == UserType
     assert get_graphql_type(Optional[UserType]) == UserType
-    assert get_graphql_type(List[UserType]) == UserType
-    assert get_graphql_type(Optional[List[Optional[UserType]]]) == UserType
+    assert get_graphql_type(list[UserType]) == UserType
+    assert get_graphql_type(Optional[list[Optional[UserType]]]) == UserType
 
 
 def test_get_graphql_type_from_enum_returns_type():
@@ -69,8 +69,8 @@ def test_get_graphql_type_from_enum_returns_type():
 
     assert get_graphql_type(UserLevel) == UserLevel
     assert get_graphql_type(Optional[UserLevel]) == UserLevel
-    assert get_graphql_type(List[UserLevel]) == UserLevel
-    assert get_graphql_type(Optional[List[Optional[UserLevel]]]) == UserLevel
+    assert get_graphql_type(list[UserLevel]) == UserLevel
+    assert get_graphql_type(Optional[list[Optional[UserLevel]]]) == UserLevel
 
 
 def test_get_graphql_type_node_from_python_builtin_type(metadata):
@@ -102,10 +102,10 @@ def test_get_graphql_type_node_from_graphql_type(metadata):
 
 
 def test_get_graphql_list_type_node_from_python_builtin_type(metadata):
-    assert_list_type(get_type_node(metadata, Optional[List[str]]), "String")
-    assert_list_type(get_type_node(metadata, Union[List[int], None]), "Int")
+    assert_list_type(get_type_node(metadata, Optional[list[str]]), "String")
+    assert_list_type(get_type_node(metadata, Union[list[int], None]), "Int")
 
-    assert_list_type(get_type_node(metadata, Optional[List[bool]]), "Boolean")
+    assert_list_type(get_type_node(metadata, Optional[list[bool]]), "Boolean")
 
 
 @pytest.mark.skipif(
@@ -113,14 +113,14 @@ def test_get_graphql_list_type_node_from_python_builtin_type(metadata):
     reason="Skip test for Python 3.9",
 )
 def test_get_graphql_list_type_node_from_python_builtin_type_pipe_union(metadata):
-    assert_list_type(get_type_node(metadata, List[float] | None), "Float")
+    assert_list_type(get_type_node(metadata, list[float] | None), "Float")
 
 
 def test_get_non_null_graphql_list_type_node_from_python_builtin_type(metadata):
-    assert_non_null_list_type(get_type_node(metadata, List[str]), "String")
-    assert_non_null_list_type(get_type_node(metadata, List[int]), "Int")
-    assert_non_null_list_type(get_type_node(metadata, List[float]), "Float")
-    assert_non_null_list_type(get_type_node(metadata, List[bool]), "Boolean")
+    assert_non_null_list_type(get_type_node(metadata, list[str]), "String")
+    assert_non_null_list_type(get_type_node(metadata, list[int]), "Int")
+    assert_non_null_list_type(get_type_node(metadata, list[float]), "Float")
+    assert_non_null_list_type(get_type_node(metadata, list[bool]), "Boolean")
 
 
 def test_get_graphql_type_node_from_annotated_type(metadata):

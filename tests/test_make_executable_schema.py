@@ -1,6 +1,7 @@
 from typing import Union
 
 import pytest
+from ariadne import QueryType, SchemaDirectiveVisitor
 from graphql import (
     GraphQLField,
     GraphQLInterfaceType,
@@ -9,7 +10,6 @@ from graphql import (
     graphql_sync,
 )
 
-from ariadne import QueryType, SchemaDirectiveVisitor
 from ariadne_graphql_modules import GraphQLObject, make_executable_schema
 
 
@@ -177,7 +177,7 @@ def test_multiple_roots_fail_validation_if_merge_roots_is_disabled(data_regressi
 
 def test_schema_validation_fails_if_lazy_type_doesnt_exist(data_regression):
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=list["Missing"])  # type: ignore
+        @GraphQLObject.field(graphql_type=list["Missing"])  # type: ignore  # noqa: F821
         @staticmethod
         def other(*_):
             return None
@@ -190,7 +190,7 @@ def test_schema_validation_fails_if_lazy_type_doesnt_exist(data_regression):
 
 def test_schema_validation_passes_if_lazy_type_exists():
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=list["Exists"])  # type: ignore
+        @GraphQLObject.field(graphql_type=list["Exists"])  # type: ignore  # noqa: F821
         @staticmethod
         def other(*_):
             return None
@@ -213,7 +213,7 @@ def test_make_executable_schema_raises_error_if_called_without_any_types(
     data_regression.check(str(exc_info.value))
 
 
-def test_make_executable_schema_doesnt_set_resolvers_if_convert_names_case_is_not_enabled():
+def test_resolvers_not_set_without_name_case_conversion():
     class QueryType(GraphQLObject):
         other_field: str
 

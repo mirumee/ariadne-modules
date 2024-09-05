@@ -1,23 +1,26 @@
 from dataclasses import replace
 from inspect import signature
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Optional
 
 from ariadne.types import Resolver, Subscriber
 from graphql import FieldDefinitionNode, InputValueDefinitionNode, NameNode
 
-from ..base import GraphQLMetadata
-from ..convert_name import convert_python_name_to_graphql
-from ..description import get_description_node
-from ..typing import get_type_node
-from ..value import get_value_node
-from .graphql_field import GraphQLObjectField, GraphQLObjectFieldArg
+from ariadne_graphql_modules.base import GraphQLMetadata
+from ariadne_graphql_modules.base_object_type.graphql_field import (
+    GraphQLObjectField,
+    GraphQLObjectFieldArg,
+)
+from ariadne_graphql_modules.convert_name import convert_python_name_to_graphql
+from ariadne_graphql_modules.description import get_description_node
+from ariadne_graphql_modules.typing import get_type_node
+from ariadne_graphql_modules.value import get_value_node
 
 if TYPE_CHECKING:
-    from .graphql_type import GraphQLBaseObject
+    from ariadne_graphql_modules.base_object_type.graphql_type import GraphQLBaseObject
 
 
 def get_field_node_from_obj_field(
-    parent_type: Type["GraphQLBaseObject"],
+    parent_type: type["GraphQLBaseObject"],
     metadata: GraphQLMetadata,
     field: GraphQLObjectField,
 ) -> FieldDefinitionNode:
@@ -31,14 +34,14 @@ def get_field_node_from_obj_field(
 
 def get_field_args_from_resolver(
     resolver: Resolver,
-) -> Dict[str, GraphQLObjectFieldArg]:
+) -> dict[str, GraphQLObjectFieldArg]:
     if isinstance(resolver, staticmethod):
         resolver = resolver.__func__
     resolver_signature = signature(resolver)
     type_hints = resolver.__annotations__
     type_hints.pop("return", None)
 
-    field_args: Dict[str, GraphQLObjectFieldArg] = {}
+    field_args: dict[str, GraphQLObjectFieldArg] = {}
     field_args_start = 0
 
     # Fist pass: (arg, *_, something, something) or (arg, *, something, something):
@@ -78,12 +81,12 @@ def get_field_args_from_resolver(
 
 def get_field_args_from_subscriber(
     subscriber: Subscriber,
-) -> Dict[str, GraphQLObjectFieldArg]:
+) -> dict[str, GraphQLObjectFieldArg]:
     subscriber_signature = signature(subscriber)
     type_hints = subscriber.__annotations__
     type_hints.pop("return", None)
 
-    field_args: Dict[str, GraphQLObjectFieldArg] = {}
+    field_args: dict[str, GraphQLObjectFieldArg] = {}
     field_args_start = 0
 
     # Fist pass: (arg, *_, something, something) or (arg, *, something, something):
@@ -122,9 +125,9 @@ def get_field_args_from_subscriber(
 
 
 def get_field_args_out_names(
-    field_args: Dict[str, GraphQLObjectFieldArg],
-) -> Dict[str, str]:
-    out_names: Dict[str, str] = {}
+    field_args: dict[str, GraphQLObjectFieldArg],
+) -> dict[str, str]:
+    out_names: dict[str, str] = {}
     for field_arg in field_args.values():
         if field_arg.name and field_arg.out_name:
             out_names[field_arg.name] = field_arg.out_name
@@ -150,8 +153,8 @@ def get_field_arg_node_from_obj_field_arg(
 
 def get_field_args_nodes_from_obj_field_args(
     metadata: GraphQLMetadata,
-    field_args: Optional[Dict[str, GraphQLObjectFieldArg]],
-) -> Optional[Tuple[InputValueDefinitionNode, ...]]:
+    field_args: Optional[dict[str, GraphQLObjectFieldArg]],
+) -> Optional[tuple[InputValueDefinitionNode, ...]]:
     if not field_args:
         return None
 
@@ -162,13 +165,13 @@ def get_field_args_nodes_from_obj_field_args(
 
 
 def update_field_args_options(
-    field_args: Dict[str, GraphQLObjectFieldArg],
-    args_options: Optional[Dict[str, GraphQLObjectFieldArg]],
-) -> Dict[str, GraphQLObjectFieldArg]:
+    field_args: dict[str, GraphQLObjectFieldArg],
+    args_options: Optional[dict[str, GraphQLObjectFieldArg]],
+) -> dict[str, GraphQLObjectFieldArg]:
     if not args_options:
         return field_args
 
-    updated_args: Dict[str, GraphQLObjectFieldArg] = {}
+    updated_args: dict[str, GraphQLObjectFieldArg] = {}
     for arg_name in field_args:
         arg_options = args_options.get(arg_name)
         if not arg_options:

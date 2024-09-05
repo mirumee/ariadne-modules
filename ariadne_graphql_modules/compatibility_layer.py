@@ -1,6 +1,6 @@
 from enum import Enum
 from inspect import isclass
-from typing import Any, Dict, List, Type, Union, cast
+from typing import Any, Union, cast
 
 from graphql import (
     EnumTypeDefinitionNode,
@@ -12,34 +12,32 @@ from graphql import (
     UnionTypeDefinitionNode,
 )
 
-from .v1.executable_schema import get_all_types
-
-from .v1.directive_type import DirectiveType
-from .v1.enum_type import EnumType
-from .v1.input_type import InputType
-from .v1.interface_type import InterfaceType
-from .v1.mutation_type import MutationType
-from .v1.scalar_type import ScalarType
-from .v1.subscription_type import SubscriptionType
-from .v1.union_type import UnionType
-from .v1.object_type import ObjectType
-from .v1.bases import BaseType, BindableType
-
-from .base import GraphQLModel, GraphQLType
-from . import (
-    GraphQLObjectModel,
+from ariadne_graphql_modules import (
     GraphQLEnumModel,
     GraphQLInputModel,
-    GraphQLScalarModel,
     GraphQLInterfaceModel,
+    GraphQLObjectModel,
+    GraphQLScalarModel,
     GraphQLSubscriptionModel,
     GraphQLUnionModel,
 )
+from ariadne_graphql_modules.base import GraphQLModel, GraphQLType
+from ariadne_graphql_modules.v1.bases import BaseType, BindableType
+from ariadne_graphql_modules.v1.directive_type import DirectiveType
+from ariadne_graphql_modules.v1.enum_type import EnumType
+from ariadne_graphql_modules.v1.executable_schema import get_all_types
+from ariadne_graphql_modules.v1.input_type import InputType
+from ariadne_graphql_modules.v1.interface_type import InterfaceType
+from ariadne_graphql_modules.v1.mutation_type import MutationType
+from ariadne_graphql_modules.v1.object_type import ObjectType
+from ariadne_graphql_modules.v1.scalar_type import ScalarType
+from ariadne_graphql_modules.v1.subscription_type import SubscriptionType
+from ariadne_graphql_modules.v1.union_type import UnionType
 
 
 def wrap_legacy_types(
-    *bindable_types: Type[BaseType],
-) -> List[Type["LegacyGraphQLType"]]:
+    *bindable_types: type[BaseType],
+) -> list[type["LegacyGraphQLType"]]:
     all_types = get_all_types(bindable_types)
 
     return [
@@ -49,7 +47,7 @@ def wrap_legacy_types(
 
 
 class LegacyGraphQLType(GraphQLType):
-    __base_type__: Type[BindableType]
+    __base_type__: type[BindableType]
     __abstract__: bool = False
 
     @classmethod
@@ -76,7 +74,7 @@ class LegacyGraphQLType(GraphQLType):
 
     @classmethod
     def construct_object_model(
-        cls, base_type: Type[Union[ObjectType, MutationType]]
+        cls, base_type: type[Union[ObjectType, MutationType]]
     ) -> GraphQLObjectModel:
         return GraphQLObjectModel(
             name=base_type.graphql_name,
@@ -88,9 +86,9 @@ class LegacyGraphQLType(GraphQLType):
         )
 
     @classmethod
-    def construct_enum_model(cls, base_type: Type[EnumType]) -> GraphQLEnumModel:
+    def construct_enum_model(cls, base_type: type[EnumType]) -> GraphQLEnumModel:
         members = base_type.__enum__ or {}
-        members_values: Dict[str, Any] = {}
+        members_values: dict[str, Any] = {}
 
         if isinstance(members, dict):
             members_values = dict(members.items())
@@ -105,11 +103,11 @@ class LegacyGraphQLType(GraphQLType):
         )
 
     @classmethod
-    def construct_directive_model(cls, base_type: Type[DirectiveType]):
+    def construct_directive_model(cls, base_type: type[DirectiveType]):
         """TODO: https://github.com/mirumee/ariadne-graphql-modules/issues/29"""
 
     @classmethod
-    def construct_input_model(cls, base_type: Type[InputType]) -> GraphQLInputModel:
+    def construct_input_model(cls, base_type: type[InputType]) -> GraphQLInputModel:
         return GraphQLInputModel(
             name=base_type.graphql_name,
             ast_type=InputObjectTypeDefinitionNode,
@@ -120,7 +118,7 @@ class LegacyGraphQLType(GraphQLType):
 
     @classmethod
     def construct_interface_model(
-        cls, base_type: Type[InterfaceType]
+        cls, base_type: type[InterfaceType]
     ) -> GraphQLInterfaceModel:
         return GraphQLInterfaceModel(
             name=base_type.graphql_name,
@@ -133,7 +131,7 @@ class LegacyGraphQLType(GraphQLType):
         )
 
     @classmethod
-    def construct_scalar_model(cls, base_type: Type[ScalarType]) -> GraphQLScalarModel:
+    def construct_scalar_model(cls, base_type: type[ScalarType]) -> GraphQLScalarModel:
         return GraphQLScalarModel(
             name=base_type.graphql_name,
             ast_type=ScalarTypeDefinitionNode,
@@ -145,7 +143,7 @@ class LegacyGraphQLType(GraphQLType):
 
     @classmethod
     def construct_subscription_model(
-        cls, base_type: Type[SubscriptionType]
+        cls, base_type: type[SubscriptionType]
     ) -> GraphQLSubscriptionModel:
         return GraphQLSubscriptionModel(
             name=base_type.graphql_name,
@@ -158,7 +156,7 @@ class LegacyGraphQLType(GraphQLType):
         )
 
     @classmethod
-    def construct_union_model(cls, base_type: Type[UnionType]) -> GraphQLUnionModel:
+    def construct_union_model(cls, base_type: type[UnionType]) -> GraphQLUnionModel:
         return GraphQLUnionModel(
             name=base_type.graphql_name,
             ast_type=UnionTypeDefinitionNode,

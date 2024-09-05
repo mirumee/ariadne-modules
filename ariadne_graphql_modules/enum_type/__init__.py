@@ -1,5 +1,9 @@
-from .graphql_type import GraphQLEnum, graphql_enum, create_graphql_enum_model
-from .models import GraphQLEnumModel
+from ariadne_graphql_modules.enum_type.graphql_type import (
+    GraphQLEnum,
+    create_graphql_enum_model,
+    graphql_enum,
+)
+from ariadne_graphql_modules.enum_type.models import GraphQLEnumModel
 
 __all__ = [
     "GraphQLEnum",

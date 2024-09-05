@@ -1,14 +1,15 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from ariadne import ScalarType as ScalarTypeBindable
 from graphql import (
     GraphQLScalarLiteralParser,
     GraphQLScalarSerializer,
     GraphQLScalarValueParser,
     GraphQLSchema,
 )
-from ariadne import ScalarType as ScalarTypeBindable
-from ..base import GraphQLModel
+
+from ariadne_graphql_modules.base import GraphQLModel
 
 
 @dataclass(frozen=True)

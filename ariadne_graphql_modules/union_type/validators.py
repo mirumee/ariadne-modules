@@ -1,16 +1,15 @@
-from typing import Type, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from graphql import UnionTypeDefinitionNode
 
-
-from ..validators import validate_description, validate_name
-from ..utils import parse_definition
+from ariadne_graphql_modules.utils import parse_definition
+from ariadne_graphql_modules.validators import validate_description, validate_name
 
 if TYPE_CHECKING:
-    from .graphql_type import GraphQLUnion
+    from ariadne_graphql_modules.union_type.graphql_type import GraphQLUnion
 
 
-def validate_union_type(cls: Type["GraphQLUnion"]) -> None:
+def validate_union_type(cls: type["GraphQLUnion"]) -> None:
     types = getattr(cls, "__types__", None)
     if not types:
         raise ValueError(
@@ -19,7 +18,7 @@ def validate_union_type(cls: Type["GraphQLUnion"]) -> None:
         )
 
 
-def validate_union_type_with_schema(cls: Type["GraphQLUnion"]) -> None:
+def validate_union_type_with_schema(cls: type["GraphQLUnion"]) -> None:
     definition = cast(
         UnionTypeDefinitionNode,
         parse_definition(UnionTypeDefinitionNode, cls.__schema__),
@@ -46,12 +45,14 @@ def validate_union_type_with_schema(cls: Type["GraphQLUnion"]) -> None:
         missing_in_schema = sorted(class_type_names - schema_type_names)
         missing_in_schema_str = "', '".join(missing_in_schema)
         raise ValueError(
-            f"Types '{missing_in_schema_str}' are in '__types__' but not in '__schema__'."
+            f"Types '{missing_in_schema_str}' are in '__types__' "
+            "but not in '__schema__'."
         )
 
     if not schema_type_names.issubset(class_type_names):
         missing_in_types = sorted(schema_type_names - class_type_names)
         missing_in_types_str = "', '".join(missing_in_types)
         raise ValueError(
-            f"Types '{missing_in_types_str}' are in '__schema__' but not in '__types__'."
+            f"Types '{missing_in_types_str}' are in '__schema__' "
+            "but not in '__types__'."
         )

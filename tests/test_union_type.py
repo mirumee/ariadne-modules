@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import Union
 
 from graphql import graphql_sync
 
@@ -25,9 +25,9 @@ def test_union_field_returning_object_instance(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=List[ResultType])
+        @GraphQLObject.field(graphql_type=list[ResultType])
         @staticmethod
-        def search(*_) -> List[Union[UserType, CommentType]]:
+        def search(*_) -> list[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
                 CommentType(id=2, content="Hello World!"),
@@ -88,9 +88,9 @@ def test_union_field_returning_empty_list():
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=List[ResultType])
+        @GraphQLObject.field(graphql_type=list[ResultType])
         @staticmethod
-        def search(*_) -> List[Union[UserType, CommentType]]:
+        def search(*_) -> list[Union[UserType, CommentType]]:
             return []
 
     schema = make_executable_schema(QueryType)
@@ -121,9 +121,9 @@ def test_union_field_with_invalid_type_access():
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=List[ResultType])
+        @GraphQLObject.field(graphql_type=list[ResultType])
         @staticmethod
-        def search(*_) -> List[Union[UserType, CommentType]]:
+        def search(*_) -> list[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
                 "InvalidType",  # type: ignore
@@ -161,9 +161,9 @@ def test_serialization_error_handling():
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=List[ResultType])
+        @GraphQLObject.field(graphql_type=list[ResultType])
         @staticmethod
-        def search(*_) -> List[Union[UserType, CommentType, InvalidType]]:
+        def search(*_) -> list[Union[UserType, CommentType, InvalidType]]:
             return [InvalidType("This should cause an error")]
 
     schema = make_executable_schema(QueryType)
@@ -192,9 +192,9 @@ def test_union_with_schema_definition():
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=List[SearchResultUnion])
+        @GraphQLObject.field(graphql_type=list[SearchResultUnion])
         @staticmethod
-        def search(*_) -> List[Union[UserType, CommentType]]:
+        def search(*_) -> list[Union[UserType, CommentType]]:
             return [
                 UserType(id="1", username="Alice"),
                 CommentType(id="2", content="Test post"),

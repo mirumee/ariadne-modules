@@ -2,9 +2,9 @@
 from typing import Optional
 
 import pytest
+from ariadne import gql
 from graphql import graphql_sync
 
-from ariadne import gql
 from ariadne_graphql_modules import GraphQLObject, make_executable_schema
 
 

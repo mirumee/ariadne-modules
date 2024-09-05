@@ -1,6 +1,7 @@
+from collections.abc import Iterable, Mapping
 from decimal import Decimal
 from enum import Enum
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 from graphql import (
     BooleanValueNode,

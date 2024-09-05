@@ -4,7 +4,7 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
-from graphql import TypeDefinitionNode, GraphQLSchema, print_ast, print_schema
+from graphql import GraphQLSchema, TypeDefinitionNode, print_ast, print_schema
 
 from ariadne_graphql_modules import GraphQLMetadata
 

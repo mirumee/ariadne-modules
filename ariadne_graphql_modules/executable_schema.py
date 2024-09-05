@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from enum import Enum
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Optional, Union
 
 from ariadne import (
     SchemaBindable,
@@ -14,38 +15,38 @@ from graphql import (
     GraphQLSchema,
     assert_valid_schema,
     build_ast_schema,
-    parse,
     concat_ast,
+    parse,
 )
 
-from .base import GraphQLMetadata, GraphQLModel, GraphQLType
-from .roots import ROOTS_NAMES, merge_root_nodes
-from .sort import sort_schema_document
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.roots import ROOTS_NAMES, merge_root_nodes
+from ariadne_graphql_modules.sort import sort_schema_document
 
-SchemaType = Union[str, Enum, SchemaBindable, Type[GraphQLType], Type[Enum]]
+SchemaType = Union[str, Enum, SchemaBindable, type[GraphQLType], type[Enum]]
 
 
-def make_executable_schema(
-    *types: Union[SchemaType, List[SchemaType]],
-    directives: Optional[Dict[str, Type[SchemaDirectiveVisitor]]] = None,
+def make_executable_schema(  # noqa: C901
+    *types: Union[SchemaType, list[SchemaType]],
+    directives: Optional[dict[str, type[SchemaDirectiveVisitor]]] = None,
     convert_names_case: Union[bool, SchemaNameConverter] = False,
     merge_roots: bool = True,
 ) -> GraphQLSchema:
     metadata = GraphQLMetadata()
-    type_defs: List[str] = find_type_defs(types)
-    types_list: List[SchemaType] = flatten_types(types, metadata)
+    type_defs: list[str] = find_type_defs(types)
+    types_list: list[SchemaType] = flatten_types(types, metadata)
 
     assert_types_unique(types_list, merge_roots)
     assert_types_not_abstract(types_list)
 
-    schema_bindables: List[Union[SchemaBindable, GraphQLModel]] = []
+    schema_bindables: list[Union[SchemaBindable, GraphQLModel]] = []
     for type_def in types_list:
         if isinstance(type_def, SchemaBindable):
             schema_bindables.append(type_def)
         elif isinstance(type_def, type) and issubclass(type_def, (GraphQLType, Enum)):
             schema_bindables.append(metadata.get_graphql_model(type_def))
 
-    schema_models: List[GraphQLModel] = [
+    schema_models: list[GraphQLModel] = [
         type_def for type_def in schema_bindables if isinstance(type_def, GraphQLModel)
     ]
 
@@ -98,11 +99,11 @@ def make_executable_schema(
 
 def find_type_defs(
     types: Union[
-        Tuple[Union[SchemaType, List[SchemaType]], ...],
-        List[SchemaType],
-    ]
-) -> List[str]:
-    type_defs: List[str] = []
+        tuple[Union[SchemaType, list[SchemaType]], ...],
+        list[SchemaType],
+    ],
+) -> list[str]:
+    type_defs: list[str] = []
 
     for type_def in types:
         if isinstance(type_def, str):
@@ -114,14 +115,14 @@ def find_type_defs(
 
 
 def flatten_types(
-    types: Tuple[Union[SchemaType, List[SchemaType]], ...],
+    types: tuple[Union[SchemaType, list[SchemaType]], ...],
     metadata: GraphQLMetadata,
-) -> List[SchemaType]:
-    flat_schema_types_list: List[SchemaType] = flatten_schema_types(
+) -> list[SchemaType]:
+    flat_schema_types_list: list[SchemaType] = flatten_schema_types(
         types, metadata, dedupe=True
     )
 
-    types_list: List[SchemaType] = []
+    types_list: list[SchemaType] = []
     for type_def in flat_schema_types_list:
         if isinstance(type_def, SchemaBindable):
             types_list.append(type_def)
@@ -146,13 +147,13 @@ def flatten_types(
     return types_list
 
 
-def flatten_schema_types(
-    types: Sequence[Union[SchemaType, List[SchemaType]]],
+def flatten_schema_types(  # noqa: C901
+    types: Sequence[Union[SchemaType, list[SchemaType]]],
     metadata: GraphQLMetadata,
     dedupe: bool,
-) -> List[SchemaType]:
-    flat_list: List[SchemaType] = []
-    checked_types: List[Type[GraphQLType]] = []
+) -> list[SchemaType]:
+    flat_list: list[SchemaType] = []
+    checked_types: list[type[GraphQLType]] = []
 
     for type_def in types:
         if isinstance(type_def, str):
@@ -171,7 +172,7 @@ def flatten_schema_types(
     if not dedupe:
         return flat_list
 
-    unique_list: List[SchemaType] = []
+    unique_list: list[SchemaType] = []
     for type_def in flat_list:
         if type_def not in unique_list:
             unique_list.append(type_def)
@@ -180,9 +181,9 @@ def flatten_schema_types(
 
 
 def add_graphql_type_to_flat_list(
-    flat_list: List[SchemaType],
-    checked_types: List[Type[GraphQLType]],
-    type_def: Type[GraphQLType],
+    flat_list: list[SchemaType],
+    checked_types: list[type[GraphQLType]],
+    type_def: type[GraphQLType],
     metadata: GraphQLMetadata,
 ) -> None:
     if type_def in checked_types:
@@ -212,8 +213,8 @@ def get_graphql_type_name(type_def: SchemaType) -> Optional[str]:
     return None
 
 
-def assert_types_unique(type_defs: List[SchemaType], merge_roots: bool):
-    types_names: Dict[str, Any] = {}
+def assert_types_unique(type_defs: list[SchemaType], merge_roots: bool):
+    types_names: dict[str, Any] = {}
     for type_def in type_defs:
         type_name = get_graphql_type_name(type_def)
         if not type_name:
@@ -232,7 +233,7 @@ def assert_types_unique(type_defs: List[SchemaType], merge_roots: bool):
         types_names[type_name] = type_def
 
 
-def assert_types_not_abstract(type_defs: List[SchemaType]):
+def assert_types_not_abstract(type_defs: list[SchemaType]):
     for type_def in type_defs:
         if isinstance(type_def, SchemaBindable):
             continue

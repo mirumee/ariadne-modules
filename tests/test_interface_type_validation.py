@@ -1,11 +1,12 @@
 # pylint: disable=unused-variable
 from typing import Optional
+
 import pytest
 
 from ariadne_graphql_modules import (
     GraphQLID,
-    GraphQLObject,
     GraphQLInterface,
+    GraphQLObject,
     make_executable_schema,
 )
 
@@ -29,9 +30,7 @@ def test_interface_with_schema_object_with_no_schema(data_regression):
     with pytest.raises(ValueError) as exc_info:
 
         class UserInterface(GraphQLInterface):
-            __schema__: Optional[
-                str
-            ] = """
+            __schema__: Optional[str] = """
             interface UserInterface {
                 summary: String!
                 score: Int!

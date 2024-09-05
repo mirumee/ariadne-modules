@@ -1,11 +1,11 @@
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from graphql import graphql_sync
 
 from ariadne_graphql_modules import (
     GraphQLID,
-    GraphQLObject,
     GraphQLInterface,
+    GraphQLObject,
     GraphQLUnion,
     make_executable_schema,
 )
@@ -28,9 +28,9 @@ def test_interface_without_schema(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=List[ResultType])
+        @GraphQLObject.field(graphql_type=list[ResultType])
         @staticmethod
-        def search(*_) -> List[Union[UserType, CommentType]]:
+        def search(*_) -> list[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
                 CommentType(id=2, content="Hello World!"),
@@ -94,9 +94,9 @@ def test_interface_inheritance_without_schema(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=List[ResultType])
+        @GraphQLObject.field(graphql_type=list[ResultType])
         @staticmethod
-        def search(*_) -> List[Union[UserType, CommentType]]:
+        def search(*_) -> list[Union[UserType, CommentType]]:
             return [
                 UserType(),
                 CommentType(id=2, content="Hello World!"),
@@ -169,9 +169,9 @@ def test_interface_with_schema(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=List[ResultType])
+        @GraphQLObject.field(graphql_type=list[ResultType])
         @staticmethod
-        def search(*_) -> List[Union[UserType, CommentType]]:
+        def search(*_) -> list[Union[UserType, CommentType]]:
             return [
                 UserType(id=1, username="Bob"),
                 CommentType(id=2, content="Hello World!"),
@@ -225,7 +225,7 @@ def test_interface_inherit_interface(assert_schema_equals):
     class QueryType(GraphQLObject):
         @GraphQLObject.field
         @staticmethod
-        def users(*_) -> List[UserInterface]:
+        def users(*_) -> list[UserInterface]:
             return [
                 UserType(id="1", username="test_user"),
                 SuperUserType(
@@ -331,9 +331,9 @@ def test_interface_resolvers_and_field_descriptions(assert_schema_equals):
         name: str
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=List[UserInterface])
+        @GraphQLObject.field(graphql_type=list[UserInterface])
         @staticmethod
-        def users(*_) -> List[UserInterface]:
+        def users(*_) -> list[UserInterface]:
             return [MyType(id="2", name="old", summary="ss", score=22)]
 
     schema = make_executable_schema(QueryType, UserType, MyType, UserInterface)
@@ -404,9 +404,9 @@ def test_interface_with_schema_object_with_schema(assert_schema_equals):
         __types__ = [UserType, CommentType]
 
     class QueryType(GraphQLObject):
-        @GraphQLObject.field(graphql_type=List[ResultType])
+        @GraphQLObject.field(graphql_type=list[ResultType])
         @staticmethod
-        def search(*_) -> List[Union[UserType, CommentType]]:
+        def search(*_) -> list[Union[UserType, CommentType]]:
             return [
                 UserType(name="Bob"),
                 CommentType(id=2, content="Hello World!"),

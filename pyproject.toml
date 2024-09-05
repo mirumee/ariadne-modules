@@ -7,8 +7,9 @@ name = "ariadne-graphql-modules"
 version = "1.0.0"
 description = "Ariadne toolkit for defining GraphQL schemas in modular fashion."
 authors = [{ name = "Mirumee Software", email = "hello@mirumee.com" }]
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
+requires-python = ">=3.9,<3.13"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
@@ -26,15 +27,13 @@ dependencies = ["ariadne==0.23.0", "mkdocs-material"]
 
 [project.optional-dependencies]
 test = [
-  "black",
-  "mypy",
-  "pylint",
   "pytest",
   "pytest-cov",
   "pytest-asyncio",
   "pytest-regressions",
   "pytest-datadir",
 ]
+lint = ["black", "mypy", "pylint", "ruff"]
 docs = ["mkdocs-material"]
 
 [project.urls]
@@ -43,38 +42,46 @@ docs = ["mkdocs-material"]
 "Bug Tracker" = "https://github.com/mirumee/ariadne-graphql-modules/issues"
 "Community" = "https://github.com/mirumee/ariadne/discussions"
 "Twitter" = "https://twitter.com/AriadneGraphQL"
+"Documentation" = "https://mirumee.github.io/ariadne-graphql-modules/"
 
 [tool.hatch.build]
 include = [
   "ariadne_graphql_modules/**/*.py",
   "ariadne_graphql_modules/py.typed",
 ]
-exclude = ["tests", "tests_v1"]
+exclude = [
+  "tests",
+  "tests_v1",
+  "*.pyc",
+  "*.pyo",
+  "__pycache__",
+  ".git",
+  ".idea",
+]
 
 [tool.hatch.envs.default]
-features = ["test"]
+features = ["test", "lint", "docs"]
 python = "3.12"
 
-[tool.black]
+[tool.ruff]
 line-length = 88
-target-version = ["py39", "py310", "py311", "py312"]
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-  | snapshots
-)/
-'''
+target-version = "py39"
+exclude = ["tests_v1", "ariadne_graphql_modules/v1"]
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 80
+
+[tool.ruff.lint]
+select = ["E", "F", "G", "I", "N", "Q", "UP", "C90", "T20", "TID"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 30
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+mark-parentheses = false
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "tests_v1"]
 asyncio_mode = "strict"

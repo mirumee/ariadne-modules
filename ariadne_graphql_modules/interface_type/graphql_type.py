@@ -1,29 +1,27 @@
-from typing import Any, Dict, Optional, Tuple, cast
+from typing import Any, Optional, cast
 
 from ariadne.types import Resolver
 from graphql import (
     FieldDefinitionNode,
     InterfaceTypeDefinitionNode,
-    NameNode,
     NamedTypeNode,
+    NameNode,
 )
 
-from ariadne_graphql_modules.base_object_type.graphql_field import GraphQLClassData
-
-from ..base_object_type import (
-    GraphQLFieldData,
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel
+from ariadne_graphql_modules.base_object_type import (
     GraphQLBaseObject,
+    GraphQLFieldData,
     GraphQLObjectData,
     validate_object_type_with_schema,
     validate_object_type_without_schema,
 )
-from ..types import GraphQLClassType
-
-from ..utils import parse_definition
-from ..base import GraphQLMetadata, GraphQLModel
-from ..description import get_description_node
-from ..object_type import GraphQLObject
-from .models import GraphQLInterfaceModel
+from ariadne_graphql_modules.base_object_type.graphql_field import GraphQLClassData
+from ariadne_graphql_modules.description import get_description_node
+from ariadne_graphql_modules.interface_type.models import GraphQLInterfaceModel
+from ariadne_graphql_modules.object_type import GraphQLObject
+from ariadne_graphql_modules.types import GraphQLClassType
+from ariadne_graphql_modules.utils import parse_definition
 
 
 class GraphQLInterface(GraphQLBaseObject):
@@ -52,8 +50,8 @@ class GraphQLInterface(GraphQLBaseObject):
             parse_definition(InterfaceTypeDefinitionNode, cls.__schema__),
         )
 
-        resolvers: Dict[str, Resolver] = {}
-        fields: Tuple[FieldDefinitionNode, ...] = tuple()
+        resolvers: dict[str, Resolver] = {}
+        fields: tuple[FieldDefinitionNode, ...] = tuple()
         fields, resolvers = cls._create_fields_and_resolvers_with_schema(
             definition.fields
         )
@@ -107,7 +105,8 @@ class GraphQLInterface(GraphQLBaseObject):
             return obj.__get_graphql_name__()
 
         raise ValueError(
-            f"Cannot resolve GraphQL type {obj} for object of type '{type(obj).__name__}'."
+            f"Cannot resolve GraphQL type {obj} "
+            "for object of type '{type(obj).__name__}'."
         )
 
     @classmethod

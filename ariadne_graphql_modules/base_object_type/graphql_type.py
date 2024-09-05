@@ -1,13 +1,9 @@
+from collections.abc import Iterable
 from copy import deepcopy
 from enum import Enum
 from typing import (
     Any,
-    Dict,
-    Iterable,
-    List,
     Optional,
-    Tuple,
-    Type,
     Union,
 )
 
@@ -18,9 +14,8 @@ from graphql import (
     StringValueNode,
 )
 
-from ..types import GraphQLClassType
-
-from .graphql_field import (
+from ariadne_graphql_modules.base import GraphQLMetadata, GraphQLModel, GraphQLType
+from ariadne_graphql_modules.base_object_type.graphql_field import (
     GraphQLClassData,
     GraphQLFieldData,
     GraphQLObjectData,
@@ -31,31 +26,30 @@ from .graphql_field import (
     object_field,
     object_resolver,
 )
-from .utils import (
+from ariadne_graphql_modules.base_object_type.utils import (
     get_field_args_from_resolver,
     get_field_args_from_subscriber,
     get_field_args_out_names,
     get_field_node_from_obj_field,
     update_field_args_options,
 )
-
-from ..base import GraphQLMetadata, GraphQLModel, GraphQLType
-from ..convert_name import convert_python_name_to_graphql
-from ..description import get_description_node
-from ..typing import get_graphql_type
-from ..value import get_value_node
+from ariadne_graphql_modules.convert_name import convert_python_name_to_graphql
+from ariadne_graphql_modules.description import get_description_node
+from ariadne_graphql_modules.types import GraphQLClassType
+from ariadne_graphql_modules.typing import get_graphql_type
+from ariadne_graphql_modules.value import get_value_node
 
 
 class GraphQLBaseObject(GraphQLType):
-    __kwargs__: Dict[str, Any]
+    __kwargs__: dict[str, Any]
     __abstract__: bool = True
     __schema__: Optional[str] = None
-    __aliases__: Optional[Dict[str, str]]
-    __requires__: Optional[Iterable[Union[Type[GraphQLType], Type[Enum]]]]
+    __aliases__: Optional[dict[str, str]]
+    __requires__: Optional[Iterable[Union[type[GraphQLType], type[Enum]]]]
     __graphql_type__ = GraphQLClassType.BASE
 
     def __init__(self, **kwargs: Any):
-        default_values: Dict[str, Any] = {}
+        default_values: dict[str, Any] = {}
 
         for inherited_obj in self._collect_inherited_objects():
             if hasattr(inherited_obj, "__kwargs__"):
@@ -97,12 +91,12 @@ class GraphQLBaseObject(GraphQLType):
 
     @classmethod
     def _create_fields_and_resolvers_with_schema(
-        cls, definition_fields: Tuple["FieldDefinitionNode", ...]
-    ) -> Tuple[tuple[FieldDefinitionNode, ...], Dict[str, Resolver]]:
-        descriptions: Dict[str, StringValueNode] = {}
-        args_descriptions: Dict[str, Dict[str, StringValueNode]] = {}
-        args_defaults: Dict[str, Dict[str, Any]] = {}
-        resolvers: Dict[str, Resolver] = {}
+        cls, definition_fields: tuple["FieldDefinitionNode", ...]
+    ) -> tuple[tuple[FieldDefinitionNode, ...], dict[str, Resolver]]:
+        descriptions: dict[str, StringValueNode] = {}
+        args_descriptions: dict[str, dict[str, StringValueNode]] = {}
+        args_defaults: dict[str, dict[str, Any]] = {}
+        resolvers: dict[str, Resolver] = {}
 
         for attr_name in dir(cls):
             cls_attr = getattr(cls, attr_name)
@@ -121,21 +115,21 @@ class GraphQLBaseObject(GraphQLType):
                     for arg_name, arg_options in final_args.items():
                         arg_description = get_description_node(arg_options.description)
                         if arg_description:
-                            args_descriptions[cls_attr.field][
-                                arg_name
-                            ] = arg_description
+                            args_descriptions[cls_attr.field][arg_name] = (
+                                arg_description
+                            )
 
                         if arg_options.default_value is not None:
                             args_defaults[cls_attr.field][arg_name] = get_value_node(
                                 arg_options.default_value
                             )
 
-        fields: List[FieldDefinitionNode] = []
+        fields: list[FieldDefinitionNode] = []
         for field in definition_fields:
             field_args_descriptions = args_descriptions.get(field.name.value, {})
             field_args_defaults = args_defaults.get(field.name.value, {})
 
-            args: List[InputValueDefinitionNode] = []
+            args: list[InputValueDefinitionNode] = []
             for arg in field.arguments:
                 arg_name = arg.name.value
                 args.append(
@@ -195,7 +189,7 @@ class GraphQLBaseObject(GraphQLType):
     @classmethod
     def __get_graphql_types__(
         cls, metadata: "GraphQLMetadata"
-    ) -> Iterable[Union[Type["GraphQLType"], Type[Enum]]]:
+    ) -> Iterable[Union[type["GraphQLType"], type[Enum]]]:
         """Returns iterable with GraphQL types associated with this type"""
         if getattr(cls, "__schema__", None):
             return cls.__get_graphql_types_with_schema__(metadata)
@@ -205,16 +199,16 @@ class GraphQLBaseObject(GraphQLType):
     @classmethod
     def __get_graphql_types_with_schema__(
         cls, _: "GraphQLMetadata"
-    ) -> Iterable[Type["GraphQLType"]]:
-        types: List[Type["GraphQLType"]] = [cls]
+    ) -> Iterable[type["GraphQLType"]]:
+        types: list[type[GraphQLType]] = [cls]
         types.extend(getattr(cls, "__requires__", []))
         return types
 
     @classmethod
     def __get_graphql_types_without_schema__(
         cls, metadata: "GraphQLMetadata"
-    ) -> Iterable[Union[Type["GraphQLType"], Type[Enum]]]:
-        types: List[Union[Type["GraphQLType"], Type[Enum]]] = [cls]
+    ) -> Iterable[Union[type["GraphQLType"], type[Enum]]]:
+        types: list[Union[type[GraphQLType], type[Enum]]] = [cls]
         type_data = cls.get_graphql_object_data(metadata)
 
         for field in type_data.fields.values():
@@ -236,7 +230,7 @@ class GraphQLBaseObject(GraphQLType):
         *,
         name: Optional[str] = None,
         graphql_type: Optional[Any] = None,
-        args: Optional[Dict[str, GraphQLObjectFieldArg]] = None,
+        args: Optional[dict[str, GraphQLObjectFieldArg]] = None,
         description: Optional[str] = None,
         default_value: Optional[Any] = None,
     ) -> Any:
@@ -254,7 +248,7 @@ class GraphQLBaseObject(GraphQLType):
     def resolver(
         field: str,
         graphql_type: Optional[Any] = None,
-        args: Optional[Dict[str, GraphQLObjectFieldArg]] = None,
+        args: Optional[dict[str, GraphQLObjectFieldArg]] = None,
         description: Optional[str] = None,
     ):
         """Shortcut for object_resolver()"""
@@ -303,7 +297,7 @@ class GraphQLBaseObject(GraphQLType):
         raise NotImplementedError()
 
     @staticmethod
-    def _build_fields(fields_data: GraphQLFieldData) -> Dict[str, "GraphQLObjectField"]:
+    def _build_fields(fields_data: GraphQLFieldData) -> dict[str, "GraphQLObjectField"]:
         fields = {}
         for field_name in fields_data.fields_order:
             fields[field_name] = GraphQLObjectField(
@@ -339,7 +333,9 @@ class GraphQLBaseObject(GraphQLType):
             fields_data.fields_types[attr_name] = attr_type
 
     @staticmethod
-    def _process_class_attributes(target_cls, fields_data: GraphQLFieldData):
+    def _process_class_attributes(  # noqa: C901
+        target_cls, fields_data: GraphQLFieldData
+    ):
         for attr_name in dir(target_cls):
             if attr_name.startswith("__"):
                 continue
