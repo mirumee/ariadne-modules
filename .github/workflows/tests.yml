@@ -27,7 +27,7 @@ jobs:
           pip install -e .[test,lint]
 
       - name: Run Ruff
-        run: hatch run ruff .
+        run: hatch run ruff check .
 
       - name: Run Black
         run: hatch run black --check .
