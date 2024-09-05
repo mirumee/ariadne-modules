@@ -27,16 +27,16 @@ jobs:
           pip install -e .[test,lint]
 
       - name: Run Ruff
-        run: hatch run ruff check .
+        run: ruff check .
 
       - name: Run Black
-        run: hatch run black --check .
+        run: black --check .
 
       - name: Run MyPy
-        run: hatch run mypy .
+        run: mypy ariadne_graphql_modules --ignore-missing-imports
 
       - name: Run Pylint
-        run: hatch run pylint ariadne_graphql_modules
+        run: pylint ariadne_graphql_modules tests
 
       - name: Run Pytest
-        run: hatch run pytest --cov=ariadne_graphql_modules
+        run: pytest
