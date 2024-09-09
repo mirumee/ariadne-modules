@@ -1,0 +1,62 @@
+site_name: Ariadne Graphql Modules
+site_url: https://mirumee.github.io/ariadne-graphql-modules/
+repo_url: https://github.com/mirumee/ariadne-graphql-modules
+repo_name: mirumee/ariadne-graphql-modules
+copyright: Copyright &copy; 2024 - Mirumee Software
+
+theme:
+  name: material
+
+nav:
+  - Get Started:
+      - Welcome to Ariadne Graphql Modules: index.md
+      - Migration Guide: migration_guide.md
+      - Contributing: contributing.md
+      - Changelog: changelog.md
+  - API Documentation:
+      - GraphQLObject: api/object_type.md
+      - GraphQLSubscription: api/subscription_type.md
+      - GraphQLInput: api/input_type.md
+      - GraphQLScalar: api/scalar_type.md
+      - GraphQLEnum: api/enum_type.md
+      - GraphQLInterface: api/interface_type.md
+      - GraphQLUnion: api/union_type.md
+      - Deferred: api/deferred_type.md
+      - GraphQLType: api/base_type.md
+      - GraphQLID: api/id_type.md
+      - make_executable_schema: api/make_executable_schema.md
+      - wrap_legacy_types: api/wrap_legacy_types.md
+
+plugins:
+  - offline:
+      enabled: !ENV [OFFLINE, false]
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - footnotes
+  - tables
+  - toc:
+      permalink: true

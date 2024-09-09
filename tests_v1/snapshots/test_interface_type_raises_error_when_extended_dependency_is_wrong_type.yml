@@ -1,0 +1,3 @@
+ExampleInterface requires 'Example' to be GraphQL interface but other type was provided
+  in '__requires__'
+...

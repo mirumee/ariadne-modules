@@ -1,281 +1,146 @@
-from datetime import date, datetime
+from datetime import date
 
-import pytest
-from ariadne import SchemaDirectiveVisitor
-from graphql import GraphQLError, StringValueNode, graphql_sync
+from ariadne import gql
+from graphql import graphql_sync
 
 from ariadne_graphql_modules import (
-    DirectiveType,
-    ObjectType,
-    ScalarType,
+    GraphQLObject,
+    GraphQLScalar,
     make_executable_schema,
 )
 
 
-def test_scalar_type_raises_attribute_error_when_defined_without_schema(snapshot):
-    with pytest.raises(AttributeError) as err:
-        # pylint: disable=unused-variable
-        class DateScalar(ScalarType):
-            pass
+class DateScalar(GraphQLScalar[date]):
+    @classmethod
+    def serialize(cls, value):
+        if isinstance(value, cls):
+            return str(value.unwrap())
 
-    snapshot.assert_match(err)
-
-
-def test_scalar_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
-    with pytest.raises(TypeError) as err:
-        # pylint: disable=unused-variable
-        class DateScalar(ScalarType):
-            __schema__ = True
-
-    snapshot.assert_match(err)
+        return str(value)
 
 
-def test_scalar_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
-    with pytest.raises(GraphQLError) as err:
-        # pylint: disable=unused-variable
-        class DateScalar(ScalarType):
-            __schema__ = "scalor Date"
-
-    snapshot.assert_match(err)
+class SerializeTestScalar(GraphQLScalar[str]):
+    pass
 
 
-def test_scalar_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class DateScalar(ScalarType):
-            __schema__ = "type DateTime"
+def test_scalar_field_returning_scalar_instance(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        date: DateScalar
 
-    snapshot.assert_match(err)
-
-
-def test_scalar_type_raises_error_when_defined_with_multiple_types_schema(snapshot):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class DateScalar(ScalarType):
-            __schema__ = """
-            scalar Date
-
-            scalar DateTime
-            """
-
-    snapshot.assert_match(err)
-
-
-def test_scalar_type_extracts_graphql_name():
-    class DateScalar(ScalarType):
-        __schema__ = "scalar Date"
-
-    assert DateScalar.graphql_name == "Date"
-
-
-def test_scalar_type_can_be_extended_with_directive():
-    # pylint: disable=unused-variable
-    class ExampleDirective(DirectiveType):
-        __schema__ = "directive @example on SCALAR"
-        __visitor__ = SchemaDirectiveVisitor
-
-    class DateScalar(ScalarType):
-        __schema__ = "scalar Date"
-
-    class ExtendDateScalar(ScalarType):
-        __schema__ = "extend scalar Date @example"
-        __requires__ = [DateScalar, ExampleDirective]
-
-
-class DateReadOnlyScalar(ScalarType):
-    __schema__ = "scalar DateReadOnly"
-
-    @staticmethod
-    def serialize(date):
-        return date.strftime("%Y-%m-%d")
-
-
-class DateInputScalar(ScalarType):
-    __schema__ = "scalar DateInput"
-
-    @staticmethod
-    def parse_value(formatted_date):
-        parsed_datetime = datetime.strptime(formatted_date, "%Y-%m-%d")
-        return parsed_datetime.date()
-
-    @staticmethod
-    def parse_literal(ast, variable_values=None):  # pylint: disable=unused-argument
-        if not isinstance(ast, StringValueNode):
-            raise ValueError()
-
-        formatted_date = ast.value
-        parsed_datetime = datetime.strptime(formatted_date, "%Y-%m-%d")
-        return parsed_datetime.date()
-
-
-class DefaultParserScalar(ScalarType):
-    __schema__ = "scalar DefaultParser"
-
-    @staticmethod
-    def parse_value(value):
-        return type(value).__name__
-
-
-TEST_DATE = date(2006, 9, 13)
-TEST_DATE_SERIALIZED = TEST_DATE.strftime("%Y-%m-%d")
-
-
-class QueryType(ObjectType):
-    __schema__ = """
-    type Query {
-        testSerialize: DateReadOnly!
-        testInput(value: DateInput!): Boolean!
-        testInputValueType(value: DefaultParser!): String!
-    }
-    """
-    __requires__ = [
-        DateReadOnlyScalar,
-        DateInputScalar,
-        DefaultParserScalar,
-    ]
-    __aliases__ = {
-        "testSerialize": "test_serialize",
-        "testInput": "test_input",
-        "testInputValueType": "test_input_value_type",
-    }
-
-    @staticmethod
-    def resolve_test_serialize(*_):
-        return TEST_DATE
-
-    @staticmethod
-    def resolve_test_input(*_, value):
-        assert value == TEST_DATE
-        return True
-
-    @staticmethod
-    def resolve_test_input_value_type(*_, value):
-        return value
-
-
-schema = make_executable_schema(QueryType)
-
-
-def test_attempt_deserialize_str_literal_without_valid_date_raises_error():
-    test_input = "invalid string"
-    result = graphql_sync(schema, '{ testInput(value: "%s") }' % test_input)
-    assert result.errors is not None
-    assert str(result.errors[0]).splitlines()[:1] == [
-        "Expected value of type 'DateInput!', found \"invalid string\"; "
-        "time data 'invalid string' does not match format '%Y-%m-%d'"
-    ]
-
-
-def test_attempt_deserialize_wrong_type_literal_raises_error():
-    test_input = 123
-    result = graphql_sync(schema, "{ testInput(value: %s) }" % test_input)
-    assert result.errors is not None
-    assert str(result.errors[0]).splitlines()[:1] == [
-        "Expected value of type 'DateInput!', found 123; "
-    ]
-
-
-def test_default_literal_parser_is_used_to_extract_value_str_from_ast_node():
-    class ValueParserOnlyScalar(ScalarType):
-        __schema__ = "scalar DateInput"
-
+        @GraphQLObject.resolver("date")
         @staticmethod
-        def parse_value(formatted_date):
-            parsed_datetime = datetime.strptime(formatted_date, "%Y-%m-%d")
-            return parsed_datetime.date()
+        def resolve_date(*_) -> DateScalar:
+            return DateScalar(date(1989, 10, 30))
 
-    class ValueParserOnlyQueryType(ObjectType):
-        __schema__ = """
-        type Query {
-            parse(value: DateInput!): String!
-        }
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
         """
-        __requires__ = [ValueParserOnlyScalar]
+        scalar Date
 
+        type Query {
+          date: Date!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ date }")
+
+    assert not result.errors
+    assert result.data == {"date": "1989-10-30"}
+
+
+def test_scalar_field_returning_scalar_wrapped_type(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        scalar_date: DateScalar
+
+        @GraphQLObject.resolver("scalar_date", graphql_type=DateScalar)
         @staticmethod
-        def resolve_parse(*_, value):
-            return value
+        def resolve_date(*_) -> date:
+            return date(1989, 10, 30)
 
-    schema = make_executable_schema(ValueParserOnlyQueryType)
-    result = graphql_sync(schema, """{ parse(value: "%s") }""" % TEST_DATE_SERIALIZED)
-    assert result.errors is None
-    assert result.data == {"parse": "2006-09-13"}
+    schema = make_executable_schema(QueryType)
 
+    assert_schema_equals(
+        schema,
+        """
+        scalar Date
 
-parametrized_query = """
-    query parseValueTest($value: DateInput!) {
-        testInput(value: $value)
-    }
-"""
+        type Query {
+          scalarDate: Date!
+        }
+        """,
+    )
 
+    result = graphql_sync(schema, "{ scalarDate }")
 
-def test_variable_with_valid_date_string_is_deserialized_to_python_date():
-    variables = {"value": TEST_DATE_SERIALIZED}
-    result = graphql_sync(schema, parametrized_query, variable_values=variables)
-    assert result.errors is None
-    assert result.data == {"testInput": True}
-
-
-def test_attempt_deserialize_str_variable_without_valid_date_raises_error():
-    variables = {"value": "invalid string"}
-    result = graphql_sync(schema, parametrized_query, variable_values=variables)
-    assert result.errors is not None
-    assert str(result.errors[0]).splitlines()[:1] == [
-        "Variable '$value' got invalid value 'invalid string'; "
-        "Expected type 'DateInput'. "
-        "time data 'invalid string' does not match format '%Y-%m-%d'"
-    ]
+    assert not result.errors
+    assert result.data == {"scalarDate": "1989-10-30"}
 
 
-def test_attempt_deserialize_wrong_type_variable_raises_error():
-    variables = {"value": 123}
-    result = graphql_sync(schema, parametrized_query, variable_values=variables)
-    assert result.errors is not None
-    assert str(result.errors[0]).splitlines()[:1] == [
-        "Variable '$value' got invalid value 123; Expected type 'DateInput'. "
-        "strptime() argument 1 must be str, not int"
-    ]
+class SchemaDateScalar(GraphQLScalar[date]):
+    __schema__ = gql("scalar Date")
+
+    @classmethod
+    def serialize(cls, value):
+        if isinstance(value, cls):
+            return str(value.unwrap())
+
+        return str(value)
 
 
-def test_literal_string_is_deserialized_by_default_parser():
-    result = graphql_sync(schema, '{ testInputValueType(value: "test") }')
-    assert result.errors is None
-    assert result.data == {"testInputValueType": "str"}
+def test_unwrap_scalar_field_returning_scalar_instance(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        test: SerializeTestScalar
+
+        @GraphQLObject.resolver("test", graphql_type=str)
+        @staticmethod
+        def resolve_date(*_) -> SerializeTestScalar:
+            return SerializeTestScalar(value="Hello!")
+
+    schema = make_executable_schema(QueryType)
+
+    assert_schema_equals(
+        schema,
+        """
+        scalar SerializeTest
+
+        type Query {
+          test: SerializeTest!
+        }
+        """,
+    )
+
+    result = graphql_sync(schema, "{ test }")
+
+    assert not result.errors
+    assert result.data == {"test": "Hello!"}
 
 
-def test_literal_int_is_deserialized_by_default_parser():
-    result = graphql_sync(schema, "{ testInputValueType(value: 123) }")
-    assert result.errors is None
-    assert result.data == {"testInputValueType": "int"}
+def test_schema_scalar_field_returning_scalar_instance(assert_schema_equals):
+    class QueryType(GraphQLObject):
+        date: SchemaDateScalar
 
+        @GraphQLObject.resolver("date")
+        @staticmethod
+        def resolve_date(*_) -> SchemaDateScalar:
+            return SchemaDateScalar(date(1989, 10, 30))
 
-def test_literal_float_is_deserialized_by_default_parser():
-    result = graphql_sync(schema, "{ testInputValueType(value: 1.5) }")
-    assert result.errors is None
-    assert result.data == {"testInputValueType": "float"}
+    schema = make_executable_schema(QueryType)
 
+    assert_schema_equals(
+        schema,
+        """
+        scalar Date
 
-def test_literal_bool_true_is_deserialized_by_default_parser():
-    result = graphql_sync(schema, "{ testInputValueType(value: true) }")
-    assert result.errors is None
-    assert result.data == {"testInputValueType": "bool"}
+        type Query {
+          date: Date!
+        }
+        """,
+    )
 
+    result = graphql_sync(schema, "{ date }")
 
-def test_literal_bool_false_is_deserialized_by_default_parser():
-    result = graphql_sync(schema, "{ testInputValueType(value: false) }")
-    assert result.errors is None
-    assert result.data == {"testInputValueType": "bool"}
-
-
-def test_literal_object_is_deserialized_by_default_parser():
-    result = graphql_sync(schema, "{ testInputValueType(value: {}) }")
-    assert result.errors is None
-    assert result.data == {"testInputValueType": "dict"}
-
-
-def test_literal_list_is_deserialized_by_default_parser():
-    result = graphql_sync(schema, "{ testInputValueType(value: []) }")
-    assert result.errors is None
-    assert result.data == {"testInputValueType": "list"}
+    assert not result.errors
+    assert result.data == {"date": "1989-10-30"}

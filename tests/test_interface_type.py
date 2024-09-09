@@ -1,450 +1,454 @@
-from dataclasses import dataclass
+from typing import Optional, Union
 
-import pytest
-from ariadne import SchemaDirectiveVisitor
-from graphql import GraphQLError, graphql_sync
+from graphql import graphql_sync
 
 from ariadne_graphql_modules import (
-    DeferredType,
-    DirectiveType,
-    InterfaceType,
-    ObjectType,
+    GraphQLID,
+    GraphQLInterface,
+    GraphQLObject,
+    GraphQLUnion,
     make_executable_schema,
 )
 
 
-def test_interface_type_raises_attribute_error_when_defined_without_schema(snapshot):
-    with pytest.raises(AttributeError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            pass
-
-    snapshot.assert_match(err)
+class CommentType(GraphQLObject):
+    id: GraphQLID
+    content: str
 
 
-def test_interface_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
-    with pytest.raises(TypeError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = True
+def test_interface_without_schema(assert_schema_equals):
+    class UserInterface(GraphQLInterface):
+        summary: str
+        score: int
 
-    snapshot.assert_match(err)
+    class UserType(GraphQLObject, UserInterface):
+        name: str
+
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=list[ResultType])
+        @staticmethod
+        def search(*_) -> list[Union[UserType, CommentType]]:
+            return [
+                UserType(id=1, username="Bob"),
+                CommentType(id=2, content="Hello World!"),
+            ]
+
+    schema = make_executable_schema(QueryType, UserInterface, UserType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search: [Result!]!
+        }
+
+        union Result = User | Comment
+
+        type User implements UserInterface {
+          summary: String!
+          score: Int!
+          name: String!
+        }
+
+        type Comment {
+          id: ID!
+          content: String!
+        }
+
+        interface UserInterface {
+          summary: String!
+          score: Int!
+        }
+
+        """,
+    )
 
 
-def test_interface_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
-    with pytest.raises(GraphQLError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = "interfaco Example"
+def test_interface_inheritance_without_schema(assert_schema_equals):
+    def hello_resolver(*_, name: str) -> str:
+        return f"Hello {name}!"
 
-    snapshot.assert_match(err)
+    class UserInterface(GraphQLInterface):
+        summary: str
+        score: str = GraphQLInterface.field(
+            hello_resolver,
+            name="better_score",
+            graphql_type=str,
+            args={"name": GraphQLInterface.argument(name="json")},
+            description="desc",
+            default_value="my_json",
+        )
+
+    class UserType(GraphQLObject, UserInterface):
+        name: str = GraphQLInterface.field(
+            name="name",
+            graphql_type=str,
+            args={"name": GraphQLInterface.argument(name="json")},
+            default_value="my_json",
+        )
+
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=list[ResultType])
+        @staticmethod
+        def search(*_) -> list[Union[UserType, CommentType]]:
+            return [
+                UserType(),
+                CommentType(id=2, content="Hello World!"),
+            ]
+
+    schema = make_executable_schema(QueryType, UserInterface, UserType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search: [Result!]!
+        }
+
+        union Result = User | Comment
+
+        type User implements UserInterface {
+          summary: String!
+
+          \"\"\"desc\"\"\"
+          better_score(json: String!): String!
+          name: String!
+        }
+
+        type Comment {
+          id: ID!
+          content: String!
+        }
+
+        interface UserInterface {
+          summary: String!
+
+          \"\"\"desc\"\"\"
+          better_score(json: String!): String!
+        }
+
+        """,
+    )
+
+    result = graphql_sync(
+        schema, '{ search { ... on User{ better_score(json: "test") } } }'
+    )
+
+    assert not result.errors
+    assert result.data == {"search": [{"better_score": "Hello test!"}, {}]}
 
 
-def test_interface_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = "type Example"
-
-    snapshot.assert_match(err)
-
-
-def test_interface_type_raises_error_when_defined_with_multiple_types_schema(snapshot):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = """
-            interface Example
-
-            interface Other
-            """
-
-    snapshot.assert_match(err)
-
-
-def test_interface_type_raises_error_when_defined_without_fields(snapshot):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = "interface Example"
-
-    snapshot.assert_match(err)
-
-
-def test_interface_type_extracts_graphql_name():
-    class ExampleInterface(InterfaceType):
+def test_interface_with_schema(assert_schema_equals):
+    class UserInterface(GraphQLInterface):
         __schema__ = """
-        interface Example {
+        interface UserInterface {
+            summary: String!
+            score: Int!
+        }
+        """
+
+    class UserType(GraphQLObject):
+        __schema__ = """
+        type User implements UserInterface {
             id: ID!
+            name: String!
+            summary: String!
+            score: Int!
         }
         """
 
-    assert ExampleInterface.graphql_name == "Example"
+        __requires__ = [UserInterface]
+
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=list[ResultType])
+        @staticmethod
+        def search(*_) -> list[Union[UserType, CommentType]]:
+            return [
+                UserType(id=1, username="Bob"),
+                CommentType(id=2, content="Hello World!"),
+            ]
+
+    schema = make_executable_schema(QueryType, UserType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search: [Result!]!
+        }
+
+        union Result = User | Comment
+
+        type User implements UserInterface {
+          id: ID!
+          name: String!
+          summary: String!
+          score: Int!
+        }
+
+        interface UserInterface {
+          summary: String!
+          score: Int!
+        }
+
+        type Comment {
+          id: ID!
+          content: String!
+        }
+
+        """,
+    )
 
 
-def test_interface_type_raises_error_when_defined_without_return_type_dependency(
-    snapshot,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = """
-            interface Example {
-                group: Group
-                groups: [Group!]
-            }
-            """
+def test_interface_inherit_interface(assert_schema_equals):
+    class BaseEntityInterface(GraphQLInterface):
+        id: GraphQLID
 
-    snapshot.assert_match(err)
+    class UserInterface(BaseEntityInterface):
+        username: str
+
+    class UserType(GraphQLObject, UserInterface):
+        name: str
+
+    class SuperUserType(UserType):
+        is_super_user: bool
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field
+        @staticmethod
+        def users(*_) -> list[UserInterface]:
+            return [
+                UserType(id="1", username="test_user"),
+                SuperUserType(
+                    id="2",
+                    username="test_super_user",
+                    is_super_user=True,
+                ),
+            ]
+
+    schema = make_executable_schema(
+        QueryType, BaseEntityInterface, UserInterface, UserType, SuperUserType
+    )
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          users: [UserInterface!]!
+        }
+
+        interface UserInterface implements BaseEntityInterface {
+          id: ID!
+          username: String!
+        }
+
+        interface BaseEntityInterface {
+          id: ID!
+        }
+
+        type User implements BaseEntityInterface & UserInterface {
+          id: ID!
+          username: String!
+          name: String!
+        }
+
+        type SuperUser implements BaseEntityInterface & UserInterface {
+          id: ID!
+          username: String!
+          name: String!
+          isSuperUser: Boolean!
+        }
+        """,
+    )
 
 
-def test_interface_type_verifies_field_dependency():
-    # pylint: disable=unused-variable
-    class GroupType(ObjectType):
+def test_interface_descriptions(assert_schema_equals):
+    class UserInterface(GraphQLInterface):
+        summary: str
+        score: int
+
+        __description__: Optional[str] = "Lorem ipsum."
+
+    class UserType(GraphQLObject, UserInterface):
+        id: GraphQLID
+        username: str
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field
+        @staticmethod
+        def user(*_) -> UserType:
+            return UserType(id="1", username="test_user")
+
+    schema = make_executable_schema(QueryType, UserType, UserInterface)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          user: User!
+        }
+
+        type User implements UserInterface {
+          summary: String!
+          score: Int!
+          id: ID!
+          username: String!
+        }
+
+        \"\"\"Lorem ipsum.\"\"\"
+        interface UserInterface {
+          summary: String!
+          score: Int!
+        }
+        """,
+    )
+
+
+def test_interface_resolvers_and_field_descriptions(assert_schema_equals):
+    class UserInterface(GraphQLInterface):
+        summary: str
+        score: int
+
+        @GraphQLInterface.resolver("score", description="Lorem ipsum.")
+        @staticmethod
+        def resolve_score(*_):
+            return 200
+
+    class UserType(GraphQLObject, UserInterface):
+        id: GraphQLID
+
+    class MyType(GraphQLObject, UserInterface):
+        id: GraphQLID
+        name: str
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=list[UserInterface])
+        @staticmethod
+        def users(*_) -> list[UserInterface]:
+            return [MyType(id="2", name="old", summary="ss", score=22)]
+
+    schema = make_executable_schema(QueryType, UserType, MyType, UserInterface)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          users: [UserInterface!]!
+        }
+
+        interface UserInterface {
+          summary: String!
+
+          \"\"\"Lorem ipsum.\"\"\"
+          score: Int!
+        }
+
+        type User implements UserInterface {
+          summary: String!
+
+          \"\"\"Lorem ipsum.\"\"\"
+          score: Int!
+          id: ID!
+        }
+
+        type My implements UserInterface {
+          summary: String!
+
+          \"\"\"Lorem ipsum.\"\"\"
+          score: Int!
+          id: ID!
+          name: String!
+        }
+        """,
+    )
+    result = graphql_sync(schema, "{ users { ... on My { __typename score } } }")
+
+    assert not result.errors
+    assert result.data == {"users": [{"__typename": "My", "score": 200}]}
+
+
+def test_interface_with_schema_object_with_schema(assert_schema_equals):
+    class UserInterface(GraphQLInterface):
         __schema__ = """
-        type Group {
-            id: ID!
+        interface UserInterface {
+            summary: String!
+            score: Int!
         }
         """
 
-    class ExampleInterface(InterfaceType):
+        @GraphQLInterface.resolver("summary")
+        @staticmethod
+        def resolve_summary(*_):
+            return "base_line"
+
+    class UserType(GraphQLObject):
         __schema__ = """
-        interface Example {
-            group: Group
-            groups: [Group!]
+        type User implements UserInterface {
+            summary: String!
+            score: Int!
+            name: String!
         }
         """
-        __requires__ = [GroupType]
+        __requires__ = [UserInterface]
 
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
 
-def test_interface_type_verifies_circural_dependency():
-    # pylint: disable=unused-variable
-    class ExampleInterface(InterfaceType):
-        __schema__ = """
-        interface Example {
-            parent: Example
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=list[ResultType])
+        @staticmethod
+        def search(*_) -> list[Union[UserType, CommentType]]:
+            return [
+                UserType(name="Bob"),
+                CommentType(id=2, content="Hello World!"),
+            ]
+
+    schema = make_executable_schema(QueryType, UserType)
+
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search: [Result!]!
         }
-        """
 
+        union Result = User | Comment
 
-def test_interface_type_raises_error_when_defined_without_argument_type_dependency(
-    snapshot,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = """
-            interface Example {
-                actions(input: UserInput): [String!]!
-            }
-            """
-
-    snapshot.assert_match(err)
-
-
-def test_interface_type_verifies_circular_dependency_using_deferred_type():
-    # pylint: disable=unused-variable
-    class ExampleInterface(InterfaceType):
-        __schema__ = """
-        interface Example {
-            id: ID!
-            users: [User]
+        type User implements UserInterface {
+          summary: String!
+          score: Int!
+          name: String!
         }
-        """
-        __requires__ = [DeferredType("User")]
 
-    class UserType(ObjectType):
-        __schema__ = """
-        type User {
-            roles: [Example]
+        interface UserInterface {
+          summary: String!
+          score: Int!
         }
-        """
-        __requires__ = [ExampleInterface]
 
-
-def test_interface_type_can_be_extended_with_new_fields():
-    # pylint: disable=unused-variable
-    class ExampleInterface(InterfaceType):
-        __schema__ = """
-        interface Example {
-            id: ID!
+        type Comment {
+          id: ID!
+          content: String!
         }
-        """
 
-    class ExtendExampleInterface(InterfaceType):
-        __schema__ = """
-        extend interface Example {
-            name: String
-        }
-        """
-        __requires__ = [ExampleInterface]
+        """,
+    )
+    result = graphql_sync(schema, "{ search { ... on User{ summary } } }")
 
-
-def test_interface_type_can_be_extended_with_directive():
-    # pylint: disable=unused-variable
-    class ExampleDirective(DirectiveType):
-        __schema__ = "directive @example on INTERFACE"
-        __visitor__ = SchemaDirectiveVisitor
-
-    class ExampleInterface(InterfaceType):
-        __schema__ = """
-        interface Example {
-            id: ID!
-        }
-        """
-
-    class ExtendExampleInterface(InterfaceType):
-        __schema__ = """
-        extend interface Example @example
-        """
-        __requires__ = [ExampleInterface, ExampleDirective]
-
-
-def test_interface_type_can_be_extended_with_other_interface():
-    # pylint: disable=unused-variable
-    class ExampleInterface(InterfaceType):
-        __schema__ = """
-        interface Example {
-            id: ID!
-        }
-        """
-
-    class OtherInterface(InterfaceType):
-        __schema__ = """
-        interface Other {
-            depth: Int! 
-        }
-        """
-
-    class ExtendExampleInterface(InterfaceType):
-        __schema__ = """
-        extend interface Example implements Other
-        """
-        __requires__ = [ExampleInterface, OtherInterface]
-
-
-def test_interface_type_raises_error_when_defined_without_extended_dependency(snapshot):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExtendExampleInterface(ObjectType):
-            __schema__ = """
-            extend interface Example {
-                name: String
-            }
-            """
-
-    snapshot.assert_match(err)
-
-
-def test_interface_type_raises_error_when_extended_dependency_is_wrong_type(snapshot):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleType(ObjectType):
-            __schema__ = """
-            type Example {
-                id: ID!
-            }
-            """
-
-        class ExampleInterface(InterfaceType):
-            __schema__ = """
-            extend interface Example {
-                name: String
-            }
-            """
-            __requires__ = [ExampleType]
-
-    snapshot.assert_match(err)
-
-
-def test_interface_type_raises_error_when_defined_with_alias_for_nonexisting_field(
-    snapshot,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = """
-            interface User {
-                name: String
-            }
-            """
-            __aliases__ = {
-                "joinedDate": "joined_date",
-            }
-
-    snapshot.assert_match(err)
-
-
-def test_interface_type_raises_error_when_defined_with_resolver_for_nonexisting_field(
-    snapshot,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleInterface(InterfaceType):
-            __schema__ = """
-            interface User {
-                name: String
-            }
-            """
-
-            @staticmethod
-            def resolve_group(*_):
-                return None
-
-    snapshot.assert_match(err)
-
-
-@dataclass
-class User:
-    id: int
-    name: str
-    summary: str
-
-
-@dataclass
-class Comment:
-    id: int
-    message: str
-    summary: str
-
-
-class ResultInterface(InterfaceType):
-    __schema__ = """
-    interface Result {
-        summary: String!
-        score: Int!
-    }
-    """
-
-    @staticmethod
-    def resolve_type(instance, *_):
-        if isinstance(instance, Comment):
-            return "Comment"
-
-        if isinstance(instance, User):
-            return "User"
-
-        return None
-
-    @staticmethod
-    def resolve_score(*_):
-        return 42
-
-
-class UserType(ObjectType):
-    __schema__ = """
-    type User implements Result {
-        id: ID!
-        name: String!
-        summary: String!
-        score: Int!
-    }
-    """
-    __requires__ = [ResultInterface]
-
-
-class CommentType(ObjectType):
-    __schema__ = """
-    type Comment implements Result {
-        id: ID!
-        message: String!
-        summary: String!
-        score: Int!
-    }
-    """
-    __requires__ = [ResultInterface]
-
-    @staticmethod
-    def resolve_score(*_):
-        return 16
-
-
-class QueryType(ObjectType):
-    __schema__ = """
-    type Query {
-        results: [Result!]!
-    }
-    """
-    __requires__ = [ResultInterface]
-
-    @staticmethod
-    def resolve_results(*_):
-        return [
-            User(id=1, name="Alice", summary="Summary for Alice"),
-            Comment(id=1, message="Hello world!", summary="Summary for comment"),
+    assert not result.errors
+    assert result.data == {
+        "search": [
+            {
+                "summary": "base_line",
+            },
+            {},
         ]
-
-
-schema = make_executable_schema(QueryType, UserType, CommentType)
-
-
-def test_interface_type_binds_type_resolver():
-    query = """
-    query {
-        results {
-            ... on User {
-                __typename
-                id
-                name
-                summary
-            }
-            ... on Comment {
-                __typename
-                id
-                message
-                summary
-            }
-        }
-    }
-    """
-
-    result = graphql_sync(schema, query)
-    assert result.data == {
-        "results": [
-            {
-                "__typename": "User",
-                "id": "1",
-                "name": "Alice",
-                "summary": "Summary for Alice",
-            },
-            {
-                "__typename": "Comment",
-                "id": "1",
-                "message": "Hello world!",
-                "summary": "Summary for comment",
-            },
-        ],
-    }
-
-
-def test_interface_type_binds_field_resolvers_to_implementing_types_fields():
-    query = """
-    query {
-        results {
-            ... on User {
-                __typename
-                score
-            }
-            ... on Comment {
-                __typename
-                score
-            }
-        }
-    }
-    """
-
-    result = graphql_sync(schema, query)
-    assert result.data == {
-        "results": [
-            {
-                "__typename": "User",
-                "score": 42,
-            },
-            {
-                "__typename": "Comment",
-                "score": 16,
-            },
-        ],
     }

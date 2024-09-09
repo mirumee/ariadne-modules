@@ -1,0 +1,3 @@
+ExtendChatSubscription requires 'Subscription' to be GraphQL type but other type was
+  provided in '__requires__'
+...

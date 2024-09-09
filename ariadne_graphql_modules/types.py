@@ -1,4 +1,4 @@
-from typing import Dict, Type
+from enum import Enum
 
 from graphql import (
     DefinitionNode,
@@ -6,6 +6,13 @@ from graphql import (
     InputValueDefinitionNode,
 )
 
-FieldsDict = Dict[str, FieldDefinitionNode]
-InputFieldsDict = Dict[str, InputValueDefinitionNode]
-RequirementsDict = Dict[str, Type[DefinitionNode]]
+FieldsDict = dict[str, FieldDefinitionNode]
+InputFieldsDict = dict[str, InputValueDefinitionNode]
+RequirementsDict = dict[str, type[DefinitionNode]]
+
+
+class GraphQLClassType(Enum):
+    BASE = "Base"
+    OBJECT = "Object"
+    INTERFACE = "Interface"
+    SUBSCRIPTION = "Subscription"

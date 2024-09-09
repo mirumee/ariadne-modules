@@ -1,0 +1,3 @@
+UsersSubscription class was defined with __schema__ containing GraphQL definition
+  for 'type Other' (expected 'type Subscription')
+...

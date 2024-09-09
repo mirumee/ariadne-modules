@@ -1,243 +1,228 @@
-from dataclasses import dataclass
+from typing import Union
 
-import pytest
-from ariadne import SchemaDirectiveVisitor
-from graphql import GraphQLError, graphql_sync
+from graphql import graphql_sync
 
 from ariadne_graphql_modules import (
-    DirectiveType,
-    ObjectType,
-    UnionType,
+    GraphQLID,
+    GraphQLObject,
+    GraphQLUnion,
     make_executable_schema,
 )
 
 
-def test_union_type_raises_attribute_error_when_defined_without_schema(snapshot):
-    with pytest.raises(AttributeError) as err:
-        # pylint: disable=unused-variable
-        class ExampleUnion(UnionType):
-            pass
-
-    snapshot.assert_match(err)
+class UserType(GraphQLObject):
+    id: GraphQLID
+    username: str
 
 
-def test_union_type_raises_error_when_defined_with_invalid_schema_type(snapshot):
-    with pytest.raises(TypeError) as err:
-        # pylint: disable=unused-variable
-        class ExampleUnion(UnionType):
-            __schema__ = True
-
-    snapshot.assert_match(err)
+class CommentType(GraphQLObject):
+    id: GraphQLID
+    content: str
 
 
-def test_union_type_raises_error_when_defined_with_invalid_schema_str(snapshot):
-    with pytest.raises(GraphQLError) as err:
-        # pylint: disable=unused-variable
-        class ExampleUnion(UnionType):
-            __schema__ = "unien Example = A | B"
+def test_union_field_returning_object_instance(assert_schema_equals):
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
 
-    snapshot.assert_match(err)
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=list[ResultType])
+        @staticmethod
+        def search(*_) -> list[Union[UserType, CommentType]]:
+            return [
+                UserType(id=1, username="Bob"),
+                CommentType(id=2, content="Hello World!"),
+            ]
 
+    schema = make_executable_schema(QueryType)
 
-def test_union_type_raises_error_when_defined_with_invalid_graphql_type_schema(
-    snapshot,
-):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleUnion(UnionType):
-            __schema__ = "scalar DateTime"
+    assert_schema_equals(
+        schema,
+        """
+        type Query {
+          search: [Result!]!
+        }
 
-    snapshot.assert_match(err)
+        union Result = User | Comment
 
+        type User {
+          id: ID!
+          username: String!
+        }
 
-def test_union_type_raises_error_when_defined_with_multiple_types_schema(snapshot):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleUnion(UnionType):
-            __schema__ = """
-            union A = C | D
+        type Comment {
+          id: ID!
+          content: String!
+        }
+        """,
+    )
 
-            union B = C | D
-            """
-
-    snapshot.assert_match(err)
-
-
-@dataclass
-class User:
-    id: int
-    name: str
-
-
-@dataclass
-class Comment:
-    id: int
-    message: str
-
-
-class UserType(ObjectType):
-    __schema__ = """
-    type User {
-        id: ID!
-        name: String!
-    }
-    """
-
-
-class CommentType(ObjectType):
-    __schema__ = """
-    type Comment {
-        id: ID!
-        message: String!
-    }
-    """
-
-
-class ResultUnion(UnionType):
-    __schema__ = "union Result = Comment | User"
-    __requires__ = [CommentType, UserType]
-
-    @staticmethod
-    def resolve_type(instance, *_):
-        if isinstance(instance, Comment):
-            return "Comment"
-
-        if isinstance(instance, User):
-            return "User"
-
-        return None
-
-
-class QueryType(ObjectType):
-    __schema__ = """
-    type Query {
-        results: [Result!]!
-    }
-    """
-    __requires__ = [ResultUnion]
-
-    @staticmethod
-    def resolve_results(*_):
-        return [
-            User(id=1, name="Alice"),
-            Comment(id=1, message="Hello world!"),
-        ]
-
-
-schema = make_executable_schema(QueryType, UserType, CommentType)
-
-
-def test_union_type_extracts_graphql_name():
-    class ExampleUnion(UnionType):
-        __schema__ = "union Example = User | Comment"
-        __requires__ = [UserType, CommentType]
-
-    assert ExampleUnion.graphql_name == "Example"
-
-
-def test_union_type_raises_error_when_defined_without_member_type_dependency(snapshot):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleUnion(UnionType):
-            __schema__ = "union Example = User | Comment"
-            __requires__ = [UserType]
-
-    snapshot.assert_match(err)
-
-
-def test_interface_type_binds_type_resolver():
-    query = """
-    query {
-        results {
-            ... on User {
-                __typename
-                id
-                name
-            }
-            ... on Comment {
-                __typename
-                id
-                message
+    result = graphql_sync(
+        schema,
+        """
+        {
+            search {
+                ... on User {
+                    id
+                    username
+                }
+                ... on Comment {
+                    id
+                    content
+                }
             }
         }
-    }
-    """
+        """,
+    )
 
-    result = graphql_sync(schema, query)
+    assert not result.errors
     assert result.data == {
-        "results": [
-            {
-                "__typename": "User",
-                "id": "1",
-                "name": "Alice",
-            },
-            {
-                "__typename": "Comment",
-                "id": "1",
-                "message": "Hello world!",
-            },
-        ],
+        "search": [
+            {"id": "1", "username": "Bob"},
+            {"id": "2", "content": "Hello World!"},
+        ]
     }
 
 
-def test_union_type_can_be_extended_with_new_types():
-    # pylint: disable=unused-variable
-    class ExampleUnion(UnionType):
-        __schema__ = "union Result = User | Comment"
-        __requires__ = [UserType, CommentType]
+def test_union_field_returning_empty_list():
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
 
-    class ThreadType(ObjectType):
-        __schema__ = """
-        type Thread {
-            id: ID!
-            title: String!
-        }
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=list[ResultType])
+        @staticmethod
+        def search(*_) -> list[Union[UserType, CommentType]]:
+            return []
+
+    schema = make_executable_schema(QueryType)
+
+    result = graphql_sync(
+        schema,
         """
-
-    class ExtendExampleUnion(UnionType):
-        __schema__ = "union Result = Thread"
-        __requires__ = [ExampleUnion, ThreadType]
-
-
-def test_union_type_can_be_extended_with_directive():
-    # pylint: disable=unused-variable
-    class ExampleDirective(DirectiveType):
-        __schema__ = "directive @example on UNION"
-        __visitor__ = SchemaDirectiveVisitor
-
-    class ExampleUnion(UnionType):
-        __schema__ = "union Result = User | Comment"
-        __requires__ = [UserType, CommentType]
-
-    class ExtendExampleUnion(UnionType):
-        __schema__ = """
-        extend union Result @example
-        """
-        __requires__ = [ExampleUnion, ExampleDirective]
-
-
-def test_union_type_raises_error_when_defined_without_extended_dependency(snapshot):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExtendExampleUnion(UnionType):
-            __schema__ = "extend union Result = User"
-            __requires__ = [UserType]
-
-    snapshot.assert_match(err)
-
-
-def test_interface_type_raises_error_when_extended_dependency_is_wrong_type(snapshot):
-    with pytest.raises(ValueError) as err:
-        # pylint: disable=unused-variable
-        class ExampleType(ObjectType):
-            __schema__ = """
-            type Example {
-                id: ID!
+        {
+            search {
+                ... on User {
+                    id
+                    username
+                }
+                ... on Comment {
+                    id
+                    content
+                }
             }
-            """
+        }
+        """,
+    )
+    assert not result.errors
+    assert result.data == {"search": []}
 
-        class ExtendExampleUnion(UnionType):
-            __schema__ = "extend union Example = User"
-            __requires__ = [ExampleType, UserType]
 
-    snapshot.assert_match(err)
+def test_union_field_with_invalid_type_access():
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=list[ResultType])
+        @staticmethod
+        def search(*_) -> list[Union[UserType, CommentType]]:
+            return [
+                UserType(id=1, username="Bob"),
+                "InvalidType",  # type: ignore
+            ]
+
+    schema = make_executable_schema(QueryType)
+
+    result = graphql_sync(
+        schema,
+        """
+        {
+            search {
+                ... on User {
+                    id
+                    username
+                }
+                ... on Comment {
+                    id
+                    content
+                }
+            }
+        }
+        """,
+    )
+    assert result.errors
+    assert "InvalidType" in str(result.errors)
+
+
+def test_serialization_error_handling():
+    class InvalidType:
+        def __init__(self, value):
+            self.value = value
+
+    class ResultType(GraphQLUnion):
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=list[ResultType])
+        @staticmethod
+        def search(*_) -> list[Union[UserType, CommentType, InvalidType]]:
+            return [InvalidType("This should cause an error")]
+
+    schema = make_executable_schema(QueryType)
+
+    result = graphql_sync(
+        schema,
+        """
+        {
+            search {
+                ... on User {
+                    id
+                    username
+                }
+            }
+        }
+        """,
+    )
+    assert result.errors
+
+
+def test_union_with_schema_definition():
+    class SearchResultUnion(GraphQLUnion):
+        __schema__ = """
+        union SearchResult = User | Comment
+        """
+        __types__ = [UserType, CommentType]
+
+    class QueryType(GraphQLObject):
+        @GraphQLObject.field(graphql_type=list[SearchResultUnion])
+        @staticmethod
+        def search(*_) -> list[Union[UserType, CommentType]]:
+            return [
+                UserType(id="1", username="Alice"),
+                CommentType(id="2", content="Test post"),
+            ]
+
+    schema = make_executable_schema(QueryType, SearchResultUnion)
+
+    result = graphql_sync(
+        schema,
+        """
+        {
+            search {
+                ... on User {
+                    id
+                    username
+                }
+                ... on Comment {
+                    id
+                    content
+                }
+            }
+        }
+        """,
+    )
+    assert not result.errors
+    assert result.data == {
+        "search": [
+            {"id": "1", "username": "Alice"},
+            {"id": "2", "content": "Test post"},
+        ]
+    }
