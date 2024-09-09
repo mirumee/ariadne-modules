@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ariadne-graphql-modules"
-version = "1.0.0"
+version = "1.0.0.dev1"
 description = "Ariadne toolkit for defining GraphQL schemas in modular fashion."
 authors = [{ name = "Mirumee Software", email = "hello@mirumee.com" }]
 readme = { file = "README.md", content-type = "text/markdown" }

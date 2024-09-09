@@ -1,7 +1,7 @@
 # CHANGELOG
 
 
-## 1.0.0 (UNREALEASED)
+## 1.0.0 (DEV RELEASE)
 
 - Major API Redesign: The entire API has been restructured for better modularity and flexibility.
 - New Type System: Introduced a new type system, replacing the old v1 types.
